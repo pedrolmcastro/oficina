@@ -2,6 +2,7 @@
     "recommendations": [
         "redhat.java",
         "shengchen.vscode-checkstyle",
+        "sonarsource.sonarlint-vscode",
         "vscjava.vscode-gradle"
     ]
 }
