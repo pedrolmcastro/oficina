@@ -31,6 +31,10 @@ repositories {
 }
 
 sourceSets {
+    bdd {
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+    }
     integrationTest {
         compileClasspath += sourceSets.main.output
         runtimeClasspath += sourceSets.main.output
@@ -38,6 +42,8 @@ sourceSets {
 }
 
 configurations {
+    bddImplementation.extendsFrom testImplementation
+    bddRuntimeOnly.extendsFrom testRuntimeOnly
     integrationTestImplementation.extendsFrom testImplementation
     integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
 }
@@ -78,10 +84,11 @@ sonar {
         property 'sonar.projectKey', 'pedrolmcastro_oficina'
         property 'sonar.organization', 'pedrolmcastro'
         property "sonar.projectName", "oficina"
-        property 'sonar.tests', (sourceSets.test.allSource.srcDirs + sourceSets.integrationTest.allSource.srcDirs).findAll { it.isDirectory() }
-        property 'sonar.java.test.binaries', (sourceSets.test.output.classesDirs + sourceSets.integrationTest.output.classesDirs).files.findAll { it.isDirectory() }
-        property 'sonar.java.test.libraries', (sourceSets.test.runtimeClasspath + sourceSets.integrationTest.runtimeClasspath).files
+        property 'sonar.tests', (sourceSets.test.allSource.srcDirs + sourceSets.integrationTest.allSource.srcDirs + sourceSets.bdd.allSource.srcDirs).findAll { it.isDirectory() }
+        property 'sonar.java.test.binaries', (sourceSets.test.output.classesDirs + sourceSets.integrationTest.output.classesDirs + sourceSets.bdd.output.classesDirs).files.findAll { it.isDirectory() }
+        property 'sonar.java.test.libraries', (sourceSets.test.runtimeClasspath + sourceSets.integrationTest.runtimeClasspath + sourceSets.bdd.runtimeClasspath).files
         properties['sonar.junit.reportPaths'] += tasks.named('integrationTest', Test).get().reports.junitXml.outputLocation.get().asFile
+        properties['sonar.junit.reportPaths'] += tasks.named('bdd', Test).get().reports.junitXml.outputLocation.get().asFile
     }
 }
 
@@ -96,6 +103,10 @@ dependencies {
         exclude group: 'net.minidev', module: 'json-smart'
     }
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    bddImplementation platform('io.cucumber:cucumber-bom:8.0.4')
+    bddImplementation 'io.cucumber:cucumber-java'
+    bddImplementation 'io.cucumber:cucumber-junit-platform-engine'
+    bddImplementation 'io.rest-assured:rest-assured:6.3.0'
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -131,8 +142,19 @@ tasks.register('integrationTest', Test) {
     shouldRunAfter tasks.named('test')
 }
 
+tasks.register('bdd', Test) {
+    description = 'Runs Cucumber acceptance tests.'
+    group = 'verification'
+    testClassesDirs = sourceSets.bdd.output.classesDirs
+    classpath = sourceSets.bdd.runtimeClasspath
+    useJUnitPlatform()
+    testDefinitionDirs.from('src/bdd/resources/features')
+    shouldRunAfter tasks.named('integrationTest')
+}
+
 tasks.named('check') {
     dependsOn tasks.named('integrationTest')
+    dependsOn tasks.named('bdd')
     dependsOn tasks.named('jacocoTestReport')
 }
 
@@ -141,9 +163,9 @@ tasks.named('sonar') {
 }
 
 tasks.named('jacocoTestReport', JacocoReport) {
-    description = 'Generates combined coverage reports for unit and integration tests.'
-    dependsOn tasks.named('test'), tasks.named('integrationTest')
-    executionData tasks.named('test').get(), tasks.named('integrationTest').get()
+    description = 'Generates combined coverage reports for unit, integration and BDD tests.'
+    dependsOn tasks.named('test'), tasks.named('integrationTest'), tasks.named('bdd')
+    executionData tasks.named('test').get(), tasks.named('integrationTest').get(), tasks.named('bdd').get()
 
     reports {
         html.required = true
