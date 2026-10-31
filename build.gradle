@@ -87,6 +87,7 @@ tasks.withType(JavaCompile).configureEach {
 
 	options.errorprone {
 		allSuggestionsAsWarnings = true
+		disable('RequireExplicitNullMarking')
 		error('NullAway')
 		option('NullAway:AnnotatedPackages', 'com.oficina')
 		option('NullAway:JSpecifyMode', 'true')
