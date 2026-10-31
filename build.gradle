@@ -7,6 +7,7 @@ plugins {
 	id 'com.diffplug.spotless' version '8.10.4'
 	id 'com.github.spotbugs' version '6.5.13'
 	id 'io.spring.dependency-management' version '1.1.7'
+	id 'jacoco'
 	id 'java'
 	id 'net.ltgt.errorprone' version '5.2.0'
 	id 'org.springframework.boot' version '4.1.2'
@@ -35,6 +36,10 @@ sourceSets {
 configurations {
 	integrationTestImplementation.extendsFrom testImplementation
 	integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
+}
+
+jacoco {
+	toolVersion = '0.8.16'
 }
 
 checkstyle {
@@ -99,4 +104,16 @@ tasks.register('integrationTest', Test) {
 
 tasks.named('check') {
 	dependsOn tasks.named('integrationTest')
+	dependsOn tasks.named('jacocoTestReport')
+}
+
+tasks.named('jacocoTestReport', JacocoReport) {
+	description = 'Generates combined coverage reports for unit and integration tests.'
+	dependsOn tasks.named('test'), tasks.named('integrationTest')
+	executionData tasks.named('test').get(), tasks.named('integrationTest').get()
+
+	reports {
+		html.required = true
+		xml.required = true
+	}
 }

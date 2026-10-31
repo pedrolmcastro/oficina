@@ -1,5 +1,5 @@
 # Docs
-doc/tech-challenge/*
+doc/tech-challenge/
 
 # Gradle
 .gradle
@@ -7,3 +7,6 @@ build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
+
+# VS Code
+bin/
