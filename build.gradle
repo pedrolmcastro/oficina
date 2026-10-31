@@ -25,6 +25,18 @@ repositories {
 	mavenCentral()
 }
 
+sourceSets {
+	integrationTest {
+		compileClasspath += sourceSets.main.output
+		runtimeClasspath += sourceSets.main.output
+	}
+}
+
+configurations {
+	integrationTestImplementation.extendsFrom testImplementation
+	integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
+}
+
 checkstyle {
 	toolVersion = '14.3.0'
 	configFile = file('config/checkstyle/checkstyle.xml')
@@ -74,4 +86,17 @@ tasks.withType(SpotBugsTask).configureEach {
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+tasks.register('integrationTest', Test) {
+	description = 'Runs integration tests.'
+	group = 'verification'
+	testClassesDirs = sourceSets.integrationTest.output.classesDirs
+	classpath = sourceSets.integrationTest.runtimeClasspath
+	useJUnitPlatform()
+	shouldRunAfter tasks.named('test')
+}
+
+tasks.named('check') {
+	dependsOn tasks.named('integrationTest')
 }
