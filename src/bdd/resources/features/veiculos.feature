@@ -38,7 +38,7 @@ Funcionalidade: Gerenciar veículos
     Dado que existe um veículo com placa "<placa>"
     Quando consulto veículos pela placa "<placa>"
     Então a API deve retornar 200
-    E a resposta deve conter o veículo:
+    E a lista deve conter o veículo:
       | placa   | modelo  | marca  | ano  |
       | <placa> | Corolla | Toyota | 2024 |
 
@@ -49,7 +49,8 @@ Funcionalidade: Gerenciar veículos
 
   Cenário: Informar placa não encontrada
     Quando consulto veículos pela placa "ABC1234"
-    Então a API deve retornar 404
+    Então a API deve retornar 200
+    E a lista de veículos deve estar vazia
 
   Esquema do Cenário: Atualizar dados e placa do veículo
     Dado que existe um veículo com placa "<original>"
@@ -59,11 +60,12 @@ Funcionalidade: Gerenciar veículos
     Então a API deve retornar 200
     Quando consulto veículos pela placa "<nova>"
     Então a API deve retornar 200
-    E a resposta deve conter o veículo:
+    E a lista deve conter o veículo:
       | placa  | modelo | marca | ano  |
       | <nova> | Civic  | Honda | 2025 |
     Quando consulto veículos pela placa "<original>"
-    Então a API deve retornar 404
+    Então a API deve retornar 200
+    E a lista de veículos deve estar vazia
 
     Exemplos:
       | original | nova    |

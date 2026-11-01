@@ -34,8 +34,31 @@ class SwaggerIT {
         final var porId = documento.path("paths").path("/veiculos/{id}");
         assertThat(cadastro.path("post").path("responses").has("201")).isTrue();
         assertThat(cadastro.path("post").path("responses").has("409")).isTrue();
-        assertThat(cadastro.path("get").path("parameters").get(0).path("name").asString()).isEqualTo("placa");
-        assertThat(cadastro.path("get").path("parameters").get(0).path("required").asBoolean()).isTrue();
+        final var parametros = cadastro.path("get").path("parameters");
+        assertThat(parametros)
+            .extracting(parametro -> parametro.path("name").asString())
+            .containsExactlyInAnyOrder("placa", "cliente", "after", "first");
+        assertThat(parametros).allSatisfy(parametro -> {
+            assertThat(parametro.path("required").asBoolean()).isFalse();
+            if ("first".equals(parametro.path("name").asString())) {
+                assertThat(parametro.path("schema").path("default").asInt()).isEqualTo(25);
+                assertThat(parametro.path("schema").path("minimum").asInt()).isEqualTo(1);
+                assertThat(parametro.path("schema").path("maximum").asInt()).isEqualTo(25);
+            }
+        });
+        final var referencia = cadastro
+            .path("get")
+            .path("responses")
+            .path("200")
+            .path("content")
+            .path("application/json")
+            .path("schema")
+            .path("$ref")
+            .asString();
+        assertThat(referencia).startsWith("#/components/schemas/");
+        final var pagina = documento.at(referencia.substring(1));
+        assertThat(pagina.path("properties").path("veiculos").path("type").asString()).isEqualTo("array");
+        assertThat(pagina.path("properties").has("nextCursor")).isTrue();
         assertThat(porId.has("get")).isTrue();
         assertThat(porId.has("patch")).isTrue();
         assertThat(porId.has("delete")).isTrue();
