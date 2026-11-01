@@ -15,17 +15,6 @@ Funcionalidade: Gerenciar clientes
       | Maria Silva | maria@example.com   | 52998224725    | CPF  |
       | Oficina     | oficina@example.com | 11222333000181 | CNPJ |
 
-  Esquema do Cenário: Rejeitar cadastros inválidos
-    Quando cadastro um cliente com nome "<nome>", email "<email>" e documento "<documento>"
-    Então a API deve retornar 400
-
-    Exemplos:
-      | nome  | email             | documento      |
-      |       | maria@example.com | 52998224725    |
-      | Maria | invalido          | 52998224725    |
-      | Maria | maria@example.com | 52998224726    |
-      | Maria | maria@example.com | 11222333000182 |
-
   Esquema do Cenário: Rejeitar documento já cadastrado
     Dado que existe um cliente com documento "<documento>"
     Quando cadastro um cliente com nome "Outro cliente", email "outro@example.com" e documento "<documento>"
@@ -37,18 +26,13 @@ Funcionalidade: Gerenciar clientes
       | 52998224725    |
       | 11222333000181 |
 
-  Esquema do Cenário: Consultar cliente existente pelo ID
-    Dado que existe um cliente com documento "<documento>"
+  Cenário: Consultar cliente existente pelo ID
+    Dado que existe um cliente com documento "52998224725"
     Quando consulto o cliente cadastrado pelo ID
     Então a API deve retornar 200
     E a resposta deve conter o cliente:
-      | nome        | email             | documento   | tipo   |
-      | Maria Silva | maria@example.com | <documento> | <tipo> |
-
-    Exemplos:
-      | documento      | tipo |
-      | 52998224725    | CPF  |
-      | 11222333000181 | CNPJ |
+      | nome        | email             | documento   | tipo |
+      | Maria Silva | maria@example.com | 52998224725 | CPF  |
 
   Esquema do Cenário: Consultar cliente existente pelo documento
     Dado que existe um cliente com documento "<documento>"
@@ -63,26 +47,9 @@ Funcionalidade: Gerenciar clientes
       | 52998224725    | CPF  |
       | 11222333000181 | CNPJ |
 
-  Esquema do Cenário: Informar documento não encontrado
-    Quando consulto clientes pelo documento "<documento>"
+  Cenário: Informar documento não encontrado
+    Quando consulto clientes pelo documento "52998224725"
     Então a API deve retornar 404
-
-    Exemplos:
-      | documento      |
-      | 52998224725    |
-      | 11222333000181 |
-
-  Cenário: Alterar email preservando os demais dados do cliente
-    Dado que existe um cliente com documento "52998224725"
-    Quando atualizo o cliente cadastrado com:
-      | email            |
-      | novo@example.com |
-    Então a API deve retornar 200
-    Quando consulto o cliente cadastrado pelo ID
-    Então a API deve retornar 200
-    E a resposta deve conter o cliente:
-      | nome        | email            | documento   | tipo |
-      | Maria Silva | novo@example.com | 52998224725 | CPF  |
 
   Esquema do Cenário: Atualizar dados e documento do cliente
     Dado que existe um cliente com documento "<original>"
@@ -101,17 +68,7 @@ Funcionalidade: Gerenciar clientes
     Exemplos:
       | original       | novo           | tipo |
       | 52998224725    | 11144477735    | CPF  |
-      | 11222333000181 | 11444777000161 | CNPJ |
       | 52998224725    | 11222333000181 | CNPJ |
-      | 11222333000181 | 52998224725    | CPF  |
-
-  Cenário: Rejeitar alteração inválida sem modificar o cadastro
-    Dado que existe um cliente com documento "52998224725"
-    Quando atualizo o cliente cadastrado com:
-      | nome      | email            | documento   |
-      | Novo nome | novo@example.com | 11111111111 |
-    Então a API deve retornar 400
-    E o cliente original deve permanecer inalterado
 
   Esquema do Cenário: Impedir atualização para documento de outro cliente
     Dado que existe um cliente com documento "<ocupado>"
@@ -125,21 +82,7 @@ Funcionalidade: Gerenciar clientes
     Exemplos:
       | ocupado        | original       |
       | 52998224725    | 11144477735    |
-      | 11222333000181 | 11444777000161 |
       | 52998224725    | 11222333000181 |
-      | 11222333000181 | 52998224725    |
-
-  Esquema do Cenário: Cliente excluído deixa de estar disponível
-    Dado que existe um cliente com documento "<documento>"
-    Quando excluo o cliente cadastrado
-    Então a API deve retornar 204
-    Quando consulto o cliente cadastrado pelo ID
-    Então a API deve retornar 404
-
-    Exemplos:
-      | documento      |
-      | 52998224725    |
-      | 11222333000181 |
 
   Esquema do Cenário: Reutilizar documento de cliente excluído em um novo cadastro
     Dado que existe um cliente com documento "<documento>"

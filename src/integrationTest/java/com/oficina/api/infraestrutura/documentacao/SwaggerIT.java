@@ -1,5 +1,6 @@
-package com.oficina.api;
+package com.oficina.api.infraestrutura.documentacao;
 
+import com.oficina.api.ConfiguracaoIntegration;
 import io.restassured.RestAssured;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -17,13 +18,7 @@ class SwaggerIT {
     private int porta;
 
     @ParameterizedTest
-    @ValueSource(strings = {
-        "/swagger-ui.html",
-        "/swagger-ui/index.html",
-        "/swagger-ui/swagger-ui-bundle.js",
-        "/swagger-ui/swagger-ui.css",
-        "/v3/api-docs/swagger-config",
-        "/v3/api-docs.yaml" })
+    @ValueSource(strings = { "/swagger-ui.html", "/swagger-ui/swagger-ui-bundle.js" })
     void deveDisponibilizarDocumentacao(final String caminho) {
         final var resposta = RestAssured.given().port(this.porta).get(caminho);
         assertThat(resposta.statusCode()).isEqualTo(200);

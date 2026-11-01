@@ -8,9 +8,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class NomeTest {
     @ParameterizedTest
-    @ValueSource(strings = { "Nome", "nome", " Nome" })
-    void deveAceitarNomeValido() {
-        final var valor = " Maria d'Ávila-Silva 123 ";
+    @ValueSource(strings = { "Nome", "nome", " Nome", " Maria d'Ávila-Silva 123 " })
+    void deveAceitarNomeValido(final String valor) {
         final var nome = new Nome(valor);
         assertThat(nome.valor()).isEqualTo(valor);
     }

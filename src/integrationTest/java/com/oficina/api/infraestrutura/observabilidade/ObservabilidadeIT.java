@@ -1,5 +1,6 @@
-package com.oficina.api;
+package com.oficina.api.infraestrutura.observabilidade;
 
+import com.oficina.api.ConfiguracaoIntegration;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.restassured.RestAssured;
 import java.time.Duration;

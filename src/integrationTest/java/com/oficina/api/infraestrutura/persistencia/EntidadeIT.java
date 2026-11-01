@@ -1,8 +1,9 @@
-package com.oficina.api;
+package com.oficina.api.infraestrutura.persistencia;
 
+import com.oficina.ConfiguracaoJpaIntegration;
+import com.oficina.ConfiguracaoJpaIntegration.EntidadeTeste;
+import com.oficina.api.ConfiguracaoIntegration;
 import com.oficina.api.dominio.Entidade;
-import com.oficina.suporte.ConfiguracaoEntidadeTeste;
-import com.oficina.suporte.ConfiguracaoEntidadeTeste.EntidadeTeste;
 import jakarta.persistence.EntityManager;
 import java.util.HashSet;
 import org.hibernate.Hibernate;
@@ -17,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
     "spring.flyway.enabled=false",
     "spring.jpa.hibernate.ddl-auto=create-drop",
     "spring.jpa.properties.hibernate.default_schema=public" })
-@ContextConfiguration(classes = ConfiguracaoEntidadeTeste.class)
+@ContextConfiguration(classes = ConfiguracaoJpaIntegration.class)
 @Import(value = ConfiguracaoIntegration.class)
 class EntidadeIT {
     @Autowired

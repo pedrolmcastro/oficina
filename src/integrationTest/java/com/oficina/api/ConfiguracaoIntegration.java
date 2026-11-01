@@ -8,7 +8,7 @@ import org.springframework.test.context.DynamicPropertyRegistrar;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 @TestConfiguration(proxyBeanMethods = false)
-class ConfiguracaoIntegration {
+public class ConfiguracaoIntegration {
     @Bean
     @ServiceConnection
     PostgreSQLContainer postgres() {
