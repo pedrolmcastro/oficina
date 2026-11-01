@@ -9,6 +9,7 @@ import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import jakarta.persistence.LockModeType;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
@@ -47,12 +48,8 @@ public class ServicoClientes {
         return observar("buscar_id", this.leitura, () -> encontrar(id, LockModeType.NONE));
     }
 
-    public Cliente buscar(final Documento documento) {
-        return observar(
-            "buscar_documento",
-            this.leitura,
-            () -> this.repositorio.buscar(documento).orElseThrow(ClienteNaoEncontrado::new)
-        );
+    public Optional<Cliente> buscar(final Documento documento) {
+        return observar("buscar_documento", this.leitura, () -> this.repositorio.buscar(documento));
     }
 
     public Cliente atualizar(

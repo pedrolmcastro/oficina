@@ -71,8 +71,8 @@ class ServicoClientesTest {
     }
 
     @Test
-    void deveRejeitarDocumentoInexistente() {
+    void deveRetornarVazioParaDocumentoInexistente() {
         final var documento = Documento.de("52998224725");
-        assertThatThrownBy(() -> this.servico.buscar(documento)).isExactlyInstanceOf(ClienteNaoEncontrado.class);
+        assertThat(this.servico.buscar(documento)).isEmpty();
     }
 }

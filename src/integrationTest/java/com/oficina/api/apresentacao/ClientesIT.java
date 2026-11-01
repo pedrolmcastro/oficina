@@ -2,6 +2,7 @@ package com.oficina.api.apresentacao;
 
 import com.oficina.api.ConfiguracaoIntegration;
 import com.oficina.api.apresentacao.cliente.RespostaCliente;
+import com.oficina.api.apresentacao.cliente.RespostaListaClientes;
 import com.oficina.api.infraestrutura.seguranca.EmissorTokenJwt;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
@@ -63,13 +64,14 @@ class ClientesIT {
     }
 
     @Test
-    void deveRetornar404ParaDocumentoExcluido() {
+    void deveRetornarListaVaziaParaDocumentoExcluido() {
         final var cliente = criarCliente();
         assertThat(requisicao().delete("/clientes/{id}", cliente.id()).statusCode()).isEqualTo(204);
 
         final var resposta = requisicao().queryParam("documento", cliente.documento()).get("/clientes");
 
-        assertThat(resposta.statusCode()).isEqualTo(404);
+        validarSemCache(resposta, 200);
+        assertThat(resposta.as(RespostaListaClientes.class).clientes()).isEmpty();
     }
 
     @Test

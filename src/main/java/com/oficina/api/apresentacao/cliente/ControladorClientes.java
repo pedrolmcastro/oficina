@@ -73,15 +73,20 @@ public class ControladorClientes {
     }
 
     @GetMapping
-    @Operation(summary = "Buscar cliente por CPF ou CNPJ", description = "Informe documento apenas com dígitos.")
-    @ApiResponse(responseCode = "200", description = "Cliente encontrado")
-    @ApiResponse(responseCode = "404", description = "Cliente não encontrado", content = {
-        @Content(schema = @Schema(implementation = ProblemDetail.class)) })
-    public ResponseEntity<RespostaCliente> buscarDocumento(@RequestParam final String documento) {
+    @Operation(summary = "Buscar cliente por CPF ou CNPJ",
+        description = "Informe documento obrigatório, apenas com dígitos. "
+            + "Retorna uma lista com no máximo um cliente e nextCursor null.")
+    @ApiResponse(responseCode = "200", description = "Lista de clientes, vazia quando o documento não é encontrado")
+    public ResponseEntity<RespostaListaClientes> buscarDocumento(@RequestParam final String documento) {
         return ResponseEntity
             .ok()
             .cacheControl(CacheControl.noStore())
-            .body(RespostaCliente.de(this.servico.buscar(Documento.de(documento))));
+            .body(
+                new RespostaListaClientes(
+                    this.servico.buscar(Documento.de(documento)).stream().map(RespostaCliente::de).toList(),
+                    null
+                )
+            );
     }
 
     @PatchMapping(value = "/{id}", consumes = { MediaType.APPLICATION_JSON_VALUE, "application/merge-patch+json" })
