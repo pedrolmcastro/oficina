@@ -82,7 +82,7 @@ public class ClientesSteps {
         assertThat(cliente.nome()).isEqualTo(esperado.get("nome"));
         assertThat(cliente.email()).isEqualTo(esperado.get("email"));
         assertThat(cliente.documento()).isEqualTo(esperado.get("documento"));
-        assertThat(cliente.tipoDocumento().name()).isEqualTo(esperado.get("tipo"));
+        assertThat(this.http.resposta().jsonPath().getMap("")).containsOnlyKeys("id", "nome", "email", "documento");
     }
 
     @Then("o cliente original deve permanecer inalterado")
