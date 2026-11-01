@@ -51,13 +51,13 @@ public class ControladorServicos {
     @ApiResponse(responseCode = "201", description = "Serviço cadastrado")
     @ApiResponse(responseCode = "409", description = "Nome já cadastrado")
     public ResponseEntity<RespostaServico> criar(@Valid @RequestBody final RequisicaoCriarServico requisicao) {
-        final var servico = this.servico
+        final var criado = this.servico
             .criar(
                 new Nome(new TextoNormalizado(requisicao.nome())),
                 new PrecoVenda(new Preco(requisicao.precoVenda())),
                 requisicao.requerDiagnostico()
             );
-        return RespostasHttp.criada(URI.create("/servicos/" + servico.id()), RespostaServico.de(servico));
+        return RespostasHttp.criada(URI.create("/servicos/" + criado.id()), RespostaServico.de(criado));
     }
 
     @GetMapping(value = "/{id}")
@@ -90,7 +90,7 @@ public class ControladorServicos {
     ) {
         final var nome = atualizacao.nome();
         final var precoVenda = atualizacao.precoVenda();
-        final var servico = this.servico
+        final var atualizado = this.servico
             .atualizar(
                 id,
                 nome == null
@@ -101,7 +101,7 @@ public class ControladorServicos {
                     : new PrecoVenda(new Preco(precoVenda)),
                 atualizacao.requerDiagnostico()
             );
-        return RespostasHttp.ok(RespostaServico.de(servico));
+        return RespostasHttp.ok(RespostaServico.de(atualizado));
     }
 
     @DeleteMapping(value = "/{id}")

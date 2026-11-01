@@ -46,15 +46,16 @@ class ServicoServicosTest {
         final String nomeEsperado,
         final BigDecimal precoEsperado
     ) {
-        final var servico = new Servico(
+        final var existente = new Servico(
             new Nome(new TextoNormalizado("Óleo")),
             new PrecoVenda(new Preco(new BigDecimal("19.90"))),
             true
         );
-        when(this.repositorio.buscar(servico.id(), LockModeType.PESSIMISTIC_WRITE)).thenReturn(Optional.of(servico));
+        when(this.repositorio.buscar(existente.id(), LockModeType.PESSIMISTIC_WRITE))
+            .thenReturn(Optional.of(existente));
         final var atualizado = this.servico
             .atualizar(
-                servico.id(),
+                existente.id(),
                 nome == null
                     ? null
                     : new Nome(new TextoNormalizado(nome)),
@@ -63,7 +64,7 @@ class ServicoServicosTest {
                     : new PrecoVenda(new Preco(preco)),
                 null
             );
-        assertThat(atualizado.id()).isEqualTo(servico.id());
+        assertThat(atualizado.id()).isEqualTo(existente.id());
         assertThat(atualizado.requerDiagnostico()).isTrue();
         assertThat(atualizado.nome().texto().valor()).isEqualTo(nomeEsperado);
         assertThat(atualizado.precoVenda().preco().valor()).isEqualByComparingTo(precoEsperado);

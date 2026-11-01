@@ -78,7 +78,8 @@ class ServicoClientesTest {
     void deveRejeitarIdInexistente() {
         final var id = UUID.randomUUID();
         assertThatThrownBy(() -> this.servico.buscar(id)).isExactlyInstanceOf(ClienteNaoEncontradoException.class);
-        assertThatThrownBy(() -> this.servico.atualizar(id, new Nome(new TextoNormalizado("Novo nome")), null, null))
+        final var nome = new Nome(new TextoNormalizado("Novo nome"));
+        assertThatThrownBy(() -> this.servico.atualizar(id, nome, null, null))
             .isExactlyInstanceOf(ClienteNaoEncontradoException.class);
         assertThatThrownBy(() -> this.servico.excluir(id)).isExactlyInstanceOf(ClienteNaoEncontradoException.class);
     }

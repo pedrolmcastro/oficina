@@ -25,8 +25,9 @@ class ConfiguracaoSegurancaTest {
     void deveRejeitarSegredoCurto(final int tamanho) {
         final var propriedades = propriedades(new byte[tamanho]);
 
+        final var configuracao = new ConfiguracaoSeguranca();
         assertThatIllegalArgumentException()
-            .isThrownBy(() -> new ConfiguracaoSeguranca().secretKey(propriedades))
+            .isThrownBy(() -> configuracao.secretKey(propriedades))
             .withMessageContaining("pelo menos " + TAMANHO_MINIMO_SEGREDO_BYTES + " bytes");
     }
 
@@ -49,7 +50,8 @@ class ConfiguracaoSegurancaTest {
         final var outroEncoder = NimbusJwtEncoder.withSecretKey(outraChave).algorithm(MacAlgorithm.HS256).build();
         final var token = assinar(outroEncoder, Instant.now().plusSeconds(1800));
 
-        assertThatThrownBy(() -> configuracao.jwtDecoder(chave).decode(token)).isInstanceOf(JwtException.class);
+        final var decoder = configuracao.jwtDecoder(chave);
+        assertThatThrownBy(() -> decoder.decode(token)).isInstanceOf(JwtException.class);
     }
 
     @Test
@@ -57,7 +59,8 @@ class ConfiguracaoSegurancaTest {
         final var configuracao = new ConfiguracaoSeguranca();
         final var chave = configuracao.secretKey(propriedades(new byte[TAMANHO_MINIMO_SEGREDO_BYTES]));
         final var token = assinar(configuracao.jwtEncoder(chave), Instant.now().minusSeconds(1));
-        assertThatThrownBy(() -> configuracao.jwtDecoder(chave).decode(token)).isInstanceOf(JwtException.class);
+        final var decoder = configuracao.jwtDecoder(chave);
+        assertThatThrownBy(() -> decoder.decode(token)).isInstanceOf(JwtException.class);
     }
 
     private static String assinar(final JwtEncoder jwtEncoder, final Instant expiraEm) {
