@@ -106,6 +106,10 @@ dependencies {
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.2.0'
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-flyway'
+    runtimeOnly 'org.flywaydb:flyway-database-postgresql'
+    runtimeOnly 'org.postgresql:postgresql'
     runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
     implementation 'org.springframework.boot:spring-boot-starter-webmvc'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
@@ -116,6 +120,8 @@ dependencies {
         exclude group: 'com.jayway.jsonpath', module: 'json-path'
         exclude group: 'net.minidev', module: 'json-smart'
     }
+    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+    testImplementation 'org.testcontainers:testcontainers-postgresql'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     bddImplementation platform('io.cucumber:cucumber-bom:8.0.4')
     bddImplementation 'io.cucumber:cucumber-spring'
@@ -155,6 +161,7 @@ tasks.register('integrationTest', Test) {
     group = 'verification'
     testClassesDirs = sourceSets.integrationTest.output.classesDirs
     classpath = sourceSets.integrationTest.runtimeClasspath
+    systemProperty 'spring.profiles.active', 'test'
     useJUnitPlatform()
     shouldRunAfter tasks.named('test')
 }
@@ -164,6 +171,7 @@ tasks.register('bdd', Test) {
     group = 'verification'
     testClassesDirs = sourceSets.bdd.output.classesDirs
     classpath = sourceSets.bdd.runtimeClasspath
+    systemProperty 'spring.profiles.active', 'test'
     useJUnitPlatform {
         includeEngines 'junit-platform-suite'
     }

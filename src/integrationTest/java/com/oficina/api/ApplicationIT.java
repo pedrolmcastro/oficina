@@ -1,5 +1,6 @@
 package com.oficina.api;
 
+import jakarta.persistence.EntityManagerFactory;
 import java.time.Instant;
 import javax.crypto.spec.SecretKeySpec;
 import org.junit.jupiter.api.Test;
@@ -15,16 +16,28 @@ import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import static com.oficina.api.infraestrutura.seguranca.ConfiguracaoSeguranca.TAMANHO_MINIMO_SEGREDO_BYTES;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest(useMainMethod = SpringBootTest.UseMainMethod.ALWAYS)
 @Import(value = ConfiguracaoIntegration.class)
 class ApplicationIT {
     @Autowired
+    private EntityManagerFactory entityManagerFactory;
+
+    @Autowired
     private JwtDecoder jwtDecoder;
 
     @Autowired
     private JwtEncoder jwtEncoder;
+
+    @Test
+    void deveConectarAoSchema() {
+        try (final var entityManager = this.entityManagerFactory.createEntityManager()) {
+            assertThat(entityManager.createNativeQuery("SELECT current_schema()", String.class).getSingleResult())
+                .isEqualTo("oficina");
+        }
+    }
 
     @Test
     void deveRejeitarAssinaturaDiferente() {
