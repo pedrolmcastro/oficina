@@ -1,4 +1,7 @@
 app:
+  clientes:
+    chave-criptografia: ${CLIENTES_CHAVE_CRIPTOGRAFIA}
+    chave-hash: ${CLIENTES_CHAVE_HASH}
   seguranca:
     admin:
       nome-usuario: ${ADMIN_NOME_USUARIO}
@@ -22,6 +25,8 @@ spring:
       ddl-auto: validate
     properties:
       hibernate:
+        cdi:
+          extensions: true
         default_schema: oficina
   threads:
     virtual:
