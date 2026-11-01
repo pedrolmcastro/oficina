@@ -1,6 +1,7 @@
 package com.oficina.api.apresentacao;
 
 import com.oficina.api.aplicacao.cliente.ClienteNaoEncontrado;
+import com.oficina.api.aplicacao.insumo.InsumoNaoEncontrado;
 import com.oficina.api.aplicacao.veiculo.VeiculoNaoEncontrado;
 import com.oficina.api.dominio.DadoInvalidoException;
 import java.util.Objects;
@@ -45,6 +46,11 @@ public class ExceptionHandlers {
     @ExceptionHandler(value = VeiculoNaoEncontrado.class)
     public ResponseEntity<ProblemDetail> veiculoNaoEncontrado() {
         return buildRespostaFalha(HttpStatus.NOT_FOUND, "Veículo não encontrado");
+    }
+
+    @ExceptionHandler(value = InsumoNaoEncontrado.class)
+    public ResponseEntity<ProblemDetail> insumoNaoEncontrado() {
+        return buildRespostaFalha(HttpStatus.NOT_FOUND, "Insumo não encontrado");
     }
 
     @ExceptionHandler(value = DataIntegrityViolationException.class)
