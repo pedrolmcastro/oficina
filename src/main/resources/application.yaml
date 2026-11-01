@@ -9,6 +9,20 @@ app:
 spring:
   application:
     name: api
+  datasource:
+    url: jdbc:postgresql://localhost:5432/oficina?currentSchema=oficina
+    username: oficina
+    password: ${POSTGRES_PASSWORD}
+  flyway:
+    default-schema: public
+    create-schemas: false
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: oficina
   threads:
     virtual:
       enabled: true
