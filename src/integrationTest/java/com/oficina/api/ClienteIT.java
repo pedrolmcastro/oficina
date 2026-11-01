@@ -1,8 +1,6 @@
 package com.oficina.api;
 
 import com.oficina.api.dominio.cliente.Cliente;
-import com.oficina.api.dominio.cliente.Cliente.PessoaFisica;
-import com.oficina.api.dominio.cliente.Cliente.PessoaJuridica;
 import com.oficina.api.dominio.cliente.Documento.CNPJ;
 import com.oficina.api.dominio.cliente.Documento.CPF;
 import com.oficina.api.dominio.cliente.Email;
@@ -40,7 +38,6 @@ class ClienteIT {
             em.flush();
             em.clear();
             final var recarregado = em.find(Cliente.class, cliente.id());
-            assertThat(recarregado).isExactlyInstanceOf(cliente.getClass());
             assertThat(recarregado.id()).isEqualTo(cliente.id());
             assertThat(recarregado.documento()).isEqualTo(cliente.documento());
             assertThat(recarregado.nome()).isEqualTo(cliente.nome());
@@ -51,11 +48,7 @@ class ClienteIT {
                 .getSingleResult();
             assertThat(this.protecao.descriptografar(cifrado)).isEqualTo(cliente.documento());
             final var encontrado = em
-                .createNativeQuery(
-                    "SELECT id FROM oficina.clientes WHERE tipo_documento = :tipo AND hash_documento = :hash",
-                    UUID.class
-                )
-                .setParameter("tipo", cliente.documento().tipo().name())
+                .createNativeQuery("SELECT id FROM oficina.clientes WHERE hash_documento = :hash", UUID.class)
                 .setParameter("hash", this.protecao.calcularHash(cliente.documento()))
                 .getSingleResult();
             assertThat(encontrado).isEqualTo(cliente.id());
@@ -65,8 +58,8 @@ class ClienteIT {
     @Test
     void deveRejeitarDocumentoDuplicado() {
         assertThatThrownBy(() -> emTransacao(em -> {
-            em.persist(new PessoaFisica(new Nome("Maria"), new Email("maria@example.com"), new CPF("52998224725")));
-            em.persist(new PessoaFisica(new Nome("Outra"), new Email("outra@example.com"), new CPF("52998224725")));
+            em.persist(new Cliente(new Nome("Maria"), new Email("maria@example.com"), new CPF("52998224725")));
+            em.persist(new Cliente(new Nome("Outra"), new Email("outra@example.com"), new CPF("52998224725")));
             em.flush();
         }))
             .isExactlyInstanceOf(ConstraintViolationException.class)
@@ -79,11 +72,7 @@ class ClienteIT {
     @Test
     void deveRejeitarHashIncompativel() {
         emTransacao(em -> {
-            final var cliente = new PessoaFisica(
-                new Nome("Maria"),
-                new Email("maria@example.com"),
-                new CPF("52998224725")
-            );
+            final var cliente = new Cliente(new Nome("Maria"), new Email("maria@example.com"), new CPF("52998224725"));
 
             em.persist(cliente);
             em.flush();
@@ -105,8 +94,8 @@ class ClienteIT {
     private static Stream<Cliente> clientes() {
         return Stream
             .of(
-                new PessoaFisica(new Nome("Maria"), new Email("maria@example.com"), new CPF("52998224725")),
-                new PessoaJuridica(new Nome("Oficina"), new Email("oficina@example.com"), new CNPJ("11222333000181"))
+                new Cliente(new Nome("Maria"), new Email("maria@example.com"), new CPF("52998224725")),
+                new Cliente(new Nome("Oficina"), new Email("oficina@example.com"), new CNPJ("11222333000181"))
             );
     }
 

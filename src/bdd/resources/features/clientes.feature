@@ -3,7 +3,7 @@
 Funcionalidade: Gerenciar clientes
   O administrador deve gerenciar clientes identificados por CPF ou CNPJ.
 
-  Esquema do Cenário: Cadastrar pessoas físicas e jurídicas
+  Esquema do Cenário: Cadastrar clientes com CPF ou CNPJ
     Quando cadastro um cliente com nome "<nome>", email "<email>" e documento "<documento>"
     Então a API deve retornar 201
     E a resposta deve conter o cliente:
@@ -84,7 +84,7 @@ Funcionalidade: Gerenciar clientes
       | nome        | email            | documento   | tipo |
       | Maria Silva | novo@example.com | 52998224725 | CPF  |
 
-  Esquema do Cenário: Atualizar todos os dados mantendo o tipo de documento
+  Esquema do Cenário: Atualizar dados e documento do cliente
     Dado que existe um cliente com documento "<original>"
     Quando atualizo o cliente cadastrado com:
       | nome      | email            | documento |
@@ -102,6 +102,8 @@ Funcionalidade: Gerenciar clientes
       | original       | novo           | tipo |
       | 52998224725    | 11144477735    | CPF  |
       | 11222333000181 | 11444777000161 | CNPJ |
+      | 52998224725    | 11222333000181 | CNPJ |
+      | 11222333000181 | 52998224725    | CPF  |
 
   Cenário: Rejeitar alteração inválida sem modificar o cadastro
     Dado que existe um cliente com documento "52998224725"
@@ -110,19 +112,6 @@ Funcionalidade: Gerenciar clientes
       | Novo nome | novo@example.com | 11111111111 |
     Então a API deve retornar 400
     E o cliente original deve permanecer inalterado
-
-  Esquema do Cenário: Impedir mudança entre pessoa física e jurídica
-    Dado que existe um cliente com documento "<original>"
-    Quando atualizo o cliente cadastrado com:
-      | nome      | email            | documento      |
-      | Novo nome | novo@example.com | <incompativel> |
-    Então a API deve retornar 400
-    E o cliente original deve permanecer inalterado
-
-    Exemplos:
-      | original       | incompativel   |
-      | 52998224725    | 11222333000181 |
-      | 11222333000181 | 52998224725    |
 
   Esquema do Cenário: Impedir atualização para documento de outro cliente
     Dado que existe um cliente com documento "<ocupado>"
@@ -137,6 +126,8 @@ Funcionalidade: Gerenciar clientes
       | ocupado        | original       |
       | 52998224725    | 11144477735    |
       | 11222333000181 | 11444777000161 |
+      | 52998224725    | 11222333000181 |
+      | 11222333000181 | 52998224725    |
 
   Esquema do Cenário: Cliente excluído deixa de estar disponível
     Dado que existe um cliente com documento "<documento>"

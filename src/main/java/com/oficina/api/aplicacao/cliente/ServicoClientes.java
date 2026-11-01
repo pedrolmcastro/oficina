@@ -37,10 +37,7 @@ public class ServicoClientes {
 
     public Cliente criar(final Nome nome, final Email email, final Documento documento) {
         return observar("criar", this.escrita, () -> {
-            final Cliente cliente = switch (documento) {
-                case Documento.CPF cpf -> new Cliente.PessoaFisica(nome, email, cpf);
-                case Documento.CNPJ cnpj -> new Cliente.PessoaJuridica(nome, email, cnpj);
-            };
+            final var cliente = new Cliente(nome, email, documento);
             this.repositorio.adicionar(cliente);
             return cliente;
         });

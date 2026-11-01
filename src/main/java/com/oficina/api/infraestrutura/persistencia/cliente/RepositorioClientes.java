@@ -27,12 +27,8 @@ public class RepositorioClientes {
     }
 
     public Optional<Cliente> buscar(final Documento documento) {
-        final var consulta = switch (documento) {
-            case Documento.CPF _ -> "FROM Cliente$PessoaFisica c WHERE c.cpf.hash = :hash";
-            case Documento.CNPJ _ -> "FROM Cliente$PessoaJuridica c WHERE c.cnpj.hash = :hash";
-        };
         final var cliente = this.entityManager
-            .createQuery(consulta, Cliente.class)
+            .createQuery("FROM Cliente c WHERE c.documento.hash = :hash", Cliente.class)
             .setParameter("hash", this.protecao.calcularHash(documento))
             .getSingleResultOrNull();
 
