@@ -2,6 +2,7 @@ package com.oficina.api;
 
 import com.oficina.api.apresentacao.auth.RequisicaoLogin;
 import com.oficina.api.apresentacao.auth.RespostaLogin;
+import com.oficina.api.apresentacao.auth.TipoToken;
 import com.oficina.api.infraestrutura.seguranca.EmissorTokenJwt;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -115,7 +116,8 @@ public class LoginSteps {
         assertThat(resposta().header("Cache-Control")).isEqualTo("no-store");
         assertThat(resposta().cookies()).isEmpty();
         final var login = resposta().as(RespostaLogin.class);
-        assertThat(login.tipoToken()).isEqualTo("Bearer");
+        assertThat(resposta().jsonPath().getString("tipoToken")).isEqualTo("Bearer");
+        assertThat(login.tipoToken()).isEqualTo(TipoToken.BEARER);
         assertThat(login.expiraEm()).isEqualTo(1800);
         this.token = login.tokenAcesso();
         final var jwt = this.decoder.decode(Objects.requireNonNull(this.token));

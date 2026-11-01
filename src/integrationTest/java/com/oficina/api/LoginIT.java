@@ -15,9 +15,14 @@ class LoginIT {
     private int porta;
 
     @ParameterizedTest
-    @ValueSource(strings = { "{ \"nomeUsuario\": \"\", \"senha\": \"admin\" }",
-        "{ \"nomeUsuario\": \"admin\", \"senha\":\"   \" }", "{ \"senha\": \"admin\" }",
-        "{ \"nomeUsuario\": \"admin\" }", "{}", "{" })
+    @ValueSource(strings = {
+        "{ \"nomeUsuario\": \"\", \"senha\": \"admin\" }",
+        "{ \"nomeUsuario\": \"admin\", \"senha\":\"   \" }",
+        "{ \"senha\": \"admin\" }",
+        "{ \"nomeUsuario\": \"admin\" }",
+        "{}",
+        "{"
+    })
     void deveRejeitarPayloadInvalido(final String json) {
         final var resposta = RestAssured
             .given()

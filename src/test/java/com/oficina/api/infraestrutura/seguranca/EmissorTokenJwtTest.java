@@ -27,7 +27,9 @@ class EmissorTokenJwtTest {
     }
 
     @ParameterizedTest
-    @ValueSource(longs = { 0, -1, -2 })
+    @ValueSource(longs = {
+        0, -1, -2
+    })
     void deveRejeitarValidadeNaoPositiva(final long segundos) {
         final var encoder = new ConfiguracaoSeguranca()
             .jwtEncoder(new SecretKeySpec(new byte[TAMANHO_MINIMO_SEGREDO_BYTES], "HmacSHA256"));
