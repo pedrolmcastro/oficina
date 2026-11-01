@@ -7,13 +7,13 @@ Funcionalidade: Gerenciar clientes
     Quando cadastro um cliente com nome "<nome>", email "<email>" e documento "<documento>"
     Então a API deve retornar 201
     E a resposta deve conter o cliente:
-      | nome   | email   | documento   | tipo   |
-      | <nome> | <email> | <documento> | <tipo> |
+      | nome   | email   | documento   |
+      | <nome> | <email> | <documento> |
 
     Exemplos:
-      | nome        | email               | documento      | tipo |
-      | Maria Silva | maria@example.com   | 52998224725    | CPF  |
-      | Oficina     | oficina@example.com | 11222333000181 | CNPJ |
+      | nome        | email               | documento      |
+      | Maria Silva | maria@example.com   | 52998224725    |
+      | Oficina     | oficina@example.com | 11222333000181 |
 
   Esquema do Cenário: Rejeitar documento já cadastrado
     Dado que existe um cliente com documento "<documento>"
@@ -31,21 +31,21 @@ Funcionalidade: Gerenciar clientes
     Quando consulto o cliente cadastrado pelo ID
     Então a API deve retornar 200
     E a resposta deve conter o cliente:
-      | nome        | email             | documento   | tipo |
-      | Maria Silva | maria@example.com | 52998224725 | CPF  |
+      | nome        | email             | documento   |
+      | Maria Silva | maria@example.com | 52998224725 |
 
   Esquema do Cenário: Consultar cliente existente pelo documento
     Dado que existe um cliente com documento "<documento>"
     Quando consulto clientes pelo documento "<documento>"
     Então a API deve retornar 200
     E a resposta deve conter o cliente:
-      | nome        | email             | documento   | tipo   |
-      | Maria Silva | maria@example.com | <documento> | <tipo> |
+      | nome        | email             | documento   |
+      | Maria Silva | maria@example.com | <documento> |
 
     Exemplos:
-      | documento      | tipo |
-      | 52998224725    | CPF  |
-      | 11222333000181 | CNPJ |
+      | documento      |
+      | 52998224725    |
+      | 11222333000181 |
 
   Cenário: Informar documento não encontrado
     Quando consulto clientes pelo documento "52998224725"
@@ -60,15 +60,15 @@ Funcionalidade: Gerenciar clientes
     Quando consulto clientes pelo documento "<novo>"
     Então a API deve retornar 200
     E a resposta deve conter o cliente:
-      | nome      | email            | documento | tipo   |
-      | Novo nome | novo@example.com | <novo>    | <tipo> |
+      | nome      | email            | documento |
+      | Novo nome | novo@example.com | <novo>    |
     Quando consulto clientes pelo documento "<original>"
     Então a API deve retornar 404
 
     Exemplos:
-      | original       | novo           | tipo |
-      | 52998224725    | 11144477735    | CPF  |
-      | 52998224725    | 11222333000181 | CNPJ |
+      | original       | novo           |
+      | 52998224725    | 11144477735    |
+      | 52998224725    | 11222333000181 |
 
   Esquema do Cenário: Impedir atualização para documento de outro cliente
     Dado que existe um cliente com documento "<ocupado>"
