@@ -1,3 +1,11 @@
+app:
+  seguranca:
+    admin:
+      nome-usuario: ${ADMIN_NOME_USUARIO}
+      hash-senha: ${ADMIN_HASH_SENHA}
+    jwt:
+      segredo: ${JWT_SEGREDO}
+      validade: 30m
 spring:
   application:
     name: api

@@ -1,0 +1,7 @@
+app:
+  seguranca:
+    admin:
+      nome-usuario: admin
+    jwt:
+      segredo: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+      validade: 30m

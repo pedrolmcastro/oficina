@@ -1,4 +1,10 @@
 {
+    "cucumber.features": [
+        "src/bdd/resources/features/**/*.feature"
+    ],
+    "cucumber.glue": [
+        "src/bdd/java/**/*.java"
+    ],
     "java.checkstyle.configuration": "${workspaceFolder}/config/checkstyle/checkstyle.xml",
     "java.checkstyle.version": "14.3.0",
     "java.compile.nullAnalysis.mode": "automatic",
