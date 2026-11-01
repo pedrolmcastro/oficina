@@ -84,15 +84,15 @@ public abstract class Criptografia<T> {
         return cipher;
     }
 
-    private static byte[] decodificarChave(final String valor) {
-        final var chave = Base64.getDecoder().decode(valor);
-        if (chave.length != 32) {
-            throw new IllegalArgumentException("As chaves de dados devem conter 32 bytes em Base64");
-        }
-        return chave;
-    }
-
     private static record Chaves(SecretKeySpec criptografia, SecretKeySpec hash) {
+        private static byte[] decodificarChave(final String valor) {
+            final var chave = Base64.getDecoder().decode(valor);
+            if (chave.length != 32) {
+                throw new IllegalArgumentException("As chaves de dados devem conter 32 bytes em Base64");
+            }
+            return chave;
+        }
+
         private static Chaves de(final String chaveCriptografia, final String chaveHash) {
             final var criptografia = decodificarChave(chaveCriptografia);
             final var hash = decodificarChave(chaveHash);

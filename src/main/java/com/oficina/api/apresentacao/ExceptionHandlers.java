@@ -36,7 +36,7 @@ public class ExceptionHandlers {
     }
 
     @ExceptionHandler(value = RecursoNaoEncontradoException.class)
-    public ResponseEntity<ProblemDetail> naoEncontrado(final RecursoNaoEncontradoException erro) {
+    public ResponseEntity<ProblemDetail> naoEncontrado(final Throwable erro) {
         return buildRespostaFalha(HttpStatus.NOT_FOUND, Objects.requireNonNull(erro.getMessage()));
     }
 

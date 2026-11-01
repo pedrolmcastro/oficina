@@ -19,7 +19,8 @@ class PrecoTest {
     @ParameterizedTest
     @ValueSource(strings = { "-0.01", "-10000" })
     void deveRejeitarValorNegativo(final String valor) {
-        assertThatThrownBy(() -> new Preco(new BigDecimal(valor)))
+        final var decimal = new BigDecimal(valor);
+        assertThatThrownBy(() -> new Preco(decimal))
             .isExactlyInstanceOf(DadoInvalidoException.class)
             .hasMessage("Preço não pode ser negativo");
     }
@@ -27,7 +28,8 @@ class PrecoTest {
     @ParameterizedTest
     @ValueSource(strings = { "0.001", "19.999", "-0.001" })
     void deveRejeitarFracoesDeCentavoSemArredondar(final String valor) {
-        assertThatThrownBy(() -> new Preco(new BigDecimal(valor)))
+        final var decimal = new BigDecimal(valor);
+        assertThatThrownBy(() -> new Preco(decimal))
             .isExactlyInstanceOf(DadoInvalidoException.class)
             .hasMessage("Preço deve ter no máximo duas casas decimais");
     }

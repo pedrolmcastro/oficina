@@ -51,7 +51,8 @@ class PaginaTest {
         final var pagina = Pagina.de(encontrados, new Pagina.Limite(1));
         encontrados.clear();
         assertThat(pagina.itens()).containsExactly(entidade);
-        assertThatThrownBy(() -> pagina.itens().clear()).isExactlyInstanceOf(UnsupportedOperationException.class);
+        final var itens = pagina.itens();
+        assertThatThrownBy(itens::clear).isExactlyInstanceOf(UnsupportedOperationException.class);
     }
 
     private static Entidade entidade() {
