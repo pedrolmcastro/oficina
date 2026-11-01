@@ -38,7 +38,7 @@ Funcionalidade: Gerenciar clientes
     Dado que existe um cliente com documento "<documento>"
     Quando consulto clientes pelo documento "<documento>"
     Então a API deve retornar 200
-    E a resposta deve conter o cliente:
+    E a resposta deve conter uma lista com o cliente:
       | nome        | email             | documento   |
       | Maria Silva | maria@example.com | <documento> |
 
@@ -47,9 +47,10 @@ Funcionalidade: Gerenciar clientes
       | 52998224725    |
       | 11222333000181 |
 
-  Cenário: Informar documento não encontrado
+  Cenário: Retornar lista vazia para documento não encontrado
     Quando consulto clientes pelo documento "52998224725"
-    Então a API deve retornar 404
+    Então a API deve retornar 200
+    E a resposta deve conter uma lista vazia de clientes
 
   Esquema do Cenário: Atualizar dados e documento do cliente
     Dado que existe um cliente com documento "<original>"
@@ -59,11 +60,12 @@ Funcionalidade: Gerenciar clientes
     Então a API deve retornar 200
     Quando consulto clientes pelo documento "<novo>"
     Então a API deve retornar 200
-    E a resposta deve conter o cliente:
+    E a resposta deve conter uma lista com o cliente:
       | nome      | email            | documento |
       | Novo nome | novo@example.com | <novo>    |
     Quando consulto clientes pelo documento "<original>"
-    Então a API deve retornar 404
+    Então a API deve retornar 200
+    E a resposta deve conter uma lista vazia de clientes
 
     Exemplos:
       | original       | novo           |

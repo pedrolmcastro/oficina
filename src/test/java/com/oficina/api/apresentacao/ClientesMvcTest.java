@@ -8,6 +8,7 @@ import com.oficina.api.dominio.cliente.Documento;
 import com.oficina.api.dominio.cliente.Email;
 import com.oficina.api.dominio.cliente.Nome;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -81,6 +82,34 @@ class ClientesMvcTest {
     void deveRetornar400ParaConsultaComDocumentoInvalido(final String documento) throws Exception {
         this.mvc.perform(get("/clientes").param("documento", documento)).andExpect(status().isBadRequest());
         verifyNoInteractions(this.servico);
+    }
+
+    @Test
+    void deveRetornarListaComUmClientePorDocumento() throws Exception {
+        final var cliente = new Cliente(new Nome("Maria"), new Email("maria@example.com"), Documento.de("52998224725"));
+        when(this.servico.buscar(cliente.documento())).thenReturn(Optional.of(cliente));
+
+        this.mvc
+            .perform(get("/clientes").param("documento", cliente.documento().valor()))
+            .andExpect(status().isOk())
+            .andExpect(
+                content()
+                    .json(
+                        ("{\"clientes\":[{\"id\":\"%s\",\"nome\":\"Maria\",\"email\":\"maria@example.com\","
+                            + "\"documento\":\"52998224725\"}],\"nextCursor\":null}").formatted(cliente.id())
+                    )
+            );
+    }
+
+    @Test
+    void deveRetornarListaVaziaParaDocumentoNaoEncontrado() throws Exception {
+        final var documento = Documento.de("52998224725");
+        when(this.servico.buscar(documento)).thenReturn(Optional.empty());
+
+        this.mvc
+            .perform(get("/clientes").param("documento", documento.valor()))
+            .andExpect(status().isOk())
+            .andExpect(content().json("{\"clientes\":[],\"nextCursor\":null}"));
     }
 
     @Test

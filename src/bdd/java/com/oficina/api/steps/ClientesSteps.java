@@ -1,6 +1,7 @@
 package com.oficina.api.steps;
 
 import com.oficina.api.apresentacao.cliente.RespostaCliente;
+import com.oficina.api.apresentacao.cliente.RespostaListaClientes;
 import com.oficina.api.infraestrutura.seguranca.EmissorTokenJwt;
 import io.cucumber.datatable.DataTable;
 import io.cucumber.java.Before;
@@ -77,13 +78,20 @@ public class ClientesSteps {
 
     @Then("a resposta deve conter o cliente:")
     public void validarCliente(final DataTable tabela) {
-        final var esperado = tabela.asMaps().getFirst();
-        final var cliente = this.http.resposta().as(RespostaCliente.class);
-        assertThat(cliente.id()).isNotNull();
-        assertThat(cliente.nome()).isEqualTo(esperado.get("nome"));
-        assertThat(cliente.email()).isEqualTo(esperado.get("email"));
-        assertThat(cliente.documento()).isEqualTo(esperado.get("documento"));
+        validarDadosCliente(this.http.resposta().as(RespostaCliente.class), tabela);
         assertThat(this.http.resposta().jsonPath().getMap("")).containsOnlyKeys("id", "nome", "email", "documento");
+    }
+
+    @Then("a resposta deve conter uma lista com o cliente:")
+    public void validarListaClientes(final DataTable tabela) {
+        assertThat(this.http.resposta().as(RespostaListaClientes.class).clientes())
+            .singleElement()
+            .satisfies(cliente -> validarDadosCliente(cliente, tabela));
+    }
+
+    @Then("a resposta deve conter uma lista vazia de clientes")
+    public void validarListaVazia() {
+        assertThat(this.http.resposta().as(RespostaListaClientes.class).clientes()).isEmpty();
     }
 
     @Then("o cliente original deve permanecer inalterado")
@@ -97,6 +105,14 @@ public class ClientesSteps {
     @Then("o novo cadastro deve ter outro ID")
     public void validarNovoId() {
         assertThat(this.http.resposta().as(RespostaCliente.class).id()).isNotEqualTo(clienteOriginal().id());
+    }
+
+    private void validarDadosCliente(final RespostaCliente cliente, final DataTable tabela) {
+        final var esperado = tabela.asMaps().getFirst();
+        assertThat(cliente.id()).isNotNull();
+        assertThat(cliente.nome()).isEqualTo(esperado.get("nome"));
+        assertThat(cliente.email()).isEqualTo(esperado.get("email"));
+        assertThat(cliente.documento()).isEqualTo(esperado.get("documento"));
     }
 
     private RespostaCliente clienteOriginal() {
