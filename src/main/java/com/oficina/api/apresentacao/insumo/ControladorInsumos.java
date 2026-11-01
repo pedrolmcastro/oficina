@@ -107,6 +107,7 @@ public class ControladorInsumos {
     @DeleteMapping(value = "/{id}")
     @Operation(summary = "Excluir insumo")
     @ApiResponse(responseCode = "204", description = "Insumo excluído", content = { @Content })
+    @ApiResponse(responseCode = "409", description = "Insumo obrigatório de um serviço ativo")
     @ApiResponse(responseCode = "404", description = "Insumo inexistente ou já excluído")
     public ResponseEntity<Void> excluir(@PathVariable final UUID id) {
         this.servico.excluir(id);

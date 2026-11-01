@@ -69,6 +69,31 @@ class SwaggerIT {
     }
 
     @Test
+    void deveDocumentarServicosEAssociacoesDeInsumos() {
+        final var resposta = RestAssured.given().port(this.porta).get("/v3/api-docs");
+        assertThat(resposta.statusCode()).isEqualTo(200);
+        final var documento = JsonMapper.builder().build().readTree(resposta.asString());
+        final var caminhos = documento.path("paths");
+        assertThat(caminhos.path("/servicos").has("post")).isTrue();
+        assertThat(caminhos.path("/servicos").has("get")).isTrue();
+        final var porId = caminhos.path("/servicos/{id}");
+        assertThat(porId.has("get")).isTrue();
+        assertThat(porId.has("patch")).isTrue();
+        assertThat(porId.has("delete")).isTrue();
+        assertThat(porId.has("put")).isFalse();
+        final var insumos = caminhos.path("/servicos/{servicoId}/insumos-obrigatorios");
+        assertThat(insumos.has("get")).isTrue();
+        assertThat(insumos.path("post").path("responses").has("201")).isTrue();
+        assertThat(insumos.path("post").path("responses").has("409")).isTrue();
+        assertThat(caminhos.path("/servicos/{servicoId}/insumos-obrigatorios/{insumoId}").has("delete")).isTrue();
+        final var cadastro = documento.path("components").path("schemas").path("RequisicaoCriarServico");
+        assertThat(cadastro.path("required"))
+            .extracting(campo -> campo.asString())
+            .containsExactlyInAnyOrder("nome", "precoVenda", "requerDiagnostico");
+        assertThat(cadastro.path("properties").path("requerDiagnostico").path("type").asString()).isEqualTo("boolean");
+    }
+
+    @Test
     void deveGerarOpenApi() {
         final var resposta = RestAssured.given().port(this.porta).get("/v3/api-docs");
         assertThat(resposta.statusCode()).isEqualTo(200);

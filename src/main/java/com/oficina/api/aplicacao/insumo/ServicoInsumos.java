@@ -11,6 +11,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -75,7 +76,11 @@ public class ServicoInsumos {
 
     public void excluir(final UUID id) {
         observar("excluir", this.escrita, () -> {
-            encontrar(id, LockModeType.PESSIMISTIC_WRITE).excluir();
+            final var insumo = encontrar(id, LockModeType.PESSIMISTIC_WRITE);
+            if (this.repositorio.obrigatorioParaServicoAtivo(id)) {
+                throw new DataIntegrityViolationException("Insumo obrigatório de serviço ativo");
+            }
+            insumo.excluir();
             return Boolean.TRUE;
         });
     }
