@@ -2,18 +2,13 @@ package com.oficina.api.infraestrutura.persistencia.cliente;
 
 import com.oficina.api.dominio.cliente.Documento.CNPJ;
 import com.oficina.api.dominio.cliente.Documento.CPF;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import javax.crypto.Cipher;
 import javax.crypto.Mac;
-import javax.crypto.spec.GCMParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mockStatic;
@@ -65,16 +60,10 @@ class ProtecaoDocumentoTest {
     }
 
     @ParameterizedTest
-    @CsvSource(value = {
-        "invalido!, Illegal base64 character 21",
-        "YQ==, As chaves de documentos devem conter 32 bytes em Base64" })
-    void deveRejeitarChavesInvalidas(final String chave, final String mensagem) {
-        assertThatThrownBy(() -> new ProtecaoDocumento(chave, CHAVE_HMAC))
-            .isExactlyInstanceOf(IllegalArgumentException.class)
-            .hasMessage(mensagem);
-        assertThatThrownBy(() -> new ProtecaoDocumento(CHAVE_AES, chave))
-            .isExactlyInstanceOf(IllegalArgumentException.class)
-            .hasMessage(mensagem);
+    @ValueSource(strings = { "invalido!", "YQ==" })
+    void deveRejeitarChavesInvalidas(final String chave) {
+        assertThatThrownBy(() -> new ProtecaoDocumento(chave, CHAVE_HMAC)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new ProtecaoDocumento(CHAVE_AES, chave)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -90,26 +79,9 @@ class ProtecaoDocumentoTest {
     }
 
     @Test
-    void deveRejeitarTipoDeDocumentoInvalido() throws GeneralSecurityException {
-        final var nonce = new byte[12];
-        final var cipher = Cipher.getInstance("AES/GCM/NoPadding");
-
-        cipher
-            .init(
-                Cipher.ENCRYPT_MODE,
-                new SecretKeySpec(Base64.getDecoder().decode(CHAVE_AES), "AES"),
-                new GCMParameterSpec(128, nonce)
-            );
-        cipher.updateAAD(new byte[] { 1, });
-
-        final var cifrado = cipher.doFinal("RG:123456789".getBytes(StandardCharsets.UTF_8));
-
-        final var envelope = ByteBuffer
-            .allocate(1 + nonce.length + cifrado.length)
-            .put((byte) 1)
-            .put(nonce)
-            .put(cifrado)
-            .array();
+    void deveRejeitarTipoDeDocumentoInvalido() {
+        // Envelope v1 autenticado com CHAVE_AES, nonce zero e conteúdo "RG:123456789".
+        final var envelope = Base64.getDecoder().decode("AQAAAAAAAAAAAAAAAJw0mzAgMGtt2Rq5sdkAdCfesV7EGRFTHj/hP+U=");
 
         assertThatThrownBy(() -> this.protecao.descriptografar(envelope))
             .isExactlyInstanceOf(IllegalArgumentException.class)

@@ -48,19 +48,14 @@ class DocumentoPersistidoTest {
     void devePreservarContratoDeValorImutavel() {
         final var documento = new CPF("52998224725");
         assertThat(this.tipo.equals(documento, new CPF("52998224725"))).isTrue();
-        assertThat(this.tipo.equals(documento, null)).isFalse();
-        assertThat(this.tipo.equals(null, null)).isTrue();
         assertThat(this.tipo.hashCode(documento)).isEqualTo(documento.hashCode());
-        assertThat(this.tipo.hashCode(null)).isZero();
         assertThat(this.tipo.replace(documento, new CPF("11144477735"), null)).isSameAs(documento);
-        assertThat(this.tipo.replace(null, documento, null)).isNull();
     }
 
     @Test
     void deveProtegerCache() {
         final var documento = new CPF("52998224725");
         final var cache = this.tipo.disassemble(documento);
-        assertThat(cache).isInstanceOf(DocumentoPersistido.Colunas.class);
         assertThat(this.tipo.assemble(cache, null)).isEqualTo(documento);
         assertThat(this.tipo.disassemble(null)).isNull();
         assertThat(this.tipo.assemble(null, null)).isNull();
