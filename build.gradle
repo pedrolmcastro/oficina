@@ -49,6 +49,11 @@ eclipse {
 }
 
 configurations {
+    testImplementation {
+        // Unused JSONPath/json-smart test support. No release fixes CVE-2026-113602 yet
+        exclude group: 'com.jayway.jsonpath', module: 'json-path'
+        exclude group: 'net.minidev', module: 'json-smart'
+    }
     bddImplementation.extendsFrom testImplementation
     bddRuntimeOnly.extendsFrom testRuntimeOnly
     integrationTestImplementation.extendsFrom testImplementation
@@ -116,11 +121,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-security-oauth2-resource-server'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
-    testImplementation('org.springframework.boot:spring-boot-starter-test') {
-        // Unused JSONPath/json-smart test support. No release fixes CVE-2026-113602 yet
-        exclude group: 'com.jayway.jsonpath', module: 'json-path'
-        exclude group: 'net.minidev', module: 'json-smart'
-    }
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
     testImplementation 'org.springframework.boot:spring-boot-testcontainers'
     testImplementation 'org.testcontainers:testcontainers-postgresql'
