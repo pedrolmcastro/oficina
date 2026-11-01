@@ -9,6 +9,9 @@ app:
 spring:
   application:
     name: api
+  threads:
+    virtual:
+      enabled: true
 management:
   server:
     port: 8081
