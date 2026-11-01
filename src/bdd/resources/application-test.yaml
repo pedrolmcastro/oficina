@@ -2,6 +2,9 @@ app:
   clientes:
     chave-criptografia: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
     chave-hash: ZmVkY2JhOTg3NjU0MzIxMGZlZGNiYTk4NzY1NDMyMTA=
+  veiculos:
+    chave-criptografia: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+    chave-hash: ZmVkY2JhOTg3NjU0MzIxMGZlZGNiYTk4NzY1NDMyMTA=
   seguranca:
     admin:
       nome-usuario: admin

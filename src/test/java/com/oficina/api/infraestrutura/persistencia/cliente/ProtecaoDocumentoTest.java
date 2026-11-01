@@ -45,11 +45,11 @@ class ProtecaoDocumentoTest {
         final var outraProtecao = new ProtecaoDocumento(CHAVE_HMAC, CHAVE_AES);
         assertThatThrownBy(() -> outraProtecao.descriptografar(cifrado))
             .isExactlyInstanceOf(IllegalStateException.class)
-            .hasMessage("Não foi possível autenticar o documento criptografado");
+            .hasMessage("Não foi possível autenticar o dado criptografado");
         cifrado[cifrado.length - 1] ^= 1;
         assertThatThrownBy(() -> this.protecao.descriptografar(cifrado))
             .isExactlyInstanceOf(IllegalStateException.class)
-            .hasMessage("Não foi possível autenticar o documento criptografado");
+            .hasMessage("Não foi possível autenticar o dado criptografado");
     }
 
     @Test
@@ -70,12 +70,12 @@ class ProtecaoDocumentoTest {
     void deveRejeitarEnvelopeInvalido() {
         assertThatThrownBy(() -> this.protecao.descriptografar(new byte[0]))
             .isExactlyInstanceOf(IllegalArgumentException.class)
-            .hasMessage("Formato de documento criptografado inválido");
+            .hasMessage("Formato de dado criptografado inválido");
         final var cifrado = this.protecao.criptografar(new CPF("52998224725"));
         cifrado[0] = 2;
         assertThatThrownBy(() -> this.protecao.descriptografar(cifrado))
             .isExactlyInstanceOf(IllegalArgumentException.class)
-            .hasMessage("Formato de documento criptografado inválido");
+            .hasMessage("Formato de dado criptografado inválido");
     }
 
     @Test
@@ -98,7 +98,7 @@ class ProtecaoDocumentoTest {
 
             assertThatThrownBy(() -> this.protecao.criptografar(cpf))
                 .isExactlyInstanceOf(IllegalStateException.class)
-                .hasMessage("Não foi possível criptografar o documento")
+                .hasMessage("Não foi possível criptografar o dado")
                 .hasCause(falha);
         }
     }
@@ -113,7 +113,7 @@ class ProtecaoDocumentoTest {
 
             assertThatThrownBy(() -> this.protecao.calcularHash(cpf))
                 .isExactlyInstanceOf(IllegalStateException.class)
-                .hasMessage("Não foi possível calcular o HMAC do documento")
+                .hasMessage("Não foi possível calcular o HMAC do dado")
                 .hasCause(falha);
         }
     }
