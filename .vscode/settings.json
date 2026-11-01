@@ -1,4 +1,7 @@
 {
+    "[java]": {
+        "editor.defaultFormatter": "redhat.java",
+    },
     "cucumber.features": [
         "src/bdd/resources/features/**/*.feature"
     ],
@@ -9,7 +12,9 @@
     "java.checkstyle.version": "14.3.0",
     "java.compile.nullAnalysis.mode": "automatic",
     "java.configuration.updateBuildConfiguration": "automatic",
+    "java.format.enabled": true,
     "java.format.settings.url": "config/formatter/java-formatter.xml",
+    "java.format.settings.profile": "oficina",
     "sonarlint.connectedMode.project": {
         "connectionId": "pedrolmcastro",
         "projectKey": "pedrolmcastro_oficina"

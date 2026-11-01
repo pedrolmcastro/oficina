@@ -54,6 +54,15 @@ public class ConfiguracaoSeguranca {
                     .permitAll()
                     .requestMatchers(HttpMethod.POST, "/login")
                     .permitAll()
+                    .requestMatchers(
+                        HttpMethod.GET,
+                        "/swagger-ui.html",
+                        "/swagger-ui/**",
+                        "/v3/api-docs",
+                        "/v3/api-docs/**",
+                        "/v3/api-docs.yaml"
+                    )
+                    .permitAll()
                     .anyRequest()
                     .hasRole("ADMIN")
             )

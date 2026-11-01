@@ -9,8 +9,25 @@ import org.springframework.validation.annotation.Validated;
 
 @Validated
 @ConfigurationProperties(value = "app.seguranca")
-public record PropriedadesSeguranca(@Valid @NotNull Admin admin, @Valid @NotNull Jwt jwt) {
-    public static record Admin(@NotBlank String nomeUsuario, @NotBlank String hashSenha) {}
+public record PropriedadesSeguranca(
+    @Valid
+    @NotNull
+    Admin admin,
+    @Valid
+    @NotNull
+    Jwt jwt
+) {
+    public static record Admin(
+        @NotBlank
+        String nomeUsuario,
+        @NotBlank
+        String hashSenha
+    ) {}
 
-    public static record Jwt(@NotBlank String segredo, @NotNull Duration validade) {}
+    public static record Jwt(
+        @NotBlank
+        String segredo,
+        @NotNull
+        Duration validade
+    ) {}
 }
