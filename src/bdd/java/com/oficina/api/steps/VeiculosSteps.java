@@ -1,6 +1,7 @@
 package com.oficina.api.steps;
 
 import com.oficina.api.apresentacao.cliente.RespostaCliente;
+import com.oficina.api.apresentacao.veiculo.RespostaListaVeiculos;
 import com.oficina.api.apresentacao.veiculo.RespostaVeiculo;
 import com.oficina.api.infraestrutura.seguranca.EmissorTokenJwt;
 import io.cucumber.datatable.DataTable;
@@ -95,16 +96,21 @@ public class VeiculosSteps {
 
     @Then("a resposta deve conter o veículo:")
     public void validarVeiculo(final DataTable tabela) {
-        final var esperado = tabela.asMaps().getFirst();
-        final var veiculo = this.http.resposta().as(RespostaVeiculo.class);
-        assertThat(veiculo.id()).isNotNull();
-        assertThat(veiculo.placa()).isEqualTo(esperado.get("placa"));
-        assertThat(veiculo.modelo()).isEqualTo(esperado.get("modelo"));
-        assertThat(veiculo.marca()).isEqualTo(esperado.get("marca"));
-        assertThat(veiculo.ano()).isEqualTo(Integer.parseInt(Objects.requireNonNull(esperado.get("ano"))));
-        assertThat(veiculo.clienteId()).isEqualTo(this.clienteId);
+        validarDadosVeiculo(this.http.resposta().as(RespostaVeiculo.class), tabela);
         assertThat(this.http.resposta().jsonPath().getMap(""))
             .containsOnlyKeys("id", "placa", "modelo", "marca", "ano", "clienteId");
+    }
+
+    @Then("a lista deve conter o veículo:")
+    public void validarLista(final DataTable tabela) {
+        assertThat(this.http.resposta().as(RespostaListaVeiculos.class).veiculos())
+            .singleElement()
+            .satisfies(veiculo -> validarDadosVeiculo(veiculo, tabela));
+    }
+
+    @Then("a lista de veículos deve estar vazia")
+    public void validarListaVazia() {
+        assertThat(this.http.resposta().as(RespostaListaVeiculos.class).veiculos()).isEmpty();
     }
 
     @Then("o veículo original deve permanecer inalterado")
@@ -118,6 +124,16 @@ public class VeiculosSteps {
     @Then("o novo veículo deve ter outro ID")
     public void validarNovoId() {
         assertThat(this.http.resposta().as(RespostaVeiculo.class).id()).isNotEqualTo(original().id());
+    }
+
+    private void validarDadosVeiculo(final RespostaVeiculo veiculo, final DataTable tabela) {
+        final var esperado = tabela.asMaps().getFirst();
+        assertThat(veiculo.id()).isNotNull();
+        assertThat(veiculo.placa()).isEqualTo(esperado.get("placa"));
+        assertThat(veiculo.modelo()).isEqualTo(esperado.get("modelo"));
+        assertThat(veiculo.marca()).isEqualTo(esperado.get("marca"));
+        assertThat(veiculo.ano()).isEqualTo(Integer.parseInt(Objects.requireNonNull(esperado.get("ano"))));
+        assertThat(veiculo.clienteId()).isEqualTo(this.clienteId);
     }
 
     private RespostaVeiculo original() {

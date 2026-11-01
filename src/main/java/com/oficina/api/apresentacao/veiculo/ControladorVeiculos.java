@@ -12,8 +12,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import java.net.URI;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
@@ -79,16 +82,25 @@ public class ControladorVeiculos {
     }
 
     @GetMapping
-    @Operation(summary = "Buscar veículo por placa",
-        description = "Informe placa antiga ou Mercosul, em maiúsculas e sem hífen.")
-    @ApiResponse(responseCode = "200", description = "Veículo encontrado")
-    @ApiResponse(responseCode = "404", description = "Veículo não encontrado", content = {
-        @Content(schema = @Schema(implementation = ProblemDetail.class)) })
-    public ResponseEntity<RespostaVeiculo> buscarPlaca(@RequestParam final String placa) {
+    @Operation(summary = "Listar veículos",
+        description = "Informe ao menos um filtro: placa (antiga ou Mercosul, em maiúsculas e sem hífen) "
+            + "ou ID do cliente. "
+            + "Retorna até first veículos (padrão 25, entre 1 e 25), em ordem crescente de ID, após o ID after. "
+            + "Use nextCursor em after para continuar com os mesmos filtros; null indica que não há mais páginas.")
+    @ApiResponse(responseCode = "200", description = "Lista de veículos, vazia quando nenhum corresponde aos filtros")
+    public ResponseEntity<RespostaListaVeiculos> listar(
+        @RequestParam(required = false) final @Nullable String placa,
+        @RequestParam(required = false) final @Nullable UUID cliente,
+        @RequestParam(required = false) final @Nullable UUID after,
+        @RequestParam(defaultValue = "25") @Min(value = 1) @Max(value = 25) final int first
+    ) {
+        final var filtroPlaca = placa == null
+            ? null
+            : new Placa(placa);
         return ResponseEntity
             .ok()
             .cacheControl(CacheControl.noStore())
-            .body(RespostaVeiculo.de(this.servico.buscar(new Placa(placa))));
+            .body(RespostaListaVeiculos.de(this.servico.listar(filtroPlaca, cliente, after, first)));
     }
 
     @PatchMapping(value = "/{id}", consumes = { MediaType.APPLICATION_JSON_VALUE, "application/merge-patch+json" })

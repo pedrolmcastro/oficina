@@ -2,11 +2,14 @@ package com.oficina.api.apresentacao;
 
 import com.oficina.api.ConfiguracaoIntegration;
 import com.oficina.api.apresentacao.cliente.RespostaCliente;
+import com.oficina.api.apresentacao.veiculo.RespostaListaVeiculos;
 import com.oficina.api.apresentacao.veiculo.RespostaVeiculo;
 import com.oficina.api.infraestrutura.seguranca.EmissorTokenJwt;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -83,13 +86,53 @@ class VeiculosIT {
     }
 
     @Test
-    void deveRetornar404ParaPlacaExcluida() {
+    void deveRetornarListaVaziaParaPlacaExcluida() {
         final var veiculo = cadastrar("ABC1234").as(RespostaVeiculo.class);
         assertThat(requisicao().delete("/veiculos/{id}", veiculo.id()).statusCode()).isEqualTo(204);
 
         final var resposta = requisicao().queryParam("placa", veiculo.placa()).get("/veiculos");
 
-        assertThat(resposta.statusCode()).isEqualTo(404);
+        validarSemCache(resposta, 200);
+        assertThat(resposta.as(RespostaListaVeiculos.class).veiculos()).isEmpty();
+        assertThat(listar(Map.of("cliente", this.clienteId)).veiculos()).isEmpty();
+    }
+
+    @Test
+    void deveFiltrarPorPlacaClienteEAmbos() {
+        final var primeiro = cadastrar("ABC1234").as(RespostaVeiculo.class);
+        final var terceiro = cadastrar("GHI5678").as(RespostaVeiculo.class);
+        final var outroCliente = criarCliente("11144477735");
+        assertThat(cadastrar("DEF1G23", outroCliente).statusCode()).isEqualTo(201);
+
+        final var porPlaca = listar(Map.of("placa", primeiro.placa(), "first", 1));
+        assertThat(porPlaca.veiculos()).containsExactly(primeiro);
+        assertThat(porPlaca.nextCursor()).isNull();
+        assertThat(listar(Map.of("cliente", this.clienteId)).veiculos()).containsExactlyInAnyOrder(primeiro, terceiro);
+        assertThat(listar(Map.of("placa", primeiro.placa(), "cliente", this.clienteId)).veiculos())
+            .containsExactly(primeiro);
+        assertThat(listar(Map.of("placa", primeiro.placa(), "cliente", outroCliente)).veiculos()).isEmpty();
+        assertThat(listar(Map.of("cliente", UUID.randomUUID())).veiculos()).isEmpty();
+    }
+
+    @Test
+    void devePercorrerTodosOsVeiculosEmOrdemSemRepeticoes() {
+        final var esperados = List
+            .of(
+                cadastrar("ABC1234").as(RespostaVeiculo.class),
+                cadastrar("DEF1G23").as(RespostaVeiculo.class),
+                cadastrar("GHI5678").as(RespostaVeiculo.class)
+            )
+            .stream()
+            .sorted(Comparator.comparing(veiculo -> veiculo.id().toString()))
+            .toList();
+
+        final var primeira = listar(Map.of("cliente", this.clienteId, "first", 2));
+        assertThat(primeira.veiculos()).containsExactlyElementsOf(esperados.subList(0, 2));
+        assertThat(primeira.nextCursor()).isEqualTo(esperados.get(1).id());
+
+        final var ultima = listar(Map.of("cliente", this.clienteId, "first", 2, "after", primeira.nextCursor()));
+        assertThat(ultima.veiculos()).containsExactly(esperados.getLast());
+        assertThat(ultima.nextCursor()).isNull();
     }
 
     @Test
@@ -146,6 +189,12 @@ class VeiculosIT {
         ).isEqualTo(403);
     }
 
+    private RespostaListaVeiculos listar(final Map<String, ?> parametros) {
+        final var resposta = requisicao().queryParams(parametros).get("/veiculos");
+        assertThat(resposta.statusCode()).isEqualTo(200);
+        return resposta.as(RespostaListaVeiculos.class);
+    }
+
     private UUID criarCliente(final String documento) {
         final var resposta = requisicao()
             .body(Map.of("nome", "Maria", "email", "maria@example.com", "documento", documento))
@@ -155,10 +204,12 @@ class VeiculosIT {
     }
 
     private Response cadastrar(final String placa) {
+        return cadastrar(placa, this.clienteId);
+    }
+
+    private Response cadastrar(final String placa, final UUID cliente) {
         return requisicao()
-            .body(
-                Map.of("placa", placa, "modelo", "Corolla", "marca", "Toyota", "ano", 2024, "clienteId", this.clienteId)
-            )
+            .body(Map.of("placa", placa, "modelo", "Corolla", "marca", "Toyota", "ano", 2024, "clienteId", cliente))
             .post("/veiculos");
     }
 

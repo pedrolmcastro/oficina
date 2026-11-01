@@ -1,5 +1,6 @@
 package com.oficina.api.apresentacao;
 
+import com.oficina.api.aplicacao.veiculo.PaginaVeiculos;
 import com.oficina.api.aplicacao.veiculo.ServicoVeiculos;
 import com.oficina.api.aplicacao.veiculo.VeiculoNaoEncontrado;
 import com.oficina.api.apresentacao.veiculo.ControladorVeiculos;
@@ -9,6 +10,7 @@ import com.oficina.api.dominio.veiculo.Marca;
 import com.oficina.api.dominio.veiculo.Modelo;
 import com.oficina.api.dominio.veiculo.Placa;
 import com.oficina.api.dominio.veiculo.Veiculo;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -151,10 +153,64 @@ class VeiculosMvcTest {
     }
 
     @Test
-    void deveExigirPlacaEValidarId() throws Exception {
-        this.mvc.perform(get("/veiculos")).andExpect(status().isBadRequest());
+    void deveValidarId() throws Exception {
         this.mvc.perform(get("/veiculos/invalido")).andExpect(status().isBadRequest());
         verifyNoInteractions(this.servico);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "0", "26", "abc" })
+    void deveRejeitarTamanhoDePaginaInvalido(final String first) throws Exception {
+        this.mvc.perform(get("/veiculos").param("first", first)).andExpect(status().isBadRequest());
+        verifyNoInteractions(this.servico);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "cliente", "after" })
+    void deveRejeitarUuidDeConsultaInvalido(final String parametro) throws Exception {
+        this.mvc.perform(get("/veiculos").param(parametro, "invalido")).andExpect(status().isBadRequest());
+        verifyNoInteractions(this.servico);
+    }
+
+    @Test
+    void deveListarPorPlacaComTamanhoPadrao() throws Exception {
+        when(this.servico.listar(new Placa("ABC1234"), null, null, 25)).thenReturn(new PaginaVeiculos(List.of(), null));
+        this.mvc
+            .perform(get("/veiculos").param("placa", "ABC1234"))
+            .andExpect(status().isOk())
+            .andExpect(content().json("{\"veiculos\":[],\"nextCursor\":null}"));
+    }
+
+    @Test
+    void deveConverterFiltrosEPaginacaoParaRespostaHttp() throws Exception {
+        final var cliente = UUID.randomUUID();
+        final var after = UUID.randomUUID();
+        final var veiculo = new Veiculo(
+            new Placa("ABC1234"),
+            new Modelo("Corolla"),
+            new Marca("Toyota"),
+            new Ano(2024),
+            cliente
+        );
+        when(this.servico.listar(new Placa("ABC1234"), cliente, after, 1))
+            .thenReturn(new PaginaVeiculos(List.of(veiculo), veiculo.id()));
+        this.mvc
+            .perform(
+                get("/veiculos")
+                    .param("placa", "ABC1234")
+                    .param("cliente", cliente.toString())
+                    .param("after", after.toString())
+                    .param("first", "1")
+            )
+            .andExpect(status().isOk())
+            .andExpect(
+                content()
+                    .json(
+                        ("{\"veiculos\":[{\"id\":\"%s\",\"placa\":\"ABC1234\",\"modelo\":\"Corolla\","
+                            + "\"marca\":\"Toyota\",\"ano\":2024,\"clienteId\":\"%s\"}],\"nextCursor\":\"%s\"}")
+                            .formatted(veiculo.id(), cliente, veiculo.id())
+                    )
+            );
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.oficina.api.aplicacao.veiculo;
 
+import com.oficina.api.dominio.DadoInvalidoException;
 import com.oficina.api.dominio.veiculo.Ano;
 import com.oficina.api.dominio.veiculo.Marca;
 import com.oficina.api.dominio.veiculo.Modelo;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.SimpleTransactionStatus;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -96,8 +98,16 @@ class ServicoVeiculosTest {
     }
 
     @Test
-    void deveRejeitarPlacaInexistente() {
-        assertThatThrownBy(() -> this.servico.buscar(new Placa("ABC1234")))
-            .isExactlyInstanceOf(VeiculoNaoEncontrado.class);
+    void deveExigirPlacaOuCliente() {
+        assertThatThrownBy(() -> this.servico.listar(null, null, UUID.randomUUID(), 1))
+            .isExactlyInstanceOf(DadoInvalidoException.class)
+            .hasMessage("Informe ao menos um dos filtros: placa ou cliente");
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { 0, 26 })
+    void deveRejeitarTamanhoDePaginaInvalido(final int first) {
+        assertThatThrownBy(() -> this.servico.listar(null, UUID.randomUUID(), null, first))
+            .isExactlyInstanceOf(IllegalArgumentException.class);
     }
 }

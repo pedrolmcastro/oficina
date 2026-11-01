@@ -4,8 +4,10 @@ import com.oficina.api.dominio.veiculo.Placa;
 import com.oficina.api.dominio.veiculo.Veiculo;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -26,12 +28,33 @@ public class RepositorioVeiculos {
         return Optional.ofNullable(this.entityManager.find(Veiculo.class, id, modoBloqueio));
     }
 
-    public Optional<Veiculo> buscar(final Placa placa) {
-        final var veiculo = this.entityManager
-            .createQuery("FROM Veiculo c WHERE c.placa.hash = :hash", Veiculo.class)
-            .setParameter("hash", this.protecao.calcularHash(placa))
-            .getSingleResultOrNull();
-
-        return Optional.ofNullable(veiculo);
+    public List<Veiculo> listar(
+        final @Nullable Placa placa,
+        final @Nullable UUID cliente,
+        final @Nullable UUID after,
+        final int first
+    ) {
+        final var hql = new StringBuilder("FROM Veiculo v WHERE 1 = 1");
+        if (placa != null) {
+            hql.append(" AND v.placa.hash = :hash");
+        }
+        if (cliente != null) {
+            hql.append(" AND v.clienteId = :cliente");
+        }
+        if (after != null) {
+            hql.append(" AND v.id > :after");
+        }
+        hql.append(" ORDER BY v.id ASC");
+        final var consulta = this.entityManager.createQuery(hql.toString(), Veiculo.class);
+        if (placa != null) {
+            consulta.setParameter("hash", this.protecao.calcularHash(placa));
+        }
+        if (cliente != null) {
+            consulta.setParameter("cliente", cliente);
+        }
+        if (after != null) {
+            consulta.setParameter("after", after);
+        }
+        return consulta.setMaxResults(first).getResultList();
     }
 }

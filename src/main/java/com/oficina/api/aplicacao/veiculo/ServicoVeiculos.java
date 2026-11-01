@@ -1,6 +1,7 @@
 package com.oficina.api.aplicacao.veiculo;
 
 import com.oficina.api.aplicacao.cliente.ClienteNaoEncontrado;
+import com.oficina.api.dominio.DadoInvalidoException;
 import com.oficina.api.dominio.veiculo.Ano;
 import com.oficina.api.dominio.veiculo.Marca;
 import com.oficina.api.dominio.veiculo.Modelo;
@@ -60,12 +61,26 @@ public class ServicoVeiculos {
         return observar("buscar_id", this.leitura, () -> encontrar(id, LockModeType.NONE));
     }
 
-    public Veiculo buscar(final Placa placa) {
-        return observar(
-            "buscar_placa",
-            this.leitura,
-            () -> this.repositorio.buscar(placa).orElseThrow(VeiculoNaoEncontrado::new)
-        );
+    public PaginaVeiculos listar(
+        final @Nullable Placa placa,
+        final @Nullable UUID cliente,
+        final @Nullable UUID after,
+        final int first
+    ) {
+        if (placa == null && cliente == null) {
+            throw new DadoInvalidoException("Informe ao menos um dos filtros: placa ou cliente");
+        }
+        if (first < 1 || first > 25) {
+            throw new IllegalArgumentException("first deve estar entre 1 e 25");
+        }
+        return observar("listar", this.leitura, () -> {
+            final var encontrados = this.repositorio.listar(placa, cliente, after, first + 1);
+            if (encontrados.size() > first) {
+                final var pagina = encontrados.subList(0, first);
+                return new PaginaVeiculos(pagina, pagina.getLast().id());
+            }
+            return new PaginaVeiculos(encontrados, null);
+        });
     }
 
     public Veiculo atualizar(
