@@ -2,6 +2,8 @@ package com.oficina.api.apresentacao;
 
 import com.oficina.api.aplicacao.cliente.ClienteNaoEncontrado;
 import com.oficina.api.aplicacao.insumo.InsumoNaoEncontrado;
+import com.oficina.api.aplicacao.servico.InsumoObrigatorioNaoEncontrado;
+import com.oficina.api.aplicacao.servico.ServicoNaoEncontrado;
 import com.oficina.api.aplicacao.veiculo.VeiculoNaoEncontrado;
 import com.oficina.api.dominio.DadoInvalidoException;
 import java.util.Objects;
@@ -51,6 +53,16 @@ public class ExceptionHandlers {
     @ExceptionHandler(value = InsumoNaoEncontrado.class)
     public ResponseEntity<ProblemDetail> insumoNaoEncontrado() {
         return buildRespostaFalha(HttpStatus.NOT_FOUND, "Insumo não encontrado");
+    }
+
+    @ExceptionHandler(value = ServicoNaoEncontrado.class)
+    public ResponseEntity<ProblemDetail> servicoNaoEncontrado() {
+        return buildRespostaFalha(HttpStatus.NOT_FOUND, "Serviço não encontrado");
+    }
+
+    @ExceptionHandler(value = InsumoObrigatorioNaoEncontrado.class)
+    public ResponseEntity<ProblemDetail> vinculoInsumoObrigatorioNaoEncontrado() {
+        return buildRespostaFalha(HttpStatus.NOT_FOUND, "Associação de insumo obrigatório não encontrada");
     }
 
     @ExceptionHandler(value = DataIntegrityViolationException.class)

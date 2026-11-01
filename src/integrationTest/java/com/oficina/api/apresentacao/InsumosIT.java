@@ -39,6 +39,7 @@ class InsumosIT {
 
     @BeforeEach
     void preparar() {
+        this.jdbc.update("DELETE FROM oficina.servicos_insumos_obrigatorios");
         this.jdbc.update("DELETE FROM oficina.insumos");
     }
 

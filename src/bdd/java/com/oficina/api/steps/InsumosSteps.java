@@ -28,6 +28,7 @@ public class InsumosSteps {
 
     @Before(value = "@insumos")
     public void prepararCenario() {
+        this.jdbc.update("DELETE FROM oficina.servicos_insumos_obrigatorios");
         this.jdbc.update("DELETE FROM oficina.insumos");
         this.http.autenticar(this.emissor.emitir("admin", Set.of("ADMIN")).valor());
     }

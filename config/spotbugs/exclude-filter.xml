@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <FindBugsFilter>
     <!-- Dependências gerenciadas pelo Spring devem manter as referências compartilhadas:
-         EntityManager resolve a sessão da transação; ObservationRegistry reúne as observações. -->
+         EntityManager resolve a sessão da transação; ObservationRegistry reúne as observações.
+         Repositórios e serviços injetados também são colaboradores compartilhados, sem cópia defensiva. -->
     <Match>
         <Bug pattern="EI_EXPOSE_REP2"/>
         <Or>
             <Field type="jakarta.persistence.EntityManager"/>
             <Field type="io.micrometer.observation.ObservationRegistry"/>
+            <Field type="com.oficina.api.infraestrutura.persistencia.servico.RepositorioServicos"/>
+            <Field type="com.oficina.api.aplicacao.servico.ServicoServicos"/>
         </Or>
     </Match>
 </FindBugsFilter>

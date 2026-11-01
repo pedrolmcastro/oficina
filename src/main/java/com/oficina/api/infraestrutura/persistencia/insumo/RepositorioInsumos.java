@@ -26,6 +26,19 @@ public class RepositorioInsumos {
         return Optional.ofNullable(this.entityManager.find(Insumo.class, id, modoBloqueio));
     }
 
+    public boolean obrigatorioParaServicoAtivo(final UUID id) {
+        return this.entityManager
+            .unwrap(Session.class)
+            .createNativeQuery(
+                "SELECT EXISTS (SELECT 1 FROM oficina.servicos_insumos_obrigatorios si "
+                    + "JOIN oficina.servicos s ON s.id = si.servico_id "
+                    + "WHERE si.insumo_id = :id AND s.deletado = FALSE)",
+                Boolean.class
+            )
+            .setParameter("id", id)
+            .getSingleResult();
+    }
+
     public List<Insumo> listar(final @Nullable String nome, final @Nullable UUID after, final int first) {
         final var sql = new StringBuilder("SELECT * FROM oficina.insumos WHERE deletado = FALSE");
         if (nome != null) {
