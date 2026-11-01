@@ -1,5 +1,6 @@
 package com.oficina.api.dominio.cliente;
 
+import com.oficina.api.dominio.DadoInvalidoException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import jakarta.validation.Validation;
@@ -17,7 +18,7 @@ public record Email(
 
     public Email {
         if (!FABRICA_VALIDACAO.getValidator().validateValue(Email.class, "valor", valor).isEmpty()) {
-            throw new IllegalArgumentException("Email inválido");
+            throw new DadoInvalidoException("Email inválido");
         }
     }
 }

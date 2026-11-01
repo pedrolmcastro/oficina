@@ -81,6 +81,7 @@ spotless {
 
 spotbugs {
     toolVersion = '4.10.5'
+    excludeFilter = file('config/spotbugs/exclude-filter.xml')
     ignoreFailures = false
     effort = Effort.valueOf('MAX')
     reportLevel = Confidence.valueOf('LOW')

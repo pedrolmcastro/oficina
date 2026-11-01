@@ -1,9 +1,19 @@
 package com.oficina.api.dominio.cliente;
 
+import com.oficina.api.dominio.DadoInvalidoException;
+
 public sealed interface Documento {
     public abstract String valor();
 
     public abstract Tipo tipo();
+
+    public static Documento de(final String valor) {
+        return switch (valor.length()) {
+            case 11 -> new CPF(valor);
+            case 14 -> new CNPJ(valor);
+            default -> throw new DadoInvalidoException("Documento deve conter 11 (CPF) ou 14 (CNPJ) dígitos");
+        };
+    }
 
     public static enum Tipo {
         CPF,
@@ -13,16 +23,16 @@ public sealed interface Documento {
     public static record CPF(String valor) implements Documento {
         public CPF {
             if (valor.length() != 11) {
-                throw new IllegalArgumentException("CPF deve conter exatamente 11 caracteres");
+                throw new DadoInvalidoException("CPF deve conter exatamente 11 caracteres");
             }
             if (valor.chars().anyMatch(c -> c < '0' || c > '9')) {
-                throw new IllegalArgumentException("CPF deve conter apenas dígitos");
+                throw new DadoInvalidoException("CPF deve conter apenas dígitos");
             }
             if (valor.chars().distinct().count() == 1) {
-                throw new IllegalArgumentException("CPF não pode conter todos os dígitos iguais");
+                throw new DadoInvalidoException("CPF não pode conter todos os dígitos iguais");
             }
             if (digito(valor, 9) != valor.charAt(9) - '0' || digito(valor, 10) != valor.charAt(10) - '0') {
-                throw new IllegalArgumentException("CPF possui dígitos verificadores inválidos");
+                throw new DadoInvalidoException("CPF possui dígitos verificadores inválidos");
             }
         }
 
@@ -54,16 +64,16 @@ public sealed interface Documento {
     public static record CNPJ(String valor) implements Documento {
         public CNPJ {
             if (valor.length() != 14) {
-                throw new IllegalArgumentException("CNPJ deve conter exatamente 14 caracteres");
+                throw new DadoInvalidoException("CNPJ deve conter exatamente 14 caracteres");
             }
             if (valor.chars().anyMatch(c -> c < '0' || c > '9')) {
-                throw new IllegalArgumentException("CNPJ deve conter apenas dígitos");
+                throw new DadoInvalidoException("CNPJ deve conter apenas dígitos");
             }
             if (valor.chars().distinct().count() == 1) {
-                throw new IllegalArgumentException("CNPJ não pode conter todos os dígitos iguais");
+                throw new DadoInvalidoException("CNPJ não pode conter todos os dígitos iguais");
             }
             if (digito(valor, 12) != valor.charAt(12) - '0' || digito(valor, 13) != valor.charAt(13) - '0') {
-                throw new IllegalArgumentException("CNPJ possui dígitos verificadores inválidos");
+                throw new DadoInvalidoException("CNPJ possui dígitos verificadores inválidos");
             }
         }
 

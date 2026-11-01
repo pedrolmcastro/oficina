@@ -17,12 +17,12 @@ public abstract class Entidade {
     }
 
     @Override
-    public boolean equals(final @Nullable Object outro) {
+    public final boolean equals(final @Nullable Object outro) { // NOSONAR: Hibernate ainda intercepta id().
         return outro instanceof Entidade entidade && id().equals(entidade.id());
     }
 
     @Override
-    public int hashCode() {
+    public final int hashCode() { // NOSONAR: Hibernate ainda intercepta id().
         return id().hashCode();
     }
 }

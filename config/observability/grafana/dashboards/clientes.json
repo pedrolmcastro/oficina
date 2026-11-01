@@ -1,0 +1,164 @@
+{
+  "uid": "oficina-clientes",
+  "title": "Oficina — Clientes",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": false,
+  "tags": [
+    "oficina",
+    "clientes"
+  ],
+  "timezone": "browser",
+  "refresh": "5s",
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "description": "Volume, duração e erros HTTP de /clientes e duração das operações transacionais. Sem dados pessoais nos rótulos.",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Requisições por método e status",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 9
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (method, status) (rate(http_server_requests_seconds_count{job=\"oficina\",uri=~\"/clientes(/.*)?\"}[5m]))",
+          "legendFormat": "{{method}} {{status}}",
+          "range": true
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Duração média HTTP",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 9
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (method, uri) (rate(http_server_requests_seconds_sum{job=\"oficina\",uri=~\"/clientes(/.*)?\"}[5m])) / sum by (method, uri) (rate(http_server_requests_seconds_count{job=\"oficina\",uri=~\"/clientes(/.*)?\"}[5m]))",
+          "legendFormat": "{{method}} {{uri}}",
+          "range": true
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Respostas 4xx e 5xx",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 12,
+        "h": 9
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (status) (rate(http_server_requests_seconds_count{job=\"oficina\",uri=~\"/clientes(/.*)?\",status=~\"[45]..\"}[5m]))",
+          "legendFormat": "{{status}}",
+          "range": true
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Duração por operação e erro",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 9,
+        "w": 12,
+        "h": 9
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (operacao, error) (rate(clientes_operacao_seconds_sum{job=\"oficina\"}[5m])) / sum by (operacao, error) (rate(clientes_operacao_seconds_count{job=\"oficina\"}[5m]))",
+          "legendFormat": "{{operacao}} {{error}}",
+          "range": true
+        }
+      ]
+    }
+  ]
+}

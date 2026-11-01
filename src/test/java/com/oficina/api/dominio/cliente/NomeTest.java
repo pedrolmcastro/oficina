@@ -1,5 +1,6 @@
 package com.oficina.api.dominio.cliente;
 
+import com.oficina.api.dominio.DadoInvalidoException;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -18,7 +19,7 @@ class NomeTest {
     @ValueSource(strings = { "", " ", "\t", "\n", " \t\n " })
     void deveRejeitarNomeEmBranco(final String valor) {
         assertThatThrownBy(() -> new Nome(valor))
-            .isExactlyInstanceOf(IllegalArgumentException.class)
+            .isInstanceOf(DadoInvalidoException.class)
             .hasMessage("Nome não pode estar em branco");
     }
 }

@@ -10,8 +10,8 @@ Funcionalidade: Login
 
   Esquema do Cenário: Deve rejeitar credenciais incorretas
     Quando envio as credenciais "<usuario>" e "<senha>"
-    Então o login deve retornar 401
-    E a resposta não deve conter token nem permitir cache
+    Então a API deve retornar 401
+    E a resposta não deve conter conteúdo nem permitir cache
 
     Exemplos:
       | usuario     | senha  |
