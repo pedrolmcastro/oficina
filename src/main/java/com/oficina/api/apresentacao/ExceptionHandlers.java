@@ -1,6 +1,7 @@
 package com.oficina.api.apresentacao;
 
 import com.oficina.api.aplicacao.cliente.ClienteNaoEncontrado;
+import com.oficina.api.aplicacao.veiculo.VeiculoNaoEncontrado;
 import com.oficina.api.dominio.DadoInvalidoException;
 import java.util.Objects;
 import org.slf4j.Logger;
@@ -39,6 +40,11 @@ public class ExceptionHandlers {
     @ExceptionHandler(value = ClienteNaoEncontrado.class)
     public ResponseEntity<ProblemDetail> naoEncontrado() {
         return buildRespostaFalha(HttpStatus.NOT_FOUND, "Cliente não encontrado");
+    }
+
+    @ExceptionHandler(value = VeiculoNaoEncontrado.class)
+    public ResponseEntity<ProblemDetail> veiculoNaoEncontrado() {
+        return buildRespostaFalha(HttpStatus.NOT_FOUND, "Veículo não encontrado");
     }
 
     @ExceptionHandler(value = DataIntegrityViolationException.class)

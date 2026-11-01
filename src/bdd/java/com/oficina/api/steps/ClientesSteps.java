@@ -29,6 +29,7 @@ public class ClientesSteps {
 
     @Before(value = "@clientes")
     public void prepararCenario() {
+        this.jdbc.update("DELETE FROM oficina.veiculos");
         this.jdbc.update("DELETE FROM oficina.clientes");
         this.http.autenticar(this.emissor.emitir("admin", Set.of("ADMIN")).valor());
     }

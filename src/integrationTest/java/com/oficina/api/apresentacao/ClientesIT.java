@@ -33,6 +33,7 @@ class ClientesIT {
 
     @BeforeEach
     void limparClientes() {
+        this.jdbc.update("DELETE FROM oficina.veiculos");
         this.jdbc.update("DELETE FROM oficina.clientes");
     }
 

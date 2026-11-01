@@ -2,6 +2,9 @@ app:
   clientes:
     chave-criptografia: ${CLIENTES_CHAVE_CRIPTOGRAFIA}
     chave-hash: ${CLIENTES_CHAVE_HASH}
+  veiculos:
+    chave-criptografia: ${VEICULOS_CHAVE_CRIPTOGRAFIA}
+    chave-hash: ${VEICULOS_CHAVE_HASH}
   seguranca:
     admin:
       nome-usuario: ${ADMIN_NOME_USUARIO}
