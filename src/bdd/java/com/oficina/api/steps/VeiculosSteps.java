@@ -1,7 +1,7 @@
 package com.oficina.api.steps;
 
+import com.oficina.api.apresentacao.RespostaLista;
 import com.oficina.api.apresentacao.cliente.RespostaCliente;
-import com.oficina.api.apresentacao.veiculo.RespostaListaVeiculos;
 import com.oficina.api.apresentacao.veiculo.RespostaVeiculo;
 import com.oficina.api.infraestrutura.seguranca.EmissorTokenJwt;
 import io.cucumber.datatable.DataTable;
@@ -9,6 +9,7 @@ import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import io.restassured.common.mapper.TypeRef;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -103,14 +104,14 @@ public class VeiculosSteps {
 
     @Then("a lista deve conter o veículo:")
     public void validarLista(final DataTable tabela) {
-        assertThat(this.http.resposta().as(RespostaListaVeiculos.class).veiculos())
+        assertThat(this.http.resposta().as(new TypeRef<RespostaLista<RespostaVeiculo>>() {}).itens())
             .singleElement()
             .satisfies(veiculo -> validarDadosVeiculo(veiculo, tabela));
     }
 
     @Then("a lista de veículos deve estar vazia")
     public void validarListaVazia() {
-        assertThat(this.http.resposta().as(RespostaListaVeiculos.class).veiculos()).isEmpty();
+        assertThat(this.http.resposta().as(new TypeRef<RespostaLista<RespostaVeiculo>>() {}).itens()).isEmpty();
     }
 
     @Then("o veículo original deve permanecer inalterado")

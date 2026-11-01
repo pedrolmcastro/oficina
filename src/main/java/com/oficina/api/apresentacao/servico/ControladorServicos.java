@@ -1,6 +1,11 @@
 package com.oficina.api.apresentacao.servico;
 
+import com.oficina.api.aplicacao.Pagina;
 import com.oficina.api.aplicacao.servico.ServicoServicos;
+import com.oficina.api.apresentacao.RespostaLista;
+import com.oficina.api.apresentacao.RespostasHttp;
+import com.oficina.api.dominio.Preco;
+import com.oficina.api.dominio.TextoNormalizado;
 import com.oficina.api.dominio.servico.Nome;
 import com.oficina.api.dominio.servico.PrecoVenda;
 import io.swagger.v3.oas.annotations.Operation;
@@ -10,12 +15,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import java.net.URI;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
-import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -51,39 +53,31 @@ public class ControladorServicos {
     public ResponseEntity<RespostaServico> criar(@Valid @RequestBody final RequisicaoCriarServico requisicao) {
         final var servico = this.servico
             .criar(
-                new Nome(requisicao.nome()),
-                new PrecoVenda(requisicao.precoVenda()),
+                new Nome(new TextoNormalizado(requisicao.nome())),
+                new PrecoVenda(new Preco(requisicao.precoVenda())),
                 requisicao.requerDiagnostico()
             );
-        return ResponseEntity
-            .created(URI.create("/servicos/" + servico.id()))
-            .cacheControl(CacheControl.noStore())
-            .body(RespostaServico.de(servico));
+        return RespostasHttp.criada(URI.create("/servicos/" + servico.id()), RespostaServico.de(servico));
     }
 
     @GetMapping(value = "/{id}")
     @Operation(summary = "Buscar serviço por ID")
     @ApiResponse(responseCode = "404", description = "Serviço inexistente ou excluído")
     public ResponseEntity<RespostaServico> buscar(@PathVariable final UUID id) {
-        return ResponseEntity
-            .ok()
-            .cacheControl(CacheControl.noStore())
-            .body(RespostaServico.de(this.servico.buscar(id)));
+        return RespostasHttp.ok(RespostaServico.de(this.servico.buscar(id)));
     }
 
     @GetMapping
     @Operation(summary = "Listar serviços", description = "Busca FULLTEXT opcional por nome em português. "
-        + "Retorna até first serviços (padrão 25, entre 1 e 25), em ordem crescente de ID, após after. "
+        + "Retorna em itens até first serviços (padrão 25, entre 1 e 25), em ordem crescente de ID, após after. "
         + "Use nextCursor em after com o mesmo filtro; null indica o fim da listagem.")
-    public ResponseEntity<RespostaListaServicos> listar(
+    public ResponseEntity<RespostaLista<RespostaServico>> listar(
         @RequestParam(required = false) final @Nullable String nome,
         @RequestParam(required = false) final @Nullable UUID after,
-        @RequestParam(defaultValue = "25") @Min(value = 1) @Max(value = 25) final int first
+        @RequestParam(defaultValue = "25") @Schema(minimum = "1", maximum = "25") final int first
     ) {
-        return ResponseEntity
-            .ok()
-            .cacheControl(CacheControl.noStore())
-            .body(RespostaListaServicos.de(this.servico.listar(nome, after, first)));
+        return RespostasHttp
+            .ok(RespostaLista.de(this.servico.listar(nome, after, new Pagina.Limite(first)), RespostaServico::de));
     }
 
     @PatchMapping(value = "/{id}", consumes = { MediaType.APPLICATION_JSON_VALUE, "application/merge-patch+json" })
@@ -101,13 +95,13 @@ public class ControladorServicos {
                 id,
                 nome == null
                     ? null
-                    : new Nome(nome),
+                    : new Nome(new TextoNormalizado(nome)),
                 precoVenda == null
                     ? null
-                    : new PrecoVenda(precoVenda),
+                    : new PrecoVenda(new Preco(precoVenda)),
                 atualizacao.requerDiagnostico()
             );
-        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(RespostaServico.de(servico));
+        return RespostasHttp.ok(RespostaServico.de(servico));
     }
 
     @DeleteMapping(value = "/{id}")
@@ -116,6 +110,6 @@ public class ControladorServicos {
     @ApiResponse(responseCode = "404", description = "Serviço inexistente ou já excluído")
     public ResponseEntity<Void> excluir(@PathVariable final UUID id) {
         this.servico.excluir(id);
-        return ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build();
+        return RespostasHttp.semConteudo();
     }
 }

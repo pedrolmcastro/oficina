@@ -1,5 +1,6 @@
 package com.oficina.api.aplicacao.cliente;
 
+import com.oficina.api.dominio.TextoNormalizado;
 import com.oficina.api.dominio.cliente.Cliente;
 import com.oficina.api.dominio.cliente.Documento;
 import com.oficina.api.dominio.cliente.Documento.CPF;
@@ -43,20 +44,32 @@ class ServicoClientesTest {
         ", novo@example.com, , Maria, novo@example.com, 52998224725",
         ", , 11144477735, Maria, maria@example.com, 11144477735" })
     void deveAtualizarSomenteCamposInformados(
-        final @Nullable Nome nome,
+        final @Nullable String nome,
         final @Nullable Email email,
         final @Nullable CPF documento,
         final String nomeEsperado,
         final String emailEsperado,
         final String documentoEsperado
     ) {
-        final var cliente = new Cliente(new Nome("Maria"), new Email("maria@example.com"), Documento.de("52998224725"));
+        final var cliente = new Cliente(
+            new Nome(new TextoNormalizado("Maria")),
+            new Email("maria@example.com"),
+            Documento.de("52998224725")
+        );
         when(this.repositorio.buscar(cliente.id(), LockModeType.PESSIMISTIC_WRITE)).thenReturn(Optional.of(cliente));
 
-        final var atualizado = this.servico.atualizar(cliente.id(), nome, email, documento);
+        final var atualizado = this.servico
+            .atualizar(
+                cliente.id(),
+                nome == null
+                    ? null
+                    : new Nome(new TextoNormalizado(nome)),
+                email,
+                documento
+            );
 
-        assertThat(atualizado).isSameAs(cliente);
-        assertThat(atualizado.nome().valor()).isEqualTo(nomeEsperado);
+        assertThat(atualizado.id()).isEqualTo(cliente.id());
+        assertThat(atualizado.nome().texto().valor()).isEqualTo(nomeEsperado);
         assertThat(atualizado.email().valor()).isEqualTo(emailEsperado);
         assertThat(atualizado.documento().valor()).isEqualTo(documentoEsperado);
     }
@@ -64,10 +77,10 @@ class ServicoClientesTest {
     @Test
     void deveRejeitarIdInexistente() {
         final var id = UUID.randomUUID();
-        assertThatThrownBy(() -> this.servico.buscar(id)).isExactlyInstanceOf(ClienteNaoEncontrado.class);
-        assertThatThrownBy(() -> this.servico.atualizar(id, new Nome("Novo nome"), null, null))
-            .isExactlyInstanceOf(ClienteNaoEncontrado.class);
-        assertThatThrownBy(() -> this.servico.excluir(id)).isExactlyInstanceOf(ClienteNaoEncontrado.class);
+        assertThatThrownBy(() -> this.servico.buscar(id)).isExactlyInstanceOf(ClienteNaoEncontradoException.class);
+        assertThatThrownBy(() -> this.servico.atualizar(id, new Nome(new TextoNormalizado("Novo nome")), null, null))
+            .isExactlyInstanceOf(ClienteNaoEncontradoException.class);
+        assertThatThrownBy(() -> this.servico.excluir(id)).isExactlyInstanceOf(ClienteNaoEncontradoException.class);
     }
 
     @Test

@@ -2,6 +2,8 @@ package com.oficina.api.dominio.cliente;
 
 import com.oficina.api.dominio.Entidade;
 import com.oficina.api.infraestrutura.persistencia.cliente.DocumentoPersistido;
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
@@ -22,6 +24,9 @@ public class Cliente extends Entidade {
     @Embedded
     private Email email;
 
+    @AttributeOverrides(value = {
+        @AttributeOverride(name = "cifrado", column = @Column(name = "documento_criptografado", nullable = false)),
+        @AttributeOverride(name = "hash", column = @Column(name = "hash_documento", nullable = false)) })
     @CompositeType(value = DocumentoPersistido.class)
     private Documento documento;
 

@@ -1,13 +1,14 @@
 package com.oficina.api.steps;
 
+import com.oficina.api.apresentacao.RespostaLista;
 import com.oficina.api.apresentacao.cliente.RespostaCliente;
-import com.oficina.api.apresentacao.cliente.RespostaListaClientes;
 import com.oficina.api.infraestrutura.seguranca.EmissorTokenJwt;
 import io.cucumber.datatable.DataTable;
 import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import io.restassured.common.mapper.TypeRef;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -84,14 +85,14 @@ public class ClientesSteps {
 
     @Then("a resposta deve conter uma lista com o cliente:")
     public void validarListaClientes(final DataTable tabela) {
-        assertThat(this.http.resposta().as(RespostaListaClientes.class).clientes())
+        assertThat(this.http.resposta().as(new TypeRef<RespostaLista<RespostaCliente>>() {}).itens())
             .singleElement()
             .satisfies(cliente -> validarDadosCliente(cliente, tabela));
     }
 
     @Then("a resposta deve conter uma lista vazia de clientes")
     public void validarListaVazia() {
-        assertThat(this.http.resposta().as(RespostaListaClientes.class).clientes()).isEmpty();
+        assertThat(this.http.resposta().as(new TypeRef<RespostaLista<RespostaCliente>>() {}).itens()).isEmpty();
     }
 
     @Then("o cliente original deve permanecer inalterado")

@@ -2,6 +2,8 @@ package com.oficina.api.dominio.veiculo;
 
 import com.oficina.api.dominio.Entidade;
 import com.oficina.api.infraestrutura.persistencia.veiculo.PlacaPersistida;
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
@@ -17,6 +19,9 @@ public class Veiculo extends Entidade {
     @Column(name = "deletado", nullable = false)
     private boolean deletado;
 
+    @AttributeOverrides(value = {
+        @AttributeOverride(name = "cifrado", column = @Column(name = "placa_criptografada", nullable = false)),
+        @AttributeOverride(name = "hash", column = @Column(name = "hash_placa", nullable = false)) })
     @CompositeType(value = PlacaPersistida.class)
     private Placa placa;
 

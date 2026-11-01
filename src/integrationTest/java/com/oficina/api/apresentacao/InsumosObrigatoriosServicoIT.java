@@ -1,13 +1,10 @@
 package com.oficina.api.apresentacao;
 
-import com.oficina.api.ConfiguracaoIntegration;
 import com.oficina.api.apresentacao.insumo.RespostaInsumo;
-import com.oficina.api.apresentacao.servico.RespostaListaInsumosObrigatorios;
 import com.oficina.api.apresentacao.servico.RespostaServico;
-import com.oficina.api.infraestrutura.seguranca.EmissorTokenJwt;
 import io.restassured.RestAssured;
+import io.restassured.common.mapper.TypeRef;
 import io.restassured.response.Response;
-import io.restassured.specification.RequestSpecification;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -16,23 +13,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.context.annotation.Import;
-import org.springframework.jdbc.core.JdbcTemplate;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Import(value = ConfiguracaoIntegration.class)
-class InsumosObrigatoriosServicoIT {
-    @LocalServerPort
-    private int porta;
-    @Autowired
-    private EmissorTokenJwt emissor;
-    @Autowired
-    private JdbcTemplate jdbc;
-
+class InsumosObrigatoriosServicoIT extends ApiIntegrationTest {
     @BeforeEach
     void preparar() {
         this.jdbc.update("DELETE FROM oficina.servicos_insumos_obrigatorios");
@@ -45,15 +28,15 @@ class InsumosObrigatoriosServicoIT {
         final var servico = criarServico("Troca de óleo");
         final var outro = criarServico("Revisão");
         final var insumo = criarInsumo("Óleo");
-        assertThat(listar(servico.id()).insumosObrigatorios()).isEmpty();
+        assertThat(listar(servico.id()).itens()).isEmpty();
         final var cadastro = associar(servico.id(), insumo.id());
         validar(cadastro, 201);
         assertThat(cadastro.header("Location"))
             .isEqualTo("/servicos/" + servico.id() + "/insumos-obrigatorios/" + insumo.id());
         assertThat(cadastro.as(RespostaInsumo.class)).isEqualTo(insumo);
         validar(associar(servico.id(), insumo.id()), 409);
-        assertThat(listar(servico.id()).insumosObrigatorios()).containsExactly(insumo);
-        assertThat(listar(outro.id()).insumosObrigatorios()).isEmpty();
+        assertThat(listar(servico.id()).itens()).containsExactly(insumo);
+        assertThat(listar(outro.id()).itens()).isEmpty();
         validar(associar(outro.id(), insumo.id()), 201);
         validar(
             requisicao()
@@ -61,11 +44,11 @@ class InsumosObrigatoriosServicoIT {
                 .patch("/servicos/{id}", servico.id()),
             200
         );
-        assertThat(listar(servico.id()).insumosObrigatorios()).containsExactly(insumo);
+        assertThat(listar(servico.id()).itens()).containsExactly(insumo);
         validar(remover(servico.id(), insumo.id()), 204);
         validar(remover(servico.id(), insumo.id()), 404);
-        assertThat(listar(servico.id()).insumosObrigatorios()).isEmpty();
-        assertThat(listar(outro.id()).insumosObrigatorios()).containsExactly(insumo);
+        assertThat(listar(servico.id()).itens()).isEmpty();
+        assertThat(listar(outro.id()).itens()).containsExactly(insumo);
         final var consulta = requisicao().get("/insumos/{id}", insumo.id());
         validar(consulta, 200);
         assertThat(consulta.as(RespostaInsumo.class)).isEqualTo(insumo);
@@ -88,15 +71,15 @@ class InsumosObrigatoriosServicoIT {
             .queryParam("first", 2)
             .get("/servicos/{id}/insumos-obrigatorios", servico.id());
         validar(primeiraResposta, 200);
-        final var primeira = primeiraResposta.as(RespostaListaInsumosObrigatorios.class);
-        assertThat(primeira.insumosObrigatorios()).containsExactlyElementsOf(insumos.subList(0, 2));
+        final var primeira = primeiraResposta.as(new TypeRef<RespostaLista<RespostaInsumo>>() {});
+        assertThat(primeira.itens()).containsExactlyElementsOf(insumos.subList(0, 2));
         assertThat(primeira.nextCursor()).isEqualTo(insumos.get(1).id());
         final var ultimaResposta = requisicao()
             .queryParams(Map.of("first", 2, "after", primeira.nextCursor()))
             .get("/servicos/{id}/insumos-obrigatorios", servico.id());
         validar(ultimaResposta, 200);
-        final var ultima = ultimaResposta.as(RespostaListaInsumosObrigatorios.class);
-        assertThat(ultima.insumosObrigatorios()).containsExactly(insumos.getLast());
+        final var ultima = ultimaResposta.as(new TypeRef<RespostaLista<RespostaInsumo>>() {});
+        assertThat(ultima.itens()).containsExactly(insumos.getLast());
         assertThat(ultima.nextCursor()).isNull();
     }
 
@@ -112,7 +95,7 @@ class InsumosObrigatoriosServicoIT {
         }
         validar(associar(servico.id(), insumoId), 404);
         validar(remover(servico.id(), insumoId), 404);
-        assertThat(listar(servico.id()).insumosObrigatorios()).isEmpty();
+        assertThat(listar(servico.id()).itens()).isEmpty();
     }
 
     @ParameterizedTest
@@ -139,7 +122,7 @@ class InsumosObrigatoriosServicoIT {
         validar(associar(primeiro.id(), insumo.id()), 201);
         validar(associar(segundo.id(), insumo.id()), 201);
         validar(requisicao().delete("/insumos/{id}", insumo.id()), 409);
-        assertThat(listar(primeiro.id()).insumosObrigatorios()).containsExactly(insumo);
+        assertThat(listar(primeiro.id()).itens()).containsExactly(insumo);
         validar(remover(primeiro.id(), insumo.id()), 204);
         validar(requisicao().delete("/insumos/{id}", insumo.id()), 409);
         validar(requisicao().delete("/servicos/{id}", segundo.id()), 204);
@@ -189,23 +172,9 @@ class InsumosObrigatoriosServicoIT {
         return requisicao().delete("/servicos/{id}/insumos-obrigatorios/{insumo}", servico, insumo);
     }
 
-    private RespostaListaInsumosObrigatorios listar(final UUID servico) {
+    private RespostaLista<RespostaInsumo> listar(final UUID servico) {
         final var resposta = requisicao().get("/servicos/{id}/insumos-obrigatorios", servico);
         validar(resposta, 200);
-        return resposta.as(RespostaListaInsumosObrigatorios.class);
-    }
-
-    private static void validar(final Response resposta, final int status) {
-        assertThat(resposta.statusCode()).as(resposta.asString()).isEqualTo(status);
-        assertThat(resposta.header("Cache-Control")).isEqualTo("no-store");
-    }
-
-    private RequestSpecification requisicao() {
-        return RestAssured
-            .given()
-            .port(this.porta)
-            .contentType("application/json")
-            .auth()
-            .oauth2(this.emissor.emitir("admin", Set.of("ADMIN")).valor());
+        return resposta.as(new TypeRef<RespostaLista<RespostaInsumo>>() {});
     }
 }

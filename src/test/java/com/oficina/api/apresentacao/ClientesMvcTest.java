@@ -1,8 +1,9 @@
 package com.oficina.api.apresentacao;
 
-import com.oficina.api.aplicacao.cliente.ClienteNaoEncontrado;
+import com.oficina.api.aplicacao.cliente.ClienteNaoEncontradoException;
 import com.oficina.api.aplicacao.cliente.ServicoClientes;
 import com.oficina.api.apresentacao.cliente.ControladorClientes;
+import com.oficina.api.dominio.TextoNormalizado;
 import com.oficina.api.dominio.cliente.Cliente;
 import com.oficina.api.dominio.cliente.Documento;
 import com.oficina.api.dominio.cliente.Email;
@@ -10,23 +11,28 @@ import com.oficina.api.dominio.cliente.Nome;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.server.ResponseStatusException;
 import tools.jackson.databind.json.JsonMapper;
-import static org.mockito.Mockito.verify;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = ControladorClientes.class)
@@ -86,7 +92,11 @@ class ClientesMvcTest {
 
     @Test
     void deveRetornarListaComUmClientePorDocumento() throws Exception {
-        final var cliente = new Cliente(new Nome("Maria"), new Email("maria@example.com"), Documento.de("52998224725"));
+        final var cliente = new Cliente(
+            new Nome(new TextoNormalizado("Maria")),
+            new Email("maria@example.com"),
+            Documento.de("52998224725")
+        );
         when(this.servico.buscar(cliente.documento())).thenReturn(Optional.of(cliente));
 
         this.mvc
@@ -95,7 +105,7 @@ class ClientesMvcTest {
             .andExpect(
                 content()
                     .json(
-                        ("{\"clientes\":[{\"id\":\"%s\",\"nome\":\"Maria\",\"email\":\"maria@example.com\","
+                        ("{\"itens\":[{\"id\":\"%s\",\"nome\":\"Maria\",\"email\":\"maria@example.com\","
                             + "\"documento\":\"52998224725\"}],\"nextCursor\":null}").formatted(cliente.id())
                     )
             );
@@ -109,7 +119,7 @@ class ClientesMvcTest {
         this.mvc
             .perform(get("/clientes").param("documento", documento.valor()))
             .andExpect(status().isOk())
-            .andExpect(content().json("{\"clientes\":[],\"nextCursor\":null}"));
+            .andExpect(content().json("{\"itens\":[],\"nextCursor\":null}"));
     }
 
     @Test
@@ -143,24 +153,55 @@ class ClientesMvcTest {
         "application/json, '{\"email\":\"novo@example.com\",\"nome\":null,\"documento\":null}'",
         "application/merge-patch+json, '{\"email\":\"novo@example.com\",\"nome\":null,\"documento\":null}'" })
     void deveConverterCamposOmitidosENulos(final String formato, final String payload) throws Exception {
-        final var cliente = new Cliente(new Nome("Maria"), new Email("novo@example.com"), Documento.de("52998224725"));
+        final var cliente = new Cliente(
+            new Nome(new TextoNormalizado("Maria")),
+            new Email("novo@example.com"),
+            Documento.de("52998224725")
+        );
         when(this.servico.atualizar(cliente.id(), null, new Email("novo@example.com"), null)).thenReturn(cliente);
 
         this.mvc
             .perform(patch("/clientes/{id}", cliente.id()).contentType(formato).content(payload))
-            .andExpect(status().isOk());
-
-        verify(this.servico).atualizar(cliente.id(), null, new Email("novo@example.com"), null);
+            .andExpect(status().isOk())
+            .andExpect(
+                content()
+                    .json(
+                        ("{\"id\":\"%s\",\"nome\":\"Maria\",\"email\":\"novo@example.com\","
+                            + "\"documento\":\"52998224725\"}").formatted(cliente.id())
+                    )
+            );
     }
 
     @Test
     void deveTraduzirClienteNaoEncontrado() throws Exception {
         final var id = UUID.randomUUID();
-        when(this.servico.buscar(id)).thenThrow(new ClienteNaoEncontrado());
+        when(this.servico.buscar(id)).thenThrow(new ClienteNaoEncontradoException());
 
         this.mvc
             .perform(get("/clientes/{id}", id))
             .andExpect(status().isNotFound())
             .andExpect(content().json("{\"status\":404,\"detail\":\"Cliente não encontrado\"}"));
+    }
+
+    @ParameterizedTest
+    @MethodSource(value = "falhasInternas")
+    void deveOcultarDetalhesDeFalhaInternaNaRespostaHttp(final RuntimeException erro) throws Exception {
+        final var id = UUID.randomUUID();
+        when(this.servico.buscar(id)).thenThrow(erro);
+        this.mvc
+            .perform(get("/clientes/{id}", id))
+            .andExpect(status().isInternalServerError())
+            .andExpect(header().string("Cache-Control", "no-store"))
+            .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+            .andExpect(content().json("{\"status\":500,\"detail\":\"Não foi possível processar a requisição\"}"))
+            .andExpect(result -> assertThat(result.getResponse().getContentAsString()).doesNotContain("confidenciais"));
+    }
+
+    private static Stream<RuntimeException> falhasInternas() {
+        return Stream
+            .of(
+                new IllegalStateException("Detalhes internos confidenciais"),
+                new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Detalhes internos confidenciais")
+            );
     }
 }

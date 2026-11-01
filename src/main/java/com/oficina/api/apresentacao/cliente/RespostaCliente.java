@@ -14,7 +14,7 @@ public record RespostaCliente(
     public static RespostaCliente de(final Cliente cliente) {
         return new RespostaCliente(
             cliente.id(),
-            cliente.nome().valor(),
+            cliente.nome().texto().valor(),
             cliente.email().valor(),
             cliente.documento().valor()
         );

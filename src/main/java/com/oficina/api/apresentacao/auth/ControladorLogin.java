@@ -1,5 +1,6 @@
 package com.oficina.api.apresentacao.auth;
 
+import com.oficina.api.apresentacao.RespostasHttp;
 import com.oficina.api.infraestrutura.seguranca.EmissorTokenJwt;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -8,7 +9,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.stream.Collectors;
-import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -33,7 +33,7 @@ public class ControladorLogin {
 
     @ExceptionHandler(value = AuthenticationException.class)
     public ResponseEntity<Void> authenticationExceptionHandler() {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).cacheControl(CacheControl.noStore()).build();
+        return RespostasHttp.status(HttpStatus.UNAUTHORIZED).build();
     }
 
     @PostMapping(value = "/login", consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -62,9 +62,6 @@ public class ControladorLogin {
 
         final var token = this.emissorTokenJwt.emitir(autenticacao.getName(), perfis);
 
-        return ResponseEntity
-            .ok()
-            .cacheControl(CacheControl.noStore())
-            .body(new RespostaLogin(token.valor(), TipoToken.BEARER, token.validadeEmSegundos()));
+        return RespostasHttp.ok(new RespostaLogin(token.valor(), TipoToken.BEARER, token.validadeEmSegundos()));
     }
 }

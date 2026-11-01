@@ -1,6 +1,9 @@
 package com.oficina.api.apresentacao.servico;
 
+import com.oficina.api.aplicacao.Pagina;
 import com.oficina.api.aplicacao.servico.ServicoServicos;
+import com.oficina.api.apresentacao.RespostaLista;
+import com.oficina.api.apresentacao.RespostasHttp;
 import com.oficina.api.apresentacao.insumo.RespostaInsumo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -9,12 +12,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import java.net.URI;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
-import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -53,26 +53,31 @@ public class ControladorInsumosObrigatorios {
         @Valid @RequestBody final RequisicaoCriarInsumoObrigatorio requisicao
     ) {
         final var insumo = this.servico.associarInsumoObrigatorio(servicoId, requisicao.insumoId());
-        return ResponseEntity
-            .created(URI.create("/servicos/" + servicoId + "/insumos-obrigatorios/" + insumo.id()))
-            .cacheControl(CacheControl.noStore())
-            .body(RespostaInsumo.de(insumo));
+        return RespostasHttp
+            .criada(
+                URI.create("/servicos/" + servicoId + "/insumos-obrigatorios/" + insumo.id()),
+                RespostaInsumo.de(insumo)
+            );
     }
 
     @GetMapping
     @Operation(summary = "Listar insumos obrigatórios do serviço",
-        description = "Retorna até first insumos obrigatórios "
+        description = "Retorna em itens até first insumos obrigatórios "
             + "(padrão 25, entre 1 e 25), em ordem crescente de ID, após after. "
             + "Use nextCursor em after; null indica o fim da listagem.")
-    public ResponseEntity<RespostaListaInsumosObrigatorios> listar(
+    public ResponseEntity<RespostaLista<RespostaInsumo>> listar(
         @PathVariable final UUID servicoId,
         @RequestParam(required = false) final @Nullable UUID after,
-        @RequestParam(defaultValue = "25") @Min(value = 1) @Max(value = 25) final int first
+        @RequestParam(defaultValue = "25") @Schema(minimum = "1", maximum = "25") final int first
     ) {
-        return ResponseEntity
-            .ok()
-            .cacheControl(CacheControl.noStore())
-            .body(RespostaListaInsumosObrigatorios.de(this.servico.listarInsumosObrigatorios(servicoId, after, first)));
+        return RespostasHttp
+            .ok(
+                RespostaLista
+                    .de(
+                        this.servico.listarInsumosObrigatorios(servicoId, after, new Pagina.Limite(first)),
+                        RespostaInsumo::de
+                    )
+            );
     }
 
     @DeleteMapping(value = "/{insumoId}")
@@ -81,6 +86,6 @@ public class ControladorInsumosObrigatorios {
         @Content })
     public ResponseEntity<Void> remover(@PathVariable final UUID servicoId, @PathVariable final UUID insumoId) {
         this.servico.removerInsumoObrigatorio(servicoId, insumoId);
-        return ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build();
+        return RespostasHttp.semConteudo();
     }
 }

@@ -1,6 +1,7 @@
 package com.oficina.api.infraestrutura.persistencia;
 
 import com.oficina.api.ConfiguracaoIntegration;
+import com.oficina.api.dominio.TextoNormalizado;
 import com.oficina.api.dominio.cliente.Cliente;
 import com.oficina.api.dominio.cliente.Documento.CPF;
 import com.oficina.api.dominio.cliente.Email;
@@ -10,7 +11,7 @@ import com.oficina.api.dominio.veiculo.Marca;
 import com.oficina.api.dominio.veiculo.Modelo;
 import com.oficina.api.dominio.veiculo.Placa;
 import com.oficina.api.dominio.veiculo.Veiculo;
-import com.oficina.api.infraestrutura.persistencia.veiculo.ProtecaoPlaca;
+import com.oficina.api.infraestrutura.persistencia.veiculo.CriptografiaPlaca;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import java.time.Year;
@@ -31,7 +32,7 @@ class VeiculoIT {
     @Autowired
     private EntityManagerFactory fabrica;
     @Autowired
-    private ProtecaoPlaca protecao;
+    private CriptografiaPlaca protecao;
 
     @Test
     void deveRejeitarPlacaDuplicada() {
@@ -103,18 +104,28 @@ class VeiculoIT {
             final var id = veiculo.id();
             assertThatThrownBy(() -> em.find(Veiculo.class, id))
                 .isExactlyInstanceOf(IllegalStateException.class)
-                .hasMessage("HMAC incompatível com a placa persistida");
+                .hasMessage("HMAC incompatível com o valor persistido");
         });
     }
 
     private static Cliente cliente(final EntityManager em) {
-        final var cliente = new Cliente(new Nome("Maria"), new Email("maria@example.com"), new CPF("52998224725"));
+        final var cliente = new Cliente(
+            new Nome(new TextoNormalizado("Maria")),
+            new Email("maria@example.com"),
+            new CPF("52998224725")
+        );
         em.persist(cliente);
         return cliente;
     }
 
     private static Veiculo veiculo(final String placa, final UUID clienteId) {
-        return new Veiculo(new Placa(placa), new Modelo("Corolla"), new Marca("Toyota"), new Ano(2024), clienteId);
+        return new Veiculo(
+            new Placa(placa),
+            new Modelo(new TextoNormalizado("Corolla")),
+            new Marca(new TextoNormalizado("Toyota")),
+            new Ano(2024),
+            clienteId
+        );
     }
 
     private void emTransacao(final Consumer<EntityManager> acao) {

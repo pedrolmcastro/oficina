@@ -8,8 +8,8 @@ public record RespostaServico(UUID id, String nome, BigDecimal precoVenda, boole
     public static RespostaServico de(final Servico servico) {
         return new RespostaServico(
             servico.id(),
-            servico.nome().valor(),
-            servico.precoVenda().valor(),
+            servico.nome().texto().valor(),
+            servico.precoVenda().preco().valor(),
             servico.requerDiagnostico()
         );
     }

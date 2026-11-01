@@ -1,8 +1,7 @@
 package com.oficina.api.steps;
 
+import com.oficina.api.apresentacao.RespostaLista;
 import com.oficina.api.apresentacao.insumo.RespostaInsumo;
-import com.oficina.api.apresentacao.servico.RespostaListaInsumosObrigatorios;
-import com.oficina.api.apresentacao.servico.RespostaListaServicos;
 import com.oficina.api.apresentacao.servico.RespostaServico;
 import com.oficina.api.infraestrutura.seguranca.EmissorTokenJwt;
 import io.cucumber.datatable.DataTable;
@@ -10,6 +9,7 @@ import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import io.restassured.common.mapper.TypeRef;
 import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Objects;
@@ -95,14 +95,14 @@ public class ServicosSteps {
 
     @Then("a lista de serviços deve conter os nomes:")
     public void validarLista(final DataTable tabela) {
-        assertThat(this.http.resposta().as(RespostaListaServicos.class).servicos())
+        assertThat(this.http.resposta().as(new TypeRef<RespostaLista<RespostaServico>>() {}).itens())
             .extracting(RespostaServico::nome)
             .containsExactlyInAnyOrderElementsOf(tabela.asList());
     }
 
     @Then("a lista de serviços deve estar vazia")
     public void validarListaVazia() {
-        assertThat(this.http.resposta().as(RespostaListaServicos.class).servicos()).isEmpty();
+        assertThat(this.http.resposta().as(new TypeRef<RespostaLista<RespostaServico>>() {}).itens()).isEmpty();
     }
 
     @Then("o serviço original deve permanecer inalterado")
@@ -156,12 +156,12 @@ public class ServicosSteps {
 
     @Then("o serviço deve estar sem insumos obrigatórios")
     public void validarSemInsumos() {
-        assertThat(this.http.resposta().as(RespostaListaInsumosObrigatorios.class).insumosObrigatorios()).isEmpty();
+        assertThat(this.http.resposta().as(new TypeRef<RespostaLista<RespostaInsumo>>() {}).itens()).isEmpty();
     }
 
     @Then("o serviço deve ter o insumo disponível como obrigatório")
     public void validarInsumoObrigatorio() {
-        assertThat(this.http.resposta().as(RespostaListaInsumosObrigatorios.class).insumosObrigatorios())
+        assertThat(this.http.resposta().as(new TypeRef<RespostaLista<RespostaInsumo>>() {}).itens())
             .containsExactly(insumo());
     }
 

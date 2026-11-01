@@ -1,42 +1,23 @@
 package com.oficina.api.apresentacao;
 
-import com.oficina.api.ConfiguracaoIntegration;
-import com.oficina.api.apresentacao.servico.RespostaListaServicos;
 import com.oficina.api.apresentacao.servico.RespostaServico;
-import com.oficina.api.infraestrutura.seguranca.EmissorTokenJwt;
-import io.restassured.RestAssured;
+import io.restassured.common.mapper.TypeRef;
 import io.restassured.response.Response;
-import io.restassured.specification.RequestSpecification;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.context.annotation.Import;
-import org.springframework.jdbc.core.JdbcTemplate;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Import(value = ConfiguracaoIntegration.class)
-class ServicosIT {
-    @LocalServerPort
-    private int porta;
-    @Autowired
-    private EmissorTokenJwt emissor;
-    @Autowired
-    private JdbcTemplate jdbc;
-
+class ServicosIT extends ApiIntegrationTest {
     @BeforeEach
     void preparar() {
         this.jdbc.update("DELETE FROM oficina.servicos_insumos_obrigatorios");
@@ -49,7 +30,11 @@ class ServicosIT {
         validar(cadastro, 201);
         final var original = cadastro.as(RespostaServico.class);
         assertThat(cadastro.header("Location")).isEqualTo("/servicos/" + original.id());
-        validar(requisicao().get("/servicos/{id}", original.id()), 200);
+        assertThat(original)
+            .isEqualTo(new RespostaServico(original.id(), "Óleo de motor", new BigDecimal("19.90"), true));
+        final var consulta = requisicao().get("/servicos/{id}", original.id());
+        validar(consulta, 200);
+        assertThat(consulta.as(RespostaServico.class)).isEqualTo(original);
         validar(
             requisicao()
                 .contentType("application/merge-patch+json")
@@ -86,11 +71,11 @@ class ServicosIT {
             parametros.put("nome", nome);
         }
         final var primeira = listar(parametros);
-        assertThat(primeira.servicos()).containsExactlyElementsOf(esperados.subList(0, 2));
+        assertThat(primeira.itens()).containsExactlyElementsOf(esperados.subList(0, 2));
         assertThat(primeira.nextCursor()).isEqualTo(esperados.get(1).id());
         parametros.put("after", primeira.nextCursor());
         final var ultima = listar(parametros);
-        assertThat(ultima.servicos()).containsExactlyElementsOf(esperados.subList(2, esperados.size()));
+        assertThat(ultima.itens()).containsExactlyElementsOf(esperados.subList(2, esperados.size()));
         assertThat(ultima.nextCursor()).isNull();
     }
 
@@ -120,23 +105,9 @@ class ServicosIT {
             .post("/servicos");
     }
 
-    private RespostaListaServicos listar(final Map<String, ?> parametros) {
+    private RespostaLista<RespostaServico> listar(final Map<String, ?> parametros) {
         final var resposta = requisicao().queryParams(parametros).get("/servicos");
         validar(resposta, 200);
-        return resposta.as(RespostaListaServicos.class);
-    }
-
-    private static void validar(final Response resposta, final int status) {
-        assertThat(resposta.statusCode()).as(resposta.body().asString()).isEqualTo(status);
-        assertThat(resposta.header("Cache-Control")).isEqualTo("no-store");
-    }
-
-    private RequestSpecification requisicao() {
-        return RestAssured
-            .given()
-            .port(this.porta)
-            .contentType("application/json")
-            .auth()
-            .oauth2(this.emissor.emitir("admin", Set.of("ADMIN")).valor());
+        return resposta.as(new TypeRef<RespostaLista<RespostaServico>>() {});
     }
 }

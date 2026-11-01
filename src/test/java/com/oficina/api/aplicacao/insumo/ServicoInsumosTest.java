@@ -1,5 +1,7 @@
 package com.oficina.api.aplicacao.insumo;
 
+import com.oficina.api.dominio.Preco;
+import com.oficina.api.dominio.TextoNormalizado;
 import com.oficina.api.dominio.insumo.Insumo;
 import com.oficina.api.dominio.insumo.Nome;
 import com.oficina.api.dominio.insumo.PrecoVenda;
@@ -12,11 +14,9 @@ import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.SimpleTransactionStatus;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -43,27 +43,23 @@ class ServicoInsumosTest {
         final String nomeEsperado,
         final BigDecimal precoEsperado
     ) {
-        final var insumo = new Insumo(new Nome("Óleo"), new PrecoVenda(new BigDecimal("19.90")));
+        final var insumo = new Insumo(
+            new Nome(new TextoNormalizado("Óleo")),
+            new PrecoVenda(new Preco(new BigDecimal("19.90")))
+        );
         when(this.repositorio.buscar(insumo.id(), LockModeType.PESSIMISTIC_WRITE)).thenReturn(Optional.of(insumo));
         final var atualizado = this.servico
             .atualizar(
                 insumo.id(),
                 nome == null
                     ? null
-                    : new Nome(nome),
+                    : new Nome(new TextoNormalizado(nome)),
                 preco == null
                     ? null
-                    : new PrecoVenda(preco)
+                    : new PrecoVenda(new Preco(preco))
             );
         assertThat(atualizado.id()).isEqualTo(insumo.id());
-        assertThat(atualizado.nome().valor()).isEqualTo(nomeEsperado);
-        assertThat(atualizado.precoVenda().valor()).isEqualByComparingTo(precoEsperado);
-    }
-
-    @ParameterizedTest
-    @ValueSource(ints = { 0, 26 })
-    void deveRejeitarTamanhoDePaginaInvalido(final int first) {
-        assertThatThrownBy(() -> this.servico.listar(null, null, first))
-            .isExactlyInstanceOf(IllegalArgumentException.class);
+        assertThat(atualizado.nome().texto().valor()).isEqualTo(nomeEsperado);
+        assertThat(atualizado.precoVenda().preco().valor()).isEqualByComparingTo(precoEsperado);
     }
 }

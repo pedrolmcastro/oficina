@@ -17,8 +17,8 @@ public record RespostaVeiculo(
         return new RespostaVeiculo(
             veiculo.id(),
             veiculo.placa().valor(),
-            veiculo.modelo().valor(),
-            veiculo.marca().valor(),
+            veiculo.modelo().texto().valor(),
+            veiculo.marca().texto().valor(),
             veiculo.ano().valor(),
             veiculo.clienteId()
         );
