@@ -11,5 +11,5 @@ import static io.cucumber.junit.platform.engine.Constants.PLUGIN_PROPERTY_NAME;
 @IncludeEngines(value = "cucumber")
 @SelectPackages(value = "features")
 @ConfigurationParameter(key = GLUE_PROPERTY_NAME, value = "com.oficina.api")
-@ConfigurationParameter(key = PLUGIN_PROPERTY_NAME, value = "pretty,html:build/reports/cucumber/login.html")
-class LoginBddTest {}
+@ConfigurationParameter(key = PLUGIN_PROPERTY_NAME, value = "pretty,html:build/reports/cucumber/index.html")
+class ApplicationBddTest {}

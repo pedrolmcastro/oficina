@@ -1,5 +1,6 @@
 package com.oficina.api.dominio.cliente;
 
+import com.oficina.api.dominio.DadoInvalidoException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 
@@ -10,7 +11,7 @@ public record Nome(
 ) {
     public Nome {
         if (valor.isBlank()) {
-            throw new IllegalArgumentException("Nome não pode estar em branco");
+            throw new DadoInvalidoException("Nome não pode estar em branco");
         }
     }
 }

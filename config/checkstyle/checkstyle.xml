@@ -81,7 +81,7 @@
         <module name="SimplifyBooleanReturn"/>
         <module name="SuppressionXpathSingleFilter">
             <property name="checks" value="AnnotationUseStyle"/>
-            <property name="files" value="LoginSteps\.java$"/>
+            <property name="files" value="Steps\.java$"/>
             <property name="query" value="//ANNOTATION[IDENT[@text='Given' or @text='When' or @text='Then']]"/>
         </module>
         <module name="TodoComment"/>

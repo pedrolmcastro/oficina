@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!-- Dependências gerenciadas pelo Spring devem manter as referências compartilhadas:
+         EntityManager resolve a sessão da transação; ObservationRegistry reúne as observações. -->
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+        <Or>
+            <Field type="jakarta.persistence.EntityManager"/>
+            <Field type="io.micrometer.observation.ObservationRegistry"/>
+        </Or>
+    </Match>
+</FindBugsFilter>
