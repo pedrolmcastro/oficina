@@ -1,0 +1,191 @@
+{
+  "uid": "oficina-login",
+  "title": "Oficina — Login",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": false,
+  "tags": [
+    "oficina",
+    "login"
+  ],
+  "timezone": "browser",
+  "refresh": "5s",
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "description": "Duração HTTP do POST /login, incluindo autenticação e emissão do JWT. Médias ponderadas por requisição nos últimos 5 minutos. Sem requisições na janela, a média fica sem dados. Coleta a cada 5 segundos.",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Tempo médio — últimos 5 min",
+      "type": "stat",
+      "description": "Tempo total das requisições dividido pela quantidade, considerando todos os status. Janela móvel de 5 minutos.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 8,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "1000 * sum(rate(http_server_requests_seconds_sum{job=\"oficina\",method=\"POST\",uri=\"/login\"}[5m])) / sum(rate(http_server_requests_seconds_count{job=\"oficina\",method=\"POST\",uri=\"/login\"}[5m]))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Requisições — últimos 5 min",
+      "type": "stat",
+      "description": "Quantidade estimada pelo Prometheus na janela móvel de 5 minutos.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 0,
+        "w": 8,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(http_server_requests_seconds_count{job=\"oficina\",method=\"POST\",uri=\"/login\"}[5m]))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Coleta da API (1 = disponível)",
+      "type": "stat",
+      "description": "1 indica coleta bem-sucedida; 0 indica que o Prometheus não conseguiu coletar as métricas.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 0,
+        "w": 8,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "up{job=\"oficina\"}",
+          "legendFormat": "",
+          "instant": true,
+          "range": false
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Tempo médio por status HTTP — últimos 5 min",
+      "type": "timeseries",
+      "description": "Média ponderada por requisição, separando sucesso (200), validação (400) e credenciais inválidas (401).",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 24,
+        "h": 10
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "1000 * sum by (status) (rate(http_server_requests_seconds_sum{job=\"oficina\",method=\"POST\",uri=\"/login\"}[5m])) / sum by (status) (rate(http_server_requests_seconds_count{job=\"oficina\",method=\"POST\",uri=\"/login\"}[5m]))",
+          "legendFormat": "HTTP {{status}}",
+          "instant": false,
+          "range": true
+        }
+      ]
+    }
+  ]
+}

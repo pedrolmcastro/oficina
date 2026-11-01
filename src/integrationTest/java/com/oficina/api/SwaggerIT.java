@@ -23,8 +23,7 @@ class SwaggerIT {
         "/swagger-ui/swagger-ui-bundle.js",
         "/swagger-ui/swagger-ui.css",
         "/v3/api-docs/swagger-config",
-        "/v3/api-docs.yaml"
-    })
+        "/v3/api-docs.yaml" })
     void deveDisponibilizarDocumentacao(final String caminho) {
         final var resposta = RestAssured.given().port(this.porta).get(caminho);
         assertThat(resposta.statusCode()).isEqualTo(200);

@@ -21,8 +21,7 @@ class LoginIT {
         "{ \"senha\": \"admin\" }",
         "{ \"nomeUsuario\": \"admin\" }",
         "{}",
-        "{"
-    })
+        "{" })
     void deveRejeitarPayloadInvalido(final String json) {
         final var resposta = RestAssured
             .given()

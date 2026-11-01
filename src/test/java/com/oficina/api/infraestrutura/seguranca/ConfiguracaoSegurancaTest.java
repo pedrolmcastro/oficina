@@ -11,9 +11,7 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 
 class ConfiguracaoSegurancaTest {
     @ParameterizedTest
-    @ValueSource(ints = {
-        0, 1, TAMANHO_MINIMO_SEGREDO_BYTES / 2, TAMANHO_MINIMO_SEGREDO_BYTES - 1
-    })
+    @ValueSource(ints = { 0, 1, TAMANHO_MINIMO_SEGREDO_BYTES / 2, TAMANHO_MINIMO_SEGREDO_BYTES - 1 })
     void deveRejeitarSegredoCurto(final int tamanho) {
         final var propriedades = propriedades(new byte[tamanho]);
 

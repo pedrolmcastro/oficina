@@ -37,22 +37,15 @@ public class ControladorLogin {
     }
 
     @PostMapping(value = "/login", consumes = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(
-        summary = "Autenticar usuário",
-        description = "Autentica nome de usuário e senha e retorna um JWT para uso em Authorization: Bearer <token>."
-    )
+    @Operation(summary = "Autenticar usuário",
+        description = "Autentica nome de usuário e senha e retorna um JWT para uso em Authorization: Bearer <token>.")
     @ApiResponse(responseCode = "200", description = "Autenticação realizada com sucesso", content = {
-        @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = RespostaLogin.class))
-    })
+        @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(
+            implementation = RespostaLogin.class)) })
     @ApiResponse(responseCode = "400", description = "JSON inválido", content = {
-        @Content(
-            mediaType = MediaType.APPLICATION_JSON_VALUE,
-            schema = @Schema(type = "object", description = "Erro de validação da requisição")
-        )
-    })
-    @ApiResponse(responseCode = "401", description = "Credenciais inválidas", content = {
-        @Content
-    })
+        @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(type = "object",
+            description = "Erro de validação da requisição")) })
+    @ApiResponse(responseCode = "401", description = "Credenciais inválidas", content = { @Content })
     public ResponseEntity<RespostaLogin> login(@Valid @RequestBody final RequisicaoLogin requisicao) {
         final var credenciais = UsernamePasswordAuthenticationToken
             .unauthenticated(requisicao.nomeUsuario(), requisicao.senha());

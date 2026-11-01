@@ -9,3 +9,12 @@ app:
 spring:
   application:
     name: api
+management:
+  server:
+    port: 8081
+  endpoints:
+    web:
+      discovery:
+        enabled: false
+      exposure:
+        include: prometheus

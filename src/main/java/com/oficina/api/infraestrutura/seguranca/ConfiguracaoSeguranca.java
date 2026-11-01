@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.util.Base64;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+import org.springframework.boot.security.autoconfigure.actuate.web.servlet.EndpointRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -51,6 +52,8 @@ public class ConfiguracaoSeguranca {
             .authorizeHttpRequests(
                 autorizacao -> autorizacao
                     .dispatcherTypeMatchers(DispatcherType.ERROR)
+                    .permitAll()
+                    .requestMatchers(EndpointRequest.to("prometheus"))
                     .permitAll()
                     .requestMatchers(HttpMethod.POST, "/login")
                     .permitAll()

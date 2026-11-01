@@ -7,10 +7,7 @@ public record RespostaLogin(
     String tokenAcesso,
     @Schema(description = "Tipo do token de acesso", requiredMode = Schema.RequiredMode.REQUIRED)
     TipoToken tipoToken,
-    @Schema(
-        description = "Tempo de validade do token em segundos",
-        example = "1800",
-        requiredMode = Schema.RequiredMode.REQUIRED
-    )
+    @Schema(description = "Tempo de validade do token em segundos", example = "1800",
+        requiredMode = Schema.RequiredMode.REQUIRED)
     long expiraEm
 ) {}
