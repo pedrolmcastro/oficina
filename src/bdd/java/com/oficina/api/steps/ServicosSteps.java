@@ -2,6 +2,7 @@ package com.oficina.api.steps;
 
 import com.oficina.api.apresentacao.RespostaLista;
 import com.oficina.api.apresentacao.insumo.RespostaInsumo;
+import com.oficina.api.apresentacao.servico.RespostaInsumoObrigatorio;
 import com.oficina.api.apresentacao.servico.RespostaServico;
 import com.oficina.api.infraestrutura.seguranca.EmissorTokenJwt;
 import io.cucumber.datatable.DataTable;
@@ -128,13 +129,13 @@ public class ServicosSteps {
         this.insumoDisponivel = this.http.resposta().as(RespostaInsumo.class);
     }
 
-    @When("associo o insumo disponível como obrigatório ao serviço cadastrado")
-    public void associarInsumoObrigatorio() {
+    @When("associo o insumo disponível como obrigatório ao serviço cadastrado com quantidade {string}")
+    public void associarInsumoObrigatorio(final String quantidade) {
         this.http
             .receber(
                 this.http
                     .requisicao()
-                    .body(Map.of("insumoId", insumo().id()))
+                    .body(Map.of("insumoId", insumo().id(), "quantidade", Integer.parseInt(quantidade)))
                     .post("/servicos/{id}/insumos-obrigatorios", original().id())
             );
     }
@@ -156,13 +157,14 @@ public class ServicosSteps {
 
     @Then("o serviço deve estar sem insumos obrigatórios")
     public void validarSemInsumos() {
-        assertThat(this.http.resposta().as(new TypeRef<RespostaLista<RespostaInsumo>>() {}).itens()).isEmpty();
+        assertThat(this.http.resposta().as(new TypeRef<RespostaLista<RespostaInsumoObrigatorio>>() {}).itens())
+            .isEmpty();
     }
 
-    @Then("o serviço deve ter o insumo disponível como obrigatório")
-    public void validarInsumoObrigatorio() {
-        assertThat(this.http.resposta().as(new TypeRef<RespostaLista<RespostaInsumo>>() {}).itens())
-            .containsExactly(insumo());
+    @Then("o serviço deve ter o insumo disponível como obrigatório com quantidade {string}")
+    public void validarInsumoObrigatorio(final String quantidade) {
+        assertThat(this.http.resposta().as(new TypeRef<RespostaLista<RespostaInsumoObrigatorio>>() {}).itens())
+            .containsExactly(new RespostaInsumoObrigatorio(insumo().id(), Integer.parseInt(quantidade)));
     }
 
     @Then("o insumo disponível deve continuar cadastrado")

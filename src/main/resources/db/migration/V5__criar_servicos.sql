@@ -14,6 +14,7 @@ CREATE INDEX idx_servicos_nome_busca ON oficina.servicos
 CREATE TABLE oficina.servicos_insumos_obrigatorios (
     servico_id UUID NOT NULL REFERENCES oficina.servicos (id),
     insumo_id UUID NOT NULL REFERENCES oficina.insumos (id),
+    quantidade INTEGER NOT NULL CHECK (quantidade > 0),
     PRIMARY KEY (servico_id, insumo_id)
 );
 
