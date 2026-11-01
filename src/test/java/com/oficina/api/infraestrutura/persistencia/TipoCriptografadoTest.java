@@ -42,7 +42,8 @@ class TipoCriptografadoTest {
 
     @Test
     void deveRejeitarPropriedadeDesconhecida() {
-        assertThatThrownBy(() -> this.tipo.getPropertyValue(new CPF("52998224725"), 2))
+        final var documento = new CPF("52998224725");
+        assertThatThrownBy(() -> this.tipo.getPropertyValue(documento, 2))
             .isExactlyInstanceOf(IllegalArgumentException.class)
             .hasMessage("Propriedade de valor protegido desconhecida");
     }
@@ -69,7 +70,8 @@ class TipoCriptografadoTest {
     void deveRejeitarHashIncompativel() {
         final var cifrado = this.criptografia.criptografar(new CPF("52998224725"));
         final var outroHash = this.criptografia.calcularHash(new CPF("11144477735"));
-        assertThatThrownBy(() -> this.tipo.instantiate(valores(cifrado, outroHash)))
+        final var valores = valores(cifrado, outroHash);
+        assertThatThrownBy(() -> this.tipo.instantiate(valores))
             .isExactlyInstanceOf(IllegalStateException.class)
             .hasMessage("HMAC incompatível com o valor persistido");
     }

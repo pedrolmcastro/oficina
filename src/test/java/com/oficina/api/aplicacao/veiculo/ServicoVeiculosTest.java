@@ -97,15 +97,17 @@ class ServicoVeiculosTest {
     void deveRejeitarIdInexistente() {
         final var id = UUID.randomUUID();
         assertThatThrownBy(() -> this.servico.buscar(id)).isExactlyInstanceOf(VeiculoNaoEncontradoException.class);
-        assertThatThrownBy(
-            () -> this.servico.atualizar(id, new Modelo(new TextoNormalizado("Civic")), null, null, null, null)
-        ).isExactlyInstanceOf(VeiculoNaoEncontradoException.class);
+        final var modelo = new Modelo(new TextoNormalizado("Civic"));
+        assertThatThrownBy(() -> this.servico.atualizar(id, modelo, null, null, null, null))
+            .isExactlyInstanceOf(VeiculoNaoEncontradoException.class);
         assertThatThrownBy(() -> this.servico.excluir(id)).isExactlyInstanceOf(VeiculoNaoEncontradoException.class);
     }
 
     @Test
     void deveExigirPlacaOuCliente() {
-        assertThatThrownBy(() -> this.servico.listar(null, null, UUID.randomUUID(), new Pagina.Limite(1)))
+        final var after = UUID.randomUUID();
+        final var limite = new Pagina.Limite(1);
+        assertThatThrownBy(() -> this.servico.listar(null, null, after, limite))
             .isExactlyInstanceOf(DadoInvalidoException.class)
             .hasMessage("Informe ao menos um dos filtros: placa ou cliente");
     }

@@ -14,6 +14,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public class RepositorioServicos extends RepositorioEntidades<Servico> {
+    private static final String PARAMETRO_SERVICO = "servico";
     private final BuscaTextual<Servico> buscaTextual;
 
     public RepositorioServicos(final EntityManager entityManager) {
@@ -38,7 +39,7 @@ public class RepositorioServicos extends RepositorioEntidades<Servico> {
                 "INSERT INTO oficina.servicos_insumos_obrigatorios (servico_id, insumo_id) VALUES (:servico, :insumo)",
                 Void.class
             )
-            .setParameter("servico", servicoId)
+            .setParameter(PARAMETRO_SERVICO, servicoId)
             .setParameter("insumo", insumoId)
             .executeUpdate();
     }
@@ -49,7 +50,7 @@ public class RepositorioServicos extends RepositorioEntidades<Servico> {
                 "DELETE FROM oficina.servicos_insumos_obrigatorios WHERE servico_id = :servico AND insumo_id = :insumo",
                 Void.class
             )
-            .setParameter("servico", servicoId)
+            .setParameter(PARAMETRO_SERVICO, servicoId)
             .setParameter("insumo", insumoId)
             .executeUpdate() > 0;
     }
@@ -69,7 +70,7 @@ public class RepositorioServicos extends RepositorioEntidades<Servico> {
         }
         sql.append(" ORDER BY i.id ASC");
         final var consulta = this.entityManager.unwrap(Session.class).createNativeQuery(sql.toString(), Insumo.class);
-        consulta.setParameter("servico", servicoId);
+        consulta.setParameter(PARAMETRO_SERVICO, servicoId);
         if (after != null) {
             consulta.setParameter("after", after);
         }

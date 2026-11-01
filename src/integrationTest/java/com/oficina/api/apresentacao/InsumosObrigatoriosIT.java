@@ -13,9 +13,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.http.ProblemDetail;
 import static org.assertj.core.api.Assertions.assertThat;
 
-class InsumosObrigatoriosServicoIT extends ApiIntegrationTest {
+class InsumosObrigatoriosIT extends ApiIntegrationTest {
     @BeforeEach
     void preparar() {
         this.jdbc.update("DELETE FROM oficina.servicos_insumos_obrigatorios");
@@ -24,7 +25,7 @@ class InsumosObrigatoriosServicoIT extends ApiIntegrationTest {
     }
 
     @Test
-    void deveAssociarSemDuplicarERemoverSemExcluirInsumo() {
+    void deveAssociarSemDuplicar() {
         final var servico = criarServico("Troca de óleo");
         final var outro = criarServico("Revisão");
         final var insumo = criarInsumo("Óleo");
@@ -37,6 +38,15 @@ class InsumosObrigatoriosServicoIT extends ApiIntegrationTest {
         validar(associar(servico.id(), insumo.id()), 409);
         assertThat(listar(servico.id()).itens()).containsExactly(insumo);
         assertThat(listar(outro.id()).itens()).isEmpty();
+        validar(associar(outro.id(), insumo.id()), 201);
+    }
+
+    @Test
+    void devePreservarVinculosAoAtualizarERemoverSemExcluirInsumo() {
+        final var servico = criarServico("Troca de óleo");
+        final var outro = criarServico("Revisão");
+        final var insumo = criarInsumo("Óleo");
+        validar(associar(servico.id(), insumo.id()), 201);
         validar(associar(outro.id(), insumo.id()), 201);
         validar(
             requisicao()
@@ -111,7 +121,9 @@ class InsumosObrigatoriosServicoIT extends ApiIntegrationTest {
         }
         validar(associar(servicoId, insumo.id()), 404);
         validar(remover(servicoId, insumo.id()), 404);
-        validar(requisicao().get("/servicos/{id}/insumos-obrigatorios", servicoId), 404);
+        final var resposta = requisicao().get("/servicos/{id}/insumos-obrigatorios", servicoId);
+        validar(resposta, 404);
+        assertThat(resposta.as(ProblemDetail.class).getDetail()).isEqualTo("Serviço não encontrado");
     }
 
     @Test

@@ -94,7 +94,8 @@ class CriptografiaTest {
         // Envelope v1 autenticado com CHAVE_AES, nonce zero e conteúdo "RG:123456789".
         final var envelope = Base64.getDecoder().decode("AQAAAAAAAAAAAAAAAJw0mzAgMGtt2Rq5sdkAdCfesV7EGRFTHj/hP+U=");
 
-        assertThatThrownBy(() -> new CriptografiaDocumento(CHAVE_AES, CHAVE_HMAC).descriptografar(envelope))
+        final var documento = new CriptografiaDocumento(CHAVE_AES, CHAVE_HMAC);
+        assertThatThrownBy(() -> documento.descriptografar(envelope))
             .isExactlyInstanceOf(IllegalArgumentException.class)
             .hasMessage("Tipo de documento criptografado inválido");
     }
