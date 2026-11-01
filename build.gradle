@@ -4,6 +4,7 @@ import com.github.spotbugs.snom.SpotBugsTask
 
 plugins {
     id 'checkstyle'
+    id 'eclipse'
     id 'com.diffplug.spotless' version '8.10.4'
     id 'com.github.spotbugs' version '6.5.13'
     id 'io.spring.dependency-management' version '1.1.7'
@@ -38,6 +39,12 @@ sourceSets {
     integrationTest {
         compileClasspath += sourceSets.main.output
         runtimeClasspath += sourceSets.main.output
+    }
+}
+
+eclipse {
+    classpath {
+        testSourceSets = testSourceSets.get() + [sourceSets.integrationTest, sourceSets.bdd]
     }
 }
 
@@ -97,6 +104,10 @@ dependencies {
     errorprone 'com.uber.nullaway:nullaway:0.14.3'
     implementation 'org.jspecify:jspecify:1.0.0'
     implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-security-oauth2-resource-server'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
     testImplementation('org.springframework.boot:spring-boot-starter-test') {
         // Unused JSONPath/json-smart test support. No release fixes CVE-2026-113602 yet
         exclude group: 'com.jayway.jsonpath', module: 'json-path'
@@ -104,9 +115,12 @@ dependencies {
     }
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     bddImplementation platform('io.cucumber:cucumber-bom:8.0.4')
+    bddImplementation 'io.cucumber:cucumber-spring'
+    bddImplementation 'org.junit.platform:junit-platform-suite'
     bddImplementation 'io.cucumber:cucumber-java'
     bddImplementation 'io.cucumber:cucumber-junit-platform-engine'
     bddImplementation 'io.rest-assured:rest-assured:6.3.0'
+    integrationTestImplementation 'io.rest-assured:rest-assured:6.3.0'
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -147,7 +161,9 @@ tasks.register('bdd', Test) {
     group = 'verification'
     testClassesDirs = sourceSets.bdd.output.classesDirs
     classpath = sourceSets.bdd.runtimeClasspath
-    useJUnitPlatform()
+    useJUnitPlatform {
+        includeEngines 'junit-platform-suite'
+    }
     testDefinitionDirs.from('src/bdd/resources/features')
     shouldRunAfter tasks.named('integrationTest')
 }
@@ -156,6 +172,7 @@ tasks.named('check') {
     dependsOn tasks.named('integrationTest')
     dependsOn tasks.named('bdd')
     dependsOn tasks.named('jacocoTestReport')
+    dependsOn tasks.named('jacocoTestCoverageVerification')
 }
 
 tasks.named('sonar') {
@@ -170,5 +187,22 @@ tasks.named('jacocoTestReport', JacocoReport) {
     reports {
         html.required = true
         xml.required = true
+    }
+}
+
+tasks.named('jacocoTestCoverageVerification', JacocoCoverageVerification) {
+    dependsOn tasks.named('jacocoTestReport')
+    executionData tasks.named('test').get(), tasks.named('integrationTest').get(), tasks.named('bdd').get()
+    violationRules {
+        rule {
+            limit {
+                counter = 'LINE'
+                minimum = 1.0
+            }
+            limit {
+                counter = 'BRANCH'
+                minimum = 1.0
+            }
+        }
     }
 }

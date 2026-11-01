@@ -1,5 +1,6 @@
 {
     "recommendations": [
+        "cucumberopen.cucumber-official",
         "redhat.java",
         "shengchen.vscode-checkstyle",
         "sonarsource.sonarlint-vscode",

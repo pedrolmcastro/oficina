@@ -8,5 +8,8 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
+# Secrets
+.env
+
 # VS Code
 bin/

@@ -16,6 +16,9 @@ jobs:
   ci:
     name: CI
     runs-on: ubuntu-slim
+    env:
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
     timeout-minutes: 15
     permissions:
       contents: read # Required to checkout the repository
