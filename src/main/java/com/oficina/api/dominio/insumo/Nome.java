@@ -1,17 +1,14 @@
 package com.oficina.api.dominio.insumo;
 
-import com.oficina.api.dominio.DadoInvalidoException;
+import com.oficina.api.dominio.TextoNormalizado;
+import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
+import jakarta.persistence.Embedded;
 
 @Embeddable
 public record Nome(
-    @Column(name = "nome", nullable = false, columnDefinition = "text")
-    String valor
-) {
-    public Nome {
-        if (valor.isBlank()) {
-            throw new DadoInvalidoException("Nome não pode estar em branco");
-        }
-    }
-}
+    @Embedded
+    @AttributeOverride(name = "valor", column = @Column(name = "nome", nullable = false, columnDefinition = "text"))
+    TextoNormalizado texto
+) {}

@@ -1,49 +1,35 @@
 package com.oficina.api.infraestrutura.persistencia.servico;
 
+import com.oficina.api.aplicacao.Pagina;
 import com.oficina.api.dominio.insumo.Insumo;
 import com.oficina.api.dominio.servico.Servico;
+import com.oficina.api.infraestrutura.persistencia.BuscaTextual;
+import com.oficina.api.infraestrutura.persistencia.RepositorioEntidades;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.LockModeType;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import org.hibernate.Session;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public class RepositorioServicos {
-    private final EntityManager entityManager;
+public class RepositorioServicos extends RepositorioEntidades<Servico> {
+    private final BuscaTextual<Servico> buscaTextual;
 
     public RepositorioServicos(final EntityManager entityManager) {
-        this.entityManager = entityManager;
+        super(entityManager, Servico.class);
+
+        this.buscaTextual = new BuscaTextual<>(
+            entityManager,
+            Servico.class,
+            "SELECT * FROM oficina.servicos WHERE deletado = FALSE",
+            "id",
+            List.of("nome")
+        );
     }
 
-    public void adicionar(final Servico servico) {
-        this.entityManager.persist(servico);
-    }
-
-    public Optional<Servico> buscar(final UUID id, final LockModeType modoBloqueio) {
-        return Optional.ofNullable(this.entityManager.find(Servico.class, id, modoBloqueio));
-    }
-
-    public List<Servico> listar(final @Nullable String nome, final @Nullable UUID after, final int first) {
-        final var sql = new StringBuilder("SELECT * FROM oficina.servicos WHERE deletado = FALSE");
-        if (nome != null) {
-            sql.append(" AND to_tsvector('portuguese', nome) @@ plainto_tsquery('portuguese', :nome)");
-        }
-        if (after != null) {
-            sql.append(" AND id > :after");
-        }
-        sql.append(" ORDER BY id ASC");
-        final var consulta = this.entityManager.unwrap(Session.class).createNativeQuery(sql.toString(), Servico.class);
-        if (nome != null) {
-            consulta.setParameter("nome", nome);
-        }
-        if (after != null) {
-            consulta.setParameter("after", after);
-        }
-        return consulta.setMaxResults(first).getResultList();
+    public List<Servico> listar(final @Nullable String nome, final @Nullable UUID after, final Pagina.Limite limite) {
+        return this.buscaTextual.fulltextSearch(nome, after, limite);
     }
 
     public void associarInsumoObrigatorio(final UUID servicoId, final UUID insumoId) {
@@ -68,7 +54,11 @@ public class RepositorioServicos {
             .executeUpdate() > 0;
     }
 
-    public List<Insumo> listarInsumosObrigatorios(final UUID servicoId, final @Nullable UUID after, final int first) {
+    public List<Insumo> listarInsumosObrigatorios(
+        final UUID servicoId,
+        final @Nullable UUID after,
+        final Pagina.Limite limite
+    ) {
         final var sql = new StringBuilder(
             "SELECT i.* FROM oficina.insumos i "
                 + "JOIN oficina.servicos_insumos_obrigatorios si ON si.insumo_id = i.id "
@@ -83,6 +73,6 @@ public class RepositorioServicos {
         if (after != null) {
             consulta.setParameter("after", after);
         }
-        return consulta.setMaxResults(first).getResultList();
+        return consulta.setMaxResults(limite.quantidadeParaConsulta()).getResultList();
     }
 }

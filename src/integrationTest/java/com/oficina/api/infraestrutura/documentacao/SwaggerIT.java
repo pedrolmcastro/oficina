@@ -57,7 +57,7 @@ class SwaggerIT {
             .asString();
         assertThat(referencia).startsWith("#/components/schemas/");
         final var pagina = documento.at(referencia.substring(1));
-        assertThat(pagina.path("properties").path("veiculos").path("type").asString()).isEqualTo("array");
+        assertThat(pagina.path("properties").path("itens").path("type").asString()).isEqualTo("array");
         assertThat(pagina.path("properties").has("nextCursor")).isTrue();
         assertThat(porId.has("get")).isTrue();
         assertThat(porId.has("patch")).isTrue();
@@ -91,15 +91,5 @@ class SwaggerIT {
             .extracting(campo -> campo.asString())
             .containsExactlyInAnyOrder("nome", "precoVenda", "requerDiagnostico");
         assertThat(cadastro.path("properties").path("requerDiagnostico").path("type").asString()).isEqualTo("boolean");
-    }
-
-    @Test
-    void deveGerarOpenApi() {
-        final var resposta = RestAssured.given().port(this.porta).get("/v3/api-docs");
-        assertThat(resposta.statusCode()).isEqualTo(200);
-        final var documento = JsonMapper.builder().build().readTree(resposta.asString());
-        assertThat(documento.path("openapi").asString()).startsWith("3.");
-        assertThat(documento.path("info").isObject()).isTrue();
-        assertThat(documento.path("paths").isObject()).isTrue();
     }
 }

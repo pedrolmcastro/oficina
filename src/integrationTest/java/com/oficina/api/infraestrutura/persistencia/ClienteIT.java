@@ -1,11 +1,12 @@
 package com.oficina.api.infraestrutura.persistencia;
 
 import com.oficina.api.ConfiguracaoIntegration;
+import com.oficina.api.dominio.TextoNormalizado;
 import com.oficina.api.dominio.cliente.Cliente;
 import com.oficina.api.dominio.cliente.Documento.CPF;
 import com.oficina.api.dominio.cliente.Email;
 import com.oficina.api.dominio.cliente.Nome;
-import com.oficina.api.infraestrutura.persistencia.cliente.ProtecaoDocumento;
+import com.oficina.api.infraestrutura.persistencia.cliente.CriptografiaDocumento;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import java.util.function.Consumer;
@@ -24,13 +25,27 @@ class ClienteIT {
     private EntityManagerFactory entityManagerFactory;
 
     @Autowired
-    private ProtecaoDocumento protecao;
+    private CriptografiaDocumento protecao;
 
     @Test
     void deveRejeitarDocumentoDuplicado() {
         assertThatThrownBy(() -> emTransacao(em -> {
-            em.persist(new Cliente(new Nome("Maria"), new Email("maria@example.com"), new CPF("52998224725")));
-            em.persist(new Cliente(new Nome("Outra"), new Email("outra@example.com"), new CPF("52998224725")));
+            em
+                .persist(
+                    new Cliente(
+                        new Nome(new TextoNormalizado("Maria")),
+                        new Email("maria@example.com"),
+                        new CPF("52998224725")
+                    )
+                );
+            em
+                .persist(
+                    new Cliente(
+                        new Nome(new TextoNormalizado("Outra")),
+                        new Email("outra@example.com"),
+                        new CPF("52998224725")
+                    )
+                );
             em.flush();
         }))
             .isExactlyInstanceOf(ConstraintViolationException.class)
@@ -43,7 +58,11 @@ class ClienteIT {
     @Test
     void deveRejeitarHashIncompativel() {
         emTransacao(em -> {
-            final var cliente = new Cliente(new Nome("Maria"), new Email("maria@example.com"), new CPF("52998224725"));
+            final var cliente = new Cliente(
+                new Nome(new TextoNormalizado("Maria")),
+                new Email("maria@example.com"),
+                new CPF("52998224725")
+            );
 
             em.persist(cliente);
             em.flush();
@@ -58,7 +77,7 @@ class ClienteIT {
 
             assertThatThrownBy(() -> em.find(Cliente.class, id))
                 .isExactlyInstanceOf(IllegalStateException.class)
-                .hasMessage("HMAC incompatível com o documento persistido");
+                .hasMessage("HMAC incompatível com o valor persistido");
         });
     }
 

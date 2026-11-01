@@ -1,16 +1,11 @@
 package com.oficina.api.apresentacao;
 
-import com.oficina.api.aplicacao.cliente.ClienteNaoEncontrado;
-import com.oficina.api.aplicacao.insumo.InsumoNaoEncontrado;
-import com.oficina.api.aplicacao.servico.InsumoObrigatorioNaoEncontrado;
-import com.oficina.api.aplicacao.servico.ServicoNaoEncontrado;
-import com.oficina.api.aplicacao.veiculo.VeiculoNaoEncontrado;
+import com.oficina.api.aplicacao.RecursoNaoEncontradoException;
 import com.oficina.api.dominio.DadoInvalidoException;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -40,29 +35,9 @@ public class ExceptionHandlers {
         return buildRespostaFalha(HttpStatus.BAD_REQUEST, REQUISICAO_INVALIDA);
     }
 
-    @ExceptionHandler(value = ClienteNaoEncontrado.class)
-    public ResponseEntity<ProblemDetail> naoEncontrado() {
-        return buildRespostaFalha(HttpStatus.NOT_FOUND, "Cliente não encontrado");
-    }
-
-    @ExceptionHandler(value = VeiculoNaoEncontrado.class)
-    public ResponseEntity<ProblemDetail> veiculoNaoEncontrado() {
-        return buildRespostaFalha(HttpStatus.NOT_FOUND, "Veículo não encontrado");
-    }
-
-    @ExceptionHandler(value = InsumoNaoEncontrado.class)
-    public ResponseEntity<ProblemDetail> insumoNaoEncontrado() {
-        return buildRespostaFalha(HttpStatus.NOT_FOUND, "Insumo não encontrado");
-    }
-
-    @ExceptionHandler(value = ServicoNaoEncontrado.class)
-    public ResponseEntity<ProblemDetail> servicoNaoEncontrado() {
-        return buildRespostaFalha(HttpStatus.NOT_FOUND, "Serviço não encontrado");
-    }
-
-    @ExceptionHandler(value = InsumoObrigatorioNaoEncontrado.class)
-    public ResponseEntity<ProblemDetail> vinculoInsumoObrigatorioNaoEncontrado() {
-        return buildRespostaFalha(HttpStatus.NOT_FOUND, "Associação de insumo obrigatório não encontrada");
+    @ExceptionHandler(value = RecursoNaoEncontradoException.class)
+    public ResponseEntity<ProblemDetail> naoEncontrado(final RecursoNaoEncontradoException erro) {
+        return buildRespostaFalha(HttpStatus.NOT_FOUND, Objects.requireNonNull(erro.getMessage()));
     }
 
     @ExceptionHandler(value = DataIntegrityViolationException.class)
@@ -80,9 +55,6 @@ public class ExceptionHandlers {
     }
 
     private static ResponseEntity<ProblemDetail> buildRespostaFalha(final HttpStatus status, final String detalhe) {
-        return ResponseEntity
-            .status(status)
-            .cacheControl(CacheControl.noStore())
-            .body(ProblemDetail.forStatusAndDetail(status, detalhe));
+        return RespostasHttp.status(status).body(ProblemDetail.forStatusAndDetail(status, detalhe));
     }
 }

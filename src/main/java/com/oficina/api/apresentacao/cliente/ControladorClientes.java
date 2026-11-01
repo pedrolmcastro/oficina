@@ -1,6 +1,9 @@
 package com.oficina.api.apresentacao.cliente;
 
 import com.oficina.api.aplicacao.cliente.ServicoClientes;
+import com.oficina.api.apresentacao.RespostaLista;
+import com.oficina.api.apresentacao.RespostasHttp;
+import com.oficina.api.dominio.TextoNormalizado;
 import com.oficina.api.dominio.cliente.Documento;
 import com.oficina.api.dominio.cliente.Email;
 import com.oficina.api.dominio.cliente.Nome;
@@ -15,7 +18,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.UUID;
-import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -52,12 +54,13 @@ public class ControladorClientes {
         @Content(schema = @Schema(implementation = ProblemDetail.class)) })
     public ResponseEntity<RespostaCliente> criar(@Valid @RequestBody final RequisicaoCriarCliente requisicao) {
         final var cliente = this.servico
-            .criar(new Nome(requisicao.nome()), new Email(requisicao.email()), Documento.de(requisicao.documento()));
+            .criar(
+                new Nome(new TextoNormalizado(requisicao.nome())),
+                new Email(requisicao.email()),
+                Documento.de(requisicao.documento())
+            );
 
-        return ResponseEntity
-            .created(URI.create("/clientes/" + cliente.id()))
-            .cacheControl(CacheControl.noStore())
-            .body(RespostaCliente.de(cliente));
+        return RespostasHttp.criada(URI.create("/clientes/" + cliente.id()), RespostaCliente.de(cliente));
     }
 
     @GetMapping(value = "/{id}")
@@ -66,23 +69,18 @@ public class ControladorClientes {
     @ApiResponse(responseCode = "404", description = "Cliente inexistente ou excluído", content = {
         @Content(schema = @Schema(implementation = ProblemDetail.class)) })
     public ResponseEntity<RespostaCliente> buscar(@PathVariable final UUID id) {
-        return ResponseEntity
-            .ok()
-            .cacheControl(CacheControl.noStore())
-            .body(RespostaCliente.de(this.servico.buscar(id)));
+        return RespostasHttp.ok(RespostaCliente.de(this.servico.buscar(id)));
     }
 
     @GetMapping
     @Operation(summary = "Buscar cliente por CPF ou CNPJ",
         description = "Informe documento obrigatório, apenas com dígitos. "
-            + "Retorna uma lista com no máximo um cliente e nextCursor null.")
+            + "Retorna itens com no máximo um cliente e nextCursor null.")
     @ApiResponse(responseCode = "200", description = "Lista de clientes, vazia quando o documento não é encontrado")
-    public ResponseEntity<RespostaListaClientes> buscarDocumento(@RequestParam final String documento) {
-        return ResponseEntity
-            .ok()
-            .cacheControl(CacheControl.noStore())
-            .body(
-                new RespostaListaClientes(
+    public ResponseEntity<RespostaLista<RespostaCliente>> buscarDocumento(@RequestParam final String documento) {
+        return RespostasHttp
+            .ok(
+                new RespostaLista<>(
                     this.servico.buscar(Documento.de(documento)).stream().map(RespostaCliente::de).toList(),
                     null
                 )
@@ -110,7 +108,7 @@ public class ControladorClientes {
                 id,
                 nome == null
                     ? null
-                    : new Nome(nome),
+                    : new Nome(new TextoNormalizado(nome)),
                 email == null
                     ? null
                     : new Email(email),
@@ -118,7 +116,7 @@ public class ControladorClientes {
                     ? null
                     : Documento.de(documento)
             );
-        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(RespostaCliente.de(cliente));
+        return RespostasHttp.ok(RespostaCliente.de(cliente));
     }
 
     @DeleteMapping(value = "/{id}")
@@ -128,6 +126,6 @@ public class ControladorClientes {
         @Content(schema = @Schema(implementation = ProblemDetail.class)) })
     public ResponseEntity<Void> excluir(@PathVariable final UUID id) {
         this.servico.excluir(id);
-        return ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build();
+        return RespostasHttp.semConteudo();
     }
 }

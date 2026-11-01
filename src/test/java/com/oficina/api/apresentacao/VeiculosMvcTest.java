@@ -1,10 +1,10 @@
 package com.oficina.api.apresentacao;
 
-import com.oficina.api.aplicacao.veiculo.PaginaVeiculos;
+import com.oficina.api.aplicacao.Pagina;
 import com.oficina.api.aplicacao.veiculo.ServicoVeiculos;
-import com.oficina.api.aplicacao.veiculo.VeiculoNaoEncontrado;
 import com.oficina.api.apresentacao.veiculo.ControladorVeiculos;
 import com.oficina.api.apresentacao.veiculo.RespostaVeiculo;
+import com.oficina.api.dominio.TextoNormalizado;
 import com.oficina.api.dominio.veiculo.Ano;
 import com.oficina.api.dominio.veiculo.Marca;
 import com.oficina.api.dominio.veiculo.Modelo;
@@ -118,12 +118,13 @@ class VeiculosMvcTest {
     void deveConverterCamposOmitidosENulos(final String formato, final String payload) throws Exception {
         final var veiculo = new Veiculo(
             new Placa("ABC1234"),
-            new Modelo("Civic"),
-            new Marca("Toyota"),
+            new Modelo(new TextoNormalizado("Civic")),
+            new Marca(new TextoNormalizado("Toyota")),
             new Ano(2024),
             UUID.randomUUID()
         );
-        when(this.servico.atualizar(veiculo.id(), new Modelo("Civic"), null, null, null, null)).thenReturn(veiculo);
+        when(this.servico.atualizar(veiculo.id(), new Modelo(new TextoNormalizado("Civic")), null, null, null, null))
+            .thenReturn(veiculo);
         this.mvc
             .perform(patch("/veiculos/{id}", veiculo.id()).contentType(formato).content(payload))
             .andExpect(status().isOk())
@@ -158,27 +159,20 @@ class VeiculosMvcTest {
         verifyNoInteractions(this.servico);
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = { "0", "26", "abc" })
-    void deveRejeitarTamanhoDePaginaInvalido(final String first) throws Exception {
-        this.mvc.perform(get("/veiculos").param("first", first)).andExpect(status().isBadRequest());
-        verifyNoInteractions(this.servico);
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = { "cliente", "after" })
-    void deveRejeitarUuidDeConsultaInvalido(final String parametro) throws Exception {
-        this.mvc.perform(get("/veiculos").param(parametro, "invalido")).andExpect(status().isBadRequest());
+    @Test
+    void deveRejeitarClienteInvalido() throws Exception {
+        this.mvc.perform(get("/veiculos").param("cliente", "invalido")).andExpect(status().isBadRequest());
         verifyNoInteractions(this.servico);
     }
 
     @Test
     void deveListarPorPlacaComTamanhoPadrao() throws Exception {
-        when(this.servico.listar(new Placa("ABC1234"), null, null, 25)).thenReturn(new PaginaVeiculos(List.of(), null));
+        when(this.servico.listar(new Placa("ABC1234"), null, null, new Pagina.Limite(25)))
+            .thenReturn(new Pagina<>(List.of(), null));
         this.mvc
             .perform(get("/veiculos").param("placa", "ABC1234"))
             .andExpect(status().isOk())
-            .andExpect(content().json("{\"veiculos\":[],\"nextCursor\":null}"));
+            .andExpect(content().json("{\"itens\":[],\"nextCursor\":null}"));
     }
 
     @Test
@@ -187,13 +181,13 @@ class VeiculosMvcTest {
         final var after = UUID.randomUUID();
         final var veiculo = new Veiculo(
             new Placa("ABC1234"),
-            new Modelo("Corolla"),
-            new Marca("Toyota"),
+            new Modelo(new TextoNormalizado("Corolla")),
+            new Marca(new TextoNormalizado("Toyota")),
             new Ano(2024),
             cliente
         );
-        when(this.servico.listar(new Placa("ABC1234"), cliente, after, 1))
-            .thenReturn(new PaginaVeiculos(List.of(veiculo), veiculo.id()));
+        when(this.servico.listar(new Placa("ABC1234"), cliente, after, new Pagina.Limite(1)))
+            .thenReturn(new Pagina<>(List.of(veiculo), veiculo.id()));
         this.mvc
             .perform(
                 get("/veiculos")
@@ -206,20 +200,10 @@ class VeiculosMvcTest {
             .andExpect(
                 content()
                     .json(
-                        ("{\"veiculos\":[{\"id\":\"%s\",\"placa\":\"ABC1234\",\"modelo\":\"Corolla\","
+                        ("{\"itens\":[{\"id\":\"%s\",\"placa\":\"ABC1234\",\"modelo\":\"Corolla\","
                             + "\"marca\":\"Toyota\",\"ano\":2024,\"clienteId\":\"%s\"}],\"nextCursor\":\"%s\"}")
                             .formatted(veiculo.id(), cliente, veiculo.id())
                     )
             );
-    }
-
-    @Test
-    void deveTraduzirVeiculoNaoEncontrado() throws Exception {
-        final var id = UUID.randomUUID();
-        when(this.servico.buscar(id)).thenThrow(new VeiculoNaoEncontrado());
-        this.mvc
-            .perform(get("/veiculos/{id}", id))
-            .andExpect(status().isNotFound())
-            .andExpect(content().json("{\"status\":404,\"detail\":\"Veículo não encontrado\"}"));
     }
 }

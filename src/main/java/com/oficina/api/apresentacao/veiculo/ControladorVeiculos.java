@@ -1,6 +1,10 @@
 package com.oficina.api.apresentacao.veiculo;
 
+import com.oficina.api.aplicacao.Pagina;
 import com.oficina.api.aplicacao.veiculo.ServicoVeiculos;
+import com.oficina.api.apresentacao.RespostaLista;
+import com.oficina.api.apresentacao.RespostasHttp;
+import com.oficina.api.dominio.TextoNormalizado;
 import com.oficina.api.dominio.veiculo.Ano;
 import com.oficina.api.dominio.veiculo.Marca;
 import com.oficina.api.dominio.veiculo.Modelo;
@@ -12,12 +16,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import java.net.URI;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
-import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -57,16 +58,13 @@ public class ControladorVeiculos {
         final var veiculo = this.servico
             .criar(
                 new Placa(requisicao.placa()),
-                new Modelo(requisicao.modelo()),
-                new Marca(requisicao.marca()),
+                new Modelo(new TextoNormalizado(requisicao.modelo())),
+                new Marca(new TextoNormalizado(requisicao.marca())),
                 new Ano(requisicao.ano()),
                 requisicao.clienteId()
             );
 
-        return ResponseEntity
-            .created(URI.create("/veiculos/" + veiculo.id()))
-            .cacheControl(CacheControl.noStore())
-            .body(RespostaVeiculo.de(veiculo));
+        return RespostasHttp.criada(URI.create("/veiculos/" + veiculo.id()), RespostaVeiculo.de(veiculo));
     }
 
     @GetMapping(value = "/{id}")
@@ -75,32 +73,30 @@ public class ControladorVeiculos {
     @ApiResponse(responseCode = "404", description = "Veículo inexistente ou excluído", content = {
         @Content(schema = @Schema(implementation = ProblemDetail.class)) })
     public ResponseEntity<RespostaVeiculo> buscar(@PathVariable final UUID id) {
-        return ResponseEntity
-            .ok()
-            .cacheControl(CacheControl.noStore())
-            .body(RespostaVeiculo.de(this.servico.buscar(id)));
+        return RespostasHttp.ok(RespostaVeiculo.de(this.servico.buscar(id)));
     }
 
     @GetMapping
     @Operation(summary = "Listar veículos",
         description = "Informe ao menos um filtro: placa (antiga ou Mercosul, em maiúsculas e sem hífen) "
             + "ou ID do cliente. "
-            + "Retorna até first veículos (padrão 25, entre 1 e 25), em ordem crescente de ID, após o ID after. "
+            + "Retorna em itens até first veículos (padrão 25, entre 1 e 25), em ordem crescente de ID, após after. "
             + "Use nextCursor em after para continuar com os mesmos filtros; null indica que não há mais páginas.")
     @ApiResponse(responseCode = "200", description = "Lista de veículos, vazia quando nenhum corresponde aos filtros")
-    public ResponseEntity<RespostaListaVeiculos> listar(
+    public ResponseEntity<RespostaLista<RespostaVeiculo>> listar(
         @RequestParam(required = false) final @Nullable String placa,
         @RequestParam(required = false) final @Nullable UUID cliente,
         @RequestParam(required = false) final @Nullable UUID after,
-        @RequestParam(defaultValue = "25") @Min(value = 1) @Max(value = 25) final int first
+        @RequestParam(defaultValue = "25") @Schema(minimum = "1", maximum = "25") final int first
     ) {
         final var filtroPlaca = placa == null
             ? null
             : new Placa(placa);
-        return ResponseEntity
-            .ok()
-            .cacheControl(CacheControl.noStore())
-            .body(RespostaListaVeiculos.de(this.servico.listar(filtroPlaca, cliente, after, first)));
+        return RespostasHttp
+            .ok(
+                RespostaLista
+                    .de(this.servico.listar(filtroPlaca, cliente, after, new Pagina.Limite(first)), RespostaVeiculo::de)
+            );
     }
 
     @PatchMapping(value = "/{id}", consumes = { MediaType.APPLICATION_JSON_VALUE, "application/merge-patch+json" })
@@ -126,10 +122,10 @@ public class ControladorVeiculos {
                 id,
                 modelo == null
                     ? null
-                    : new Modelo(modelo),
+                    : new Modelo(new TextoNormalizado(modelo)),
                 marca == null
                     ? null
-                    : new Marca(marca),
+                    : new Marca(new TextoNormalizado(marca)),
                 placa == null
                     ? null
                     : new Placa(placa),
@@ -138,7 +134,7 @@ public class ControladorVeiculos {
                     : new Ano(ano),
                 atualizacao.clienteId()
             );
-        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(RespostaVeiculo.de(veiculo));
+        return RespostasHttp.ok(RespostaVeiculo.de(veiculo));
     }
 
     @DeleteMapping(value = "/{id}")
@@ -148,6 +144,6 @@ public class ControladorVeiculos {
         @Content(schema = @Schema(implementation = ProblemDetail.class)) })
     public ResponseEntity<Void> excluir(@PathVariable final UUID id) {
         this.servico.excluir(id);
-        return ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build();
+        return RespostasHttp.semConteudo();
     }
 }

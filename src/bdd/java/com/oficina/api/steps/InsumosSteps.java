@@ -1,13 +1,14 @@
 package com.oficina.api.steps;
 
+import com.oficina.api.apresentacao.RespostaLista;
 import com.oficina.api.apresentacao.insumo.RespostaInsumo;
-import com.oficina.api.apresentacao.insumo.RespostaListaInsumos;
 import com.oficina.api.infraestrutura.seguranca.EmissorTokenJwt;
 import io.cucumber.datatable.DataTable;
 import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import io.restassured.common.mapper.TypeRef;
 import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Objects;
@@ -86,14 +87,14 @@ public class InsumosSteps {
 
     @Then("a lista de insumos deve conter os nomes:")
     public void validarLista(final DataTable tabela) {
-        assertThat(this.http.resposta().as(RespostaListaInsumos.class).insumos())
+        assertThat(this.http.resposta().as(new TypeRef<RespostaLista<RespostaInsumo>>() {}).itens())
             .extracting(RespostaInsumo::nome)
             .containsExactlyInAnyOrderElementsOf(tabela.asList());
     }
 
     @Then("a lista de insumos deve estar vazia")
     public void validarListaVazia() {
-        assertThat(this.http.resposta().as(RespostaListaInsumos.class).insumos()).isEmpty();
+        assertThat(this.http.resposta().as(new TypeRef<RespostaLista<RespostaInsumo>>() {}).itens()).isEmpty();
     }
 
     @Then("o insumo original deve permanecer inalterado")

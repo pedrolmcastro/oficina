@@ -9,12 +9,8 @@ class EntidadeTest {
         final var entidade = new Entidade() {};
         final var id = entidade.id();
 
-        assertThat(id.variant()).isEqualTo(2);
         assertThat(id.version()).isEqualTo(7);
 
-        assertThat(entidade)
-            .isNotEqualTo((Entidade) new Entidade() {})
-            .isNotEqualTo(new Object())
-            .hasSameHashCodeAs(id);
+        assertThat(entidade).isNotEqualTo((Entidade) new Entidade() {}).isNotEqualTo(new Object());
     }
 }

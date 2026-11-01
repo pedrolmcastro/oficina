@@ -1,6 +1,8 @@
 package com.oficina.api.aplicacao.veiculo;
 
+import com.oficina.api.aplicacao.Pagina;
 import com.oficina.api.dominio.DadoInvalidoException;
+import com.oficina.api.dominio.TextoNormalizado;
 import com.oficina.api.dominio.veiculo.Ano;
 import com.oficina.api.dominio.veiculo.Marca;
 import com.oficina.api.dominio.veiculo.Modelo;
@@ -17,7 +19,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.SimpleTransactionStatus;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -49,8 +50,8 @@ class ServicoVeiculosTest {
         ", , DEF1G23, , Corolla, Toyota, DEF1G23, 2024",
         ", , , 2025, Corolla, Toyota, ABC1234, 2025" })
     void deveAtualizarSomenteCamposInformados(
-        final @Nullable Modelo modelo,
-        final @Nullable Marca marca,
+        final @Nullable String modelo,
+        final @Nullable String marca,
         final @Nullable Placa placa,
         final @Nullable Integer ano,
         final String modeloEsperado,
@@ -61,8 +62,8 @@ class ServicoVeiculosTest {
         final var clienteId = UUID.randomUUID();
         final var veiculo = new Veiculo(
             new Placa("ABC1234"),
-            new Modelo("Corolla"),
-            new Marca("Toyota"),
+            new Modelo(new TextoNormalizado("Corolla")),
+            new Marca(new TextoNormalizado("Toyota")),
             new Ano(2024),
             clienteId
         );
@@ -71,8 +72,12 @@ class ServicoVeiculosTest {
         final var atualizado = this.servico
             .atualizar(
                 veiculo.id(),
-                modelo,
-                marca,
+                modelo == null
+                    ? null
+                    : new Modelo(new TextoNormalizado(modelo)),
+                marca == null
+                    ? null
+                    : new Marca(new TextoNormalizado(marca)),
                 placa,
                 ano == null
                     ? null
@@ -81,8 +86,8 @@ class ServicoVeiculosTest {
             );
 
         assertThat(atualizado.id()).isEqualTo(veiculo.id());
-        assertThat(atualizado.modelo().valor()).isEqualTo(modeloEsperado);
-        assertThat(atualizado.marca().valor()).isEqualTo(marcaEsperada);
+        assertThat(atualizado.modelo().texto().valor()).isEqualTo(modeloEsperado);
+        assertThat(atualizado.marca().texto().valor()).isEqualTo(marcaEsperada);
         assertThat(atualizado.placa().valor()).isEqualTo(placaEsperada);
         assertThat(atualizado.ano().valor()).isEqualTo(anoEsperado);
         assertThat(atualizado.clienteId()).isEqualTo(clienteId);
@@ -91,23 +96,17 @@ class ServicoVeiculosTest {
     @Test
     void deveRejeitarIdInexistente() {
         final var id = UUID.randomUUID();
-        assertThatThrownBy(() -> this.servico.buscar(id)).isExactlyInstanceOf(VeiculoNaoEncontrado.class);
-        assertThatThrownBy(() -> this.servico.atualizar(id, new Modelo("Civic"), null, null, null, null))
-            .isExactlyInstanceOf(VeiculoNaoEncontrado.class);
-        assertThatThrownBy(() -> this.servico.excluir(id)).isExactlyInstanceOf(VeiculoNaoEncontrado.class);
+        assertThatThrownBy(() -> this.servico.buscar(id)).isExactlyInstanceOf(VeiculoNaoEncontradoException.class);
+        assertThatThrownBy(
+            () -> this.servico.atualizar(id, new Modelo(new TextoNormalizado("Civic")), null, null, null, null)
+        ).isExactlyInstanceOf(VeiculoNaoEncontradoException.class);
+        assertThatThrownBy(() -> this.servico.excluir(id)).isExactlyInstanceOf(VeiculoNaoEncontradoException.class);
     }
 
     @Test
     void deveExigirPlacaOuCliente() {
-        assertThatThrownBy(() -> this.servico.listar(null, null, UUID.randomUUID(), 1))
+        assertThatThrownBy(() -> this.servico.listar(null, null, UUID.randomUUID(), new Pagina.Limite(1)))
             .isExactlyInstanceOf(DadoInvalidoException.class)
             .hasMessage("Informe ao menos um dos filtros: placa ou cliente");
-    }
-
-    @ParameterizedTest
-    @ValueSource(ints = { 0, 26 })
-    void deveRejeitarTamanhoDePaginaInvalido(final int first) {
-        assertThatThrownBy(() -> this.servico.listar(null, UUID.randomUUID(), null, first))
-            .isExactlyInstanceOf(IllegalArgumentException.class);
     }
 }

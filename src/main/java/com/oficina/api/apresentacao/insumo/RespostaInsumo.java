@@ -6,6 +6,6 @@ import java.util.UUID;
 
 public record RespostaInsumo(UUID id, String nome, BigDecimal precoVenda) {
     public static RespostaInsumo de(final Insumo insumo) {
-        return new RespostaInsumo(insumo.id(), insumo.nome().valor(), insumo.precoVenda().valor());
+        return new RespostaInsumo(insumo.id(), insumo.nome().texto().valor(), insumo.precoVenda().preco().valor());
     }
 }

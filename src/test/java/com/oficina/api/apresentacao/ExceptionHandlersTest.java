@@ -1,34 +1,40 @@
 package com.oficina.api.apresentacao;
 
+import com.oficina.api.aplicacao.RecursoNaoEncontradoException;
+import com.oficina.api.aplicacao.cliente.ClienteNaoEncontradoException;
+import com.oficina.api.aplicacao.insumo.InsumoNaoEncontradoException;
+import com.oficina.api.aplicacao.servico.InsumoObrigatorioNaoEncontradoException;
+import com.oficina.api.aplicacao.servico.ServicoNaoEncontradoException;
+import com.oficina.api.aplicacao.veiculo.VeiculoNaoEncontradoException;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
-import org.springframework.web.server.ResponseStatusException;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ExceptionHandlersTest {
     @ParameterizedTest
-    @MethodSource(value = "falhasInternas")
-    void deveSensurarFalhaInterna(final Exception erro) {
-        final var resposta = new ExceptionHandlers().falhaInterna(erro);
-
-        assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-        assertThat(resposta.getHeaders().getCacheControl()).isEqualTo("no-store");
-
-        assertThat(resposta.getBody())
-            .isEqualTo(
-                ProblemDetail
-                    .forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "Não foi possível processar a requisição")
-            );
+    @MethodSource(value = "recursosNaoEncontrados")
+    void deveTraduzirTodosOsRecursosNaoEncontrados(final RecursoNaoEncontradoException erro, final String mensagem) {
+        final var resposta = new ExceptionHandlers().naoEncontrado(erro);
+        assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(resposta.getBody()).isEqualTo(ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, mensagem));
     }
 
-    private static Stream<Exception> falhasInternas() {
+    private static Stream<Arguments> recursosNaoEncontrados() {
         return Stream
             .of(
-                new IllegalStateException("Detalhes internos confidenciais"),
-                new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Detalhes internos confidenciais")
+                Arguments.of(new ClienteNaoEncontradoException(), "Cliente não encontrado"),
+                Arguments.of(new VeiculoNaoEncontradoException(), "Veículo não encontrado"),
+                Arguments.of(new InsumoNaoEncontradoException(), "Insumo não encontrado"),
+                Arguments.of(new ServicoNaoEncontradoException(), "Serviço não encontrado"),
+                Arguments
+                    .of(
+                        new InsumoObrigatorioNaoEncontradoException(),
+                        "Associação de insumo obrigatório não encontrada"
+                    )
             );
     }
 }
