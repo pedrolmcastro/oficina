@@ -20,6 +20,7 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -59,6 +60,21 @@ public class ControladorInsumosObrigatorios {
                 URI.create("/servicos/" + servicoId + "/insumos-obrigatorios/" + insumo.insumoId()),
                 RespostaInsumoObrigatorio.de(insumo)
             );
+    }
+
+    @PatchMapping(value = "/{insumoId}", consumes = {
+        MediaType.APPLICATION_JSON_VALUE,
+        "application/merge-patch+json" })
+    @Operation(summary = "Atualizar associação de insumo obrigatório")
+    @ApiResponse(responseCode = "200", description = "Associação de insumo obrigatório atualizada")
+    public ResponseEntity<RespostaInsumoObrigatorio> atualizar(
+        @PathVariable final UUID servicoId,
+        @PathVariable final UUID insumoId,
+        @Valid @RequestBody final RequisicaoAtualizarInsumoObrigatorio requisicao
+    ) {
+        final var atualizado = this.servico
+            .atualizarInsumoObrigatorio(servicoId, insumoId, new Quantidade(requisicao.quantidade()));
+        return RespostasHttp.ok(RespostaInsumoObrigatorio.de(atualizado));
     }
 
     @GetMapping

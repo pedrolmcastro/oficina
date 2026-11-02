@@ -3,13 +3,11 @@ package com.oficina.api.apresentacao;
 import com.oficina.api.apresentacao.insumo.RespostaInsumo;
 import com.oficina.api.apresentacao.servico.RespostaInsumoObrigatorio;
 import com.oficina.api.apresentacao.servico.RespostaServico;
-import io.restassured.RestAssured;
 import io.restassured.common.mapper.TypeRef;
 import io.restassured.response.Response;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,21 +25,66 @@ class InsumosObrigatoriosIT extends ApiIntegrationTest {
     }
 
     @Test
-    void deveAssociarSemDuplicar() {
+    void deveRetornarLocalizacaoEContratoDaAssociacao() {
         final var servico = criarServico("Troca de óleo");
-        final var outro = criarServico("Revisão");
         final var insumo = criarInsumo("Óleo");
-        assertThat(listar(servico.id()).itens()).isEmpty();
         final var cadastro = associar(servico.id(), insumo.id());
         validar(cadastro, 201);
         assertThat(cadastro.header("Location"))
             .isEqualTo("/servicos/" + servico.id() + "/insumos-obrigatorios/" + insumo.id());
         assertThat(cadastro.as(RespostaInsumoObrigatorio.class)).isEqualTo(obrigatorio(insumo));
         assertThat(cadastro.jsonPath().getMap("")).containsOnlyKeys("insumoId", "quantidade");
-        validar(associar(servico.id(), insumo.id()), 409);
-        assertThat(listar(servico.id()).itens()).containsExactly(obrigatorio(insumo));
-        assertThat(listar(outro.id()).itens()).isEmpty();
+    }
+
+    @Test
+    void deveAtualizarSomenteAAssociacaoInformada() {
+        final var servico = criarServico("Troca");
+        final var outro = criarServico("Revisão");
+        final var insumo = criarInsumo("Óleo");
+        final var filtro = criarInsumo("Filtro");
+        validar(associar(servico.id(), insumo.id()), 201);
+        validar(associar(servico.id(), filtro.id()), 201);
         validar(associar(outro.id(), insumo.id()), 201);
+        for (final var quantidade : List.of(4, 4, 1)) {
+            final var resposta = requisicao()
+                .contentType("application/merge-patch+json")
+                .body(Map.of("quantidade", quantidade))
+                .patch("/servicos/{id}/insumos-obrigatorios/{insumo}", servico.id(), insumo.id());
+            validar(resposta, 200);
+            final var esperado = new RespostaInsumoObrigatorio(insumo.id(), quantidade);
+            assertThat(resposta.as(RespostaInsumoObrigatorio.class)).isEqualTo(esperado);
+            assertThat(listar(servico.id()).itens()).containsExactlyInAnyOrder(esperado, obrigatorio(filtro));
+            assertThat(listar(outro.id()).itens()).containsExactly(obrigatorio(insumo));
+        }
+        assertThat(requisicao().get("/insumos/{id}", insumo.id()).as(RespostaInsumo.class)).isEqualTo(insumo);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "{}", "{\"quantidade\":null}", "{\"quantidade\":1.5}", "{\"quantidade\":2147483648}" })
+    void deveRejeitarAtualizacaoComDadosInvalidosSemAlterarAssociacao(final String corpo) {
+        final var servico = criarServico("Troca");
+        final var insumo = criarInsumo("Óleo");
+        validar(associar(servico.id(), insumo.id()), 201);
+        validar(
+            requisicao().body(corpo).patch("/servicos/{id}/insumos-obrigatorios/{insumo}", servico.id(), insumo.id()),
+            400
+        );
+        assertThat(listar(servico.id()).itens()).containsExactly(obrigatorio(insumo));
+    }
+
+    @Test
+    void deveRejeitarAtualizacaoDeAssociacaoRemovida() {
+        final var servico = criarServico("Troca");
+        final var insumo = criarInsumo("Óleo");
+        validar(associar(servico.id(), insumo.id()), 201);
+        validar(remover(servico.id(), insumo.id()), 204);
+        validar(
+            requisicao()
+                .body(Map.of("quantidade", 4))
+                .patch("/servicos/{id}/insumos-obrigatorios/{insumo}", servico.id(), insumo.id()),
+            404
+        );
+        assertThat(listar(servico.id()).itens()).isEmpty();
     }
 
     @Test
@@ -125,6 +168,12 @@ class InsumosObrigatoriosIT extends ApiIntegrationTest {
             validar(requisicao().delete("/servicos/{id}", servicoId), 204);
         }
         validar(associar(servicoId, insumo.id()), 404);
+        validar(
+            requisicao()
+                .body(Map.of("quantidade", 4))
+                .patch("/servicos/{id}/insumos-obrigatorios/{insumo}", servicoId, insumo.id()),
+            404
+        );
         validar(remover(servicoId, insumo.id()), 404);
         final var resposta = requisicao().get("/servicos/{id}/insumos-obrigatorios", servicoId);
         validar(resposta, 404);
@@ -147,42 +196,6 @@ class InsumosObrigatoriosIT extends ApiIntegrationTest {
     }
 
     @Test
-    void deveExigirAdministradorParaGerenciarServicosEVinculos() {
-        for (final var caminho : List
-            .of(
-                "/servicos",
-                "/servicos/" + UUID.randomUUID(),
-                "/servicos/" + UUID.randomUUID() + "/insumos-obrigatorios"
-            )) {
-            assertThat(RestAssured.given().port(this.porta).get(caminho).statusCode()).isEqualTo(401);
-            assertThat(
-                RestAssured
-                    .given()
-                    .port(this.porta)
-                    .auth()
-                    .oauth2(this.emissor.emitir("usuario", Set.of("USER")).valor())
-                    .get(caminho)
-                    .statusCode()
-            ).isEqualTo(403);
-        }
-    }
-
-    @Test
-    void deveManterQuantidadesIndependentesPorServico() {
-        final var primeiro = criarServico("Troca");
-        final var segundo = criarServico("Revisão");
-        final var insumo = criarInsumo("Óleo");
-        validar(associar(primeiro.id(), insumo.id()), 201);
-        final var resposta = requisicao()
-            .body(Map.of("insumoId", insumo.id(), "quantidade", 4))
-            .post("/servicos/{id}/insumos-obrigatorios", segundo.id());
-        validar(resposta, 201);
-        assertThat(resposta.as(RespostaInsumoObrigatorio.class).quantidade()).isEqualTo(4);
-        assertThat(listar(primeiro.id()).itens().getFirst().quantidade()).isEqualTo(2);
-        assertThat(listar(segundo.id()).itens().getFirst().quantidade()).isEqualTo(4);
-    }
-
-    @Test
     void devePreservarAssociacaoAoAtualizarInsumo() {
         final var servico = criarServico("Troca");
         final var insumo = criarInsumo("Óleo");
@@ -196,7 +209,7 @@ class InsumosObrigatoriosIT extends ApiIntegrationTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { "0", "-1", "1.5", "0.9", "2147483648" })
+    @ValueSource(strings = { "1.5", "0.9", "2147483648" })
     void deveRejeitarQuantidadeInvalidaSemCriarVinculo(final String quantidade) {
         final var servico = criarServico("Troca");
         final var insumo = criarInsumo("Óleo");

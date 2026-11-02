@@ -83,6 +83,8 @@ public class ControladorVeiculos {
             + "Retorna em itens até first veículos (padrão 25, entre 1 e 25), em ordem crescente de ID, após after. "
             + "Use nextCursor em after para continuar com os mesmos filtros; null indica que não há mais páginas.")
     @ApiResponse(responseCode = "200", description = "Lista de veículos, vazia quando nenhum corresponde aos filtros")
+    @ApiResponse(responseCode = "404", description = "Cliente inexistente ou excluído", content = {
+        @Content(schema = @Schema(implementation = ProblemDetail.class)) })
     public ResponseEntity<RespostaLista<RespostaVeiculo>> listar(
         @RequestParam(required = false) final @Nullable String placa,
         @RequestParam(required = false) final @Nullable UUID cliente,

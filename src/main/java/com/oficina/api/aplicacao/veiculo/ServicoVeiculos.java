@@ -63,7 +63,12 @@ public class ServicoVeiculos {
         if (placa == null && cliente == null) {
             throw new DadoInvalidoException("Informe ao menos um dos filtros: placa ou cliente");
         }
-        return this.operacoes.pagina("listar", limite, () -> this.repositorio.listar(placa, cliente, after, limite));
+        return this.operacoes.pagina("listar", limite, () -> {
+            if (cliente != null && this.clientes.buscar(cliente, LockModeType.NONE).isEmpty()) {
+                throw new ClienteNaoEncontradoException();
+            }
+            return this.repositorio.listar(placa, cliente, after, limite);
+        });
     }
 
     public Veiculo atualizar(

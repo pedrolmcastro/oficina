@@ -11,6 +11,7 @@ import jakarta.persistence.LockModeType;
 import java.util.Optional;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -66,7 +67,13 @@ public class ServicoClientes {
     }
 
     public void excluir(final UUID id) {
-        this.operacoes.escrita("excluir", () -> encontrar(id, LockModeType.PESSIMISTIC_WRITE).excluir());
+        this.operacoes.escrita("excluir", () -> {
+            final var cliente = encontrar(id, LockModeType.PESSIMISTIC_WRITE);
+            if (this.repositorio.possuiOrdemServicoAtiva(id)) {
+                throw new DataIntegrityViolationException("Cliente possui ordem de serviço ativa");
+            }
+            cliente.excluir();
+        });
     }
 
     private Cliente encontrar(final UUID id, final LockModeType modoBloqueio) {

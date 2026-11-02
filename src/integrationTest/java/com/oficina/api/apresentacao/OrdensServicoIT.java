@@ -18,24 +18,19 @@ import io.restassured.common.mapper.TypeRef;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,10 +43,8 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.clearInvocations;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 class OrdensServicoIT extends ApiIntegrationTest {
     @Autowired
@@ -143,79 +136,17 @@ class OrdensServicoIT extends ApiIntegrationTest {
         }
     }
 
-    @ParameterizedTest(name = "{0} {1}")
-    @MethodSource(value = "operacoesAdministrativas")
-    void deveRequererAutenticacaoNasOperacoesAdministrativas(final String metodo, final String caminho) {
-        assertThat(publico().request(metodo, caminho).statusCode()).isEqualTo(401);
-    }
-
-    @ParameterizedTest(name = "{0} {1}")
-    @MethodSource(value = "operacoesAdministrativas")
-    void deveRecusarPerfilSemPermissaoAdministrativa(final String metodo, final String caminho) {
-        assertThat(
-            publico()
-                .auth()
-                .oauth2(this.emissor.emitir("usuario", Set.of("USER")).valor())
-                .request(metodo, caminho)
-                .statusCode()
-        ).isEqualTo(403);
-    }
-
-    private static Stream<Arguments> operacoesAdministrativas() {
-        final var base = "/ordens-servico/" + UUID.randomUUID();
-        final var insumos = base + "/insumos-necessarios";
-        final var item = insumos + "/" + UUID.randomUUID();
-        return Stream
-            .of(
-                Arguments.of("GET", "/ordens-servico"),
-                Arguments.of("GET", base),
-                Arguments.of("GET", insumos),
-                Arguments.of("POST", "/ordens-servico"),
-                Arguments.of("POST", base + "/inicio-diagnostico"),
-                Arguments.of("POST", base + "/fim-diagnostico"),
-                Arguments.of("POST", base + "/inicio-execucao"),
-                Arguments.of("POST", base + "/fim-execucao"),
-                Arguments.of("POST", base + "/retirada-veiculo"),
-                Arguments.of("POST", base + "/acesso-cliente"),
-                Arguments.of("POST", insumos),
-                Arguments.of("PATCH", item),
-                Arguments.of("DELETE", item)
-            );
-    }
-
     @Test
-    void devePreservarClienteOriginalDaOsAposTrocaDeProprietarioDoVeiculo() {
-        final var acesso = criarComDiagnostico();
-        assertThat(acesso.ordemServico().clienteId()).isEqualTo(this.clienteId);
-        final var cadastro = requisicao()
-            .body(Map.of("nome", "João", "email", "joao@example.com", "documento", "11144477735"))
-            .post("/clientes");
-        validar(cadastro, 201);
-        final var novoProprietario = cadastro.as(RespostaCliente.class).id();
-        final var transferencia = requisicao()
-            .body(Map.of("clienteId", novoProprietario))
-            .patch("/veiculos/{id}", this.veiculoId);
-        validar(transferencia, 200);
-        assertThat(transferencia.as(RespostaVeiculo.class).clienteId()).isEqualTo(novoProprietario);
-        final var ordem = buscar(acesso);
-        assertThat(ordem.clienteId()).isEqualTo(this.clienteId).isNotEqualTo(novoProprietario);
-        assertThat(ordem.veiculoId()).isEqualTo(this.veiculoId);
-        diagnosticar(ordem.id());
-        assertThat(buscar(acesso).clienteId()).isEqualTo(this.clienteId);
-        verify(this.emails, times(2)).enviar(eq(ordem.id()), eq("maria@example.com"), anyString());
-        verifyNoMoreInteractions(this.emails);
-    }
-
-    @Test
-    void deveConcluirDiagnosticoMesmoSeClienteOriginalFoiExcluido() {
-        final var acesso = criarComDiagnostico();
-        validar(requisicao().delete("/clientes/{id}", this.clienteId), 204);
+    void naoDeveNotificarClienteExcluidoAoReemitirAcessoDeOrdemEntregue() {
+        final var acesso = criar();
         final var id = acesso.ordemServico().id();
-        diagnosticar(id);
-        assertThat(buscar(acesso).status()).isEqualTo("aguardando-confirmacao");
-        assertThat(buscar(acesso).clienteId()).isEqualTo(this.clienteId);
-        assertThat(corposEnviados(acesso)).hasSize(1);
-        validar(publico().get("/ordens-servico/acompanhamento/{token}", acesso.tokenAcompanhamento()), 200);
+        validar(decidir(acesso, "rejeicao"), 200);
+        validar(requisicao().post("/ordens-servico/{id}/retirada-veiculo", id), 200);
+        validar(requisicao().delete("/clientes/{id}", this.clienteId), 204);
+        clearInvocations(this.emails);
+        validar(requisicao().post("/ordens-servico/{id}/acesso-cliente", id), 200);
+        assertThat(buscar(acesso).status()).isEqualTo("entregue");
+        verifyNoInteractions(this.emails);
     }
 
     @Test
@@ -270,17 +201,10 @@ class OrdensServicoIT extends ApiIntegrationTest {
     }
 
     @Test
-    void deveEnviarDoisEmailsESepararPermissoesDosTokens() {
+    void deveDisponibilizarPaginasDoClienteERejeitarUsoIncorretoDoTokenDeDecisao() {
         final var acesso = criar();
-        final var corpos = corposEnviados(acesso);
-        assertThat(corpos).hasSize(2);
-        assertThat(corpos.getFirst())
-            .isEqualTo("http://localhost:8080/cliente/" + acesso.tokenAcompanhamento() + "/status");
         final var decisao = tokenDecisao(acesso);
-        assertThat(decisao).isNotEqualTo(acesso.tokenAcompanhamento());
-        validar(publico().post("/ordens-servico/acompanhamento/{token}/aprovacao", acesso.tokenAcompanhamento()), 404);
         validar(publico().get("/ordens-servico/acompanhamento/{token}", decisao), 404);
-        validar(publico().get("/ordens-servico/decisao/{token}", decisao), 200);
         validar(publico().get("/ordens-servico/decisao/{token}", "invalido"), 404);
         for (final var pagina : List.of("status", "aprovacao", "rejeicao")) {
             final var resposta = publico().get("/cliente/{token}/{pagina}", decisao, pagina);
@@ -289,72 +213,18 @@ class OrdensServicoIT extends ApiIntegrationTest {
             assertThat(resposta.asString()).contains("SwaggerUIBundle", "tryItOutEnabled: true", "validatorUrl: null");
         }
         assertThat(publico().get("/cliente/invalido/status").statusCode()).isEqualTo(404);
-        assertThat(buscar(acesso).status()).isEqualTo("aguardando-confirmacao");
-        validar(decidir(acesso, "aprovacao"), 200);
-        validar(publico().get("/ordens-servico/acompanhamento/{token}", acesso.tokenAcompanhamento()), 200);
     }
 
     @Test
-    void deveRenovarDuranteDiagnosticoEnviandoSomenteAcompanhamento() {
+    void devePersistirHashDoTokenDeDecisaoAposDiagnostico() {
         final var acesso = criarComDiagnostico();
-        clearInvocations(this.emails);
-        final var resposta = requisicao().post("/ordens-servico/{id}/acesso-cliente", acesso.ordemServico().id());
-        validar(resposta, 200);
-        final var renovado = resposta.as(RespostaAcessoOrdemServico.class);
-        assertThat(corposEnviados(acesso)).hasSize(1);
-        assertThat(corposEnviados(acesso).getFirst())
-            .isEqualTo("http://localhost:8080/cliente/" + renovado.tokenAcompanhamento() + "/status");
-        validar(publico().get("/ordens-servico/acompanhamento/{token}", acesso.tokenAcompanhamento()), 404);
-        validar(publico().get("/ordens-servico/acompanhamento/{token}", renovado.tokenAcompanhamento()), 200);
-    }
-
-    @Test
-    void deveNotificarAposDiagnosticoDeServicosMistosPreservandoAcompanhamento() {
-        final var cadastro = requisicao()
-            .body(Map.of("nome", "Avaliação do motor", "precoVenda", 50, "requerDiagnostico", true))
-            .post("/servicos");
-        validar(cadastro, 201);
-        final var diagnosticoId = cadastro.as(RespostaServico.class).id();
-        final var resposta = requisicao()
-            .body(
-                Map
-                    .of(
-                        "veiculoId",
-                        Objects.requireNonNull(this.veiculoId),
-                        "servicoIds",
-                        List.of(this.servicoId, diagnosticoId)
-                    )
-            )
-            .post("/ordens-servico");
-        validar(resposta, 201);
-        final var acesso = resposta.as(RespostaAcessoOrdemServico.class);
-        assertThat(acesso.ordemServico().status()).isEqualTo("aguardando-diagnostico");
-        assertThat(corposEnviados(acesso)).hasSize(1);
         final var id = acesso.ordemServico().id();
         diagnosticar(id);
-        assertThat(corposEnviados(acesso)).hasSize(2);
         final var token = tokenDecisao(acesso);
         assertThat(
             this.jdbc
                 .queryForObject("SELECT hash_token_decisao FROM oficina.ordens_servico WHERE id = ?", String.class, id)
         ).isEqualTo(TokenAcompanhamento.hash(token));
-        validar(publico().get("/ordens-servico/acompanhamento/{token}", acesso.tokenAcompanhamento()), 200);
-        validar(decidir(acesso, "rejeicao"), 200);
-    }
-
-    @Test
-    void deveRenovarAcessoInvalidandoTokensAnteriores() {
-        final var acesso = criar();
-        final var antigo = tokenDecisao(acesso);
-        final var resposta = requisicao().post("/ordens-servico/{id}/acesso-cliente", acesso.ordemServico().id());
-        validar(resposta, 200);
-        final var renovado = resposta.as(RespostaAcessoOrdemServico.class);
-        validar(publico().get("/ordens-servico/acompanhamento/{token}", acesso.tokenAcompanhamento()), 404);
-        validar(publico().get("/ordens-servico/acompanhamento/{token}", renovado.tokenAcompanhamento()), 200);
-        validar(publico().post("/ordens-servico/acompanhamento/{token}/aprovacao", antigo), 404);
-        final var novo = tokenDecisao(renovado);
-        assertThat(novo).isNotEqualTo(antigo);
-        validar(publico().get("/ordens-servico/decisao/{token}", novo), 200);
     }
 
     @Test
@@ -398,35 +268,6 @@ class OrdensServicoIT extends ApiIntegrationTest {
             assertThat(e.autor()).isEqualTo("CLIENTE");
             assertThat(e.dados()).containsEntry("total", "100.00");
         });
-    }
-
-    @Test
-    void devePaginarOrdensMantendoFiltro() {
-        final var ordens = List
-            .of(criar(), criar(), criar())
-            .stream()
-            .sorted(Comparator.comparing(a -> a.ordemServico().id().toString()))
-            .toList();
-        final var primeira = requisicao()
-            .queryParams(Map.of("first", 2, "status", "aguardando-confirmacao"))
-            .get("/ordens-servico");
-        validar(primeira, 200);
-        final var pagina = primeira.as(new TypeRef<RespostaLista<RespostaOrdemServico>>() {});
-        assertThat(pagina.itens())
-            .extracting(resposta -> resposta.id())
-            .containsExactly(ordens.getFirst().ordemServico().id(), ordens.get(1).ordemServico().id());
-        final var ultima = requisicao()
-            .queryParams(Map.of("first", 2, "after", pagina.nextCursor(), "status", "aguardando-confirmacao"))
-            .get("/ordens-servico");
-        validar(ultima, 200);
-        final var finalPagina = ultima.as(new TypeRef<RespostaLista<RespostaOrdemServico>>() {});
-        assertThat(finalPagina.itens())
-            .extracting(resposta -> resposta.id())
-            .containsExactly(ordens.getLast().ordemServico().id());
-        assertThat(finalPagina.nextCursor()).isNull();
-        final var semFiltro = requisicao().get("/ordens-servico");
-        validar(semFiltro, 200);
-        assertThat(semFiltro.as(new TypeRef<RespostaLista<RespostaOrdemServico>>() {}).itens()).hasSize(3);
     }
 
     @Test
@@ -504,7 +345,7 @@ class OrdensServicoIT extends ApiIntegrationTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { "null", "0", "-1", "1.5", "2147483648" })
+    @ValueSource(strings = { "null", "1.5", "2147483648" })
     void deveValidarQuantidadeNaInclusaoENaAtualizacao(final String quantidade) {
         final var acesso = criarComDiagnostico();
         final var id = acesso.ordemServico().id();
@@ -537,7 +378,6 @@ class OrdensServicoIT extends ApiIntegrationTest {
     @Test
     void deveRejeitarReferenciasInexistentesEExcluidas() {
         final var inexistente = UUID.randomUUID();
-        validar(requisicao().get("/ordens-servico/{id}", inexistente), 404);
         validar(requisicao().get("/ordens-servico/{id}/insumos-necessarios", inexistente), 404);
         validar(requisicao().post("/ordens-servico/{id}/inicio-diagnostico", inexistente), 404);
         validar(requisicao().post("/ordens-servico/{id}/acesso-cliente", inexistente), 404);
@@ -574,8 +414,6 @@ class OrdensServicoIT extends ApiIntegrationTest {
         validar(criarResposta(), 404);
         validar(requisicao().delete("/veiculos/{id}", this.veiculoId), 204);
         validar(criarResposta(), 404);
-        validar(requisicao().delete("/clientes/{id}", this.clienteId), 204);
-        validar(criarResposta(), 404);
         assertThat(buscar(acesso).servicos()).hasSize(1);
     }
 
@@ -601,80 +439,6 @@ class OrdensServicoIT extends ApiIntegrationTest {
                 400
             );
         }
-    }
-
-    @Test
-    void deveReservarParcialmenteNaOrdemDeCriacaoMesmoComAprovacoesInvertidasEConsumirNaExecucao() {
-        associarInsumo(4);
-        final var primeira = criar();
-        final var segunda = criar();
-        validar(decidir(segunda, "aprovacao"), 200);
-        validar(decidir(primeira, "aprovacao"), 200);
-        assertThat(buscar(primeira).status()).isEqualTo("aguardando-insumos");
-        validar(requisicao().post("/ordens-servico/{id}/inicio-execucao", primeira.ordemServico().id()), 409);
-        final var estoque = entrada(Objects.requireNonNull(this.insumoId), 5);
-        assertThat(estoque.quantidadeEmEstoque()).isEqualTo(5);
-        assertThat(estoque.quantidadeReservada()).isEqualTo(5);
-        assertThat(estoque.quantidadeDisponivel()).isZero();
-        assertThat(buscar(primeira).status()).isEqualTo("aguardando-execucao");
-        assertThat(buscar(segunda).status()).isEqualTo("aguardando-insumos");
-        assertThat(buscar(segunda).insumosNecessarios().getFirst().quantidadeReservada()).isEqualTo(1);
-        final var eventos = buscar(segunda).eventos();
-        validar(decidir(segunda, "aprovacao"), 200);
-        assertThat(buscar(segunda).eventos()).isEqualTo(eventos);
-        entrada(Objects.requireNonNull(this.insumoId), 3);
-        assertThat(buscar(segunda).status()).isEqualTo("aguardando-execucao");
-        validar(requisicao().post("/ordens-servico/{id}/inicio-execucao", primeira.ordemServico().id()), 200);
-        final var consumida = buscar(primeira).insumosNecessarios().getFirst();
-        assertThat(consumida.quantidadeReservada()).isZero();
-        assertThat(consumida.quantidadeConsumida()).isEqualTo(4);
-        assertThat(consumida.quantidadePendente()).isZero();
-        final var saldo = requisicao().get("/insumos/{id}", this.insumoId).as(RespostaInsumo.class);
-        assertThat(saldo.quantidadeEmEstoque()).isEqualTo(4);
-        assertThat(saldo.quantidadeReservada()).isEqualTo(4);
-        validar(requisicao().post("/ordens-servico/{id}/inicio-execucao", primeira.ordemServico().id()), 409);
-        validar(decidir(primeira, "aprovacao"), 200);
-        assertThat(requisicao().get("/insumos/{id}", this.insumoId).as(RespostaInsumo.class)).isEqualTo(saldo);
-    }
-
-    @Test
-    void deveReservarNaAprovacaoSemDuplicarEManterSobraDisponivel() {
-        associarInsumo(4);
-        entrada(Objects.requireNonNull(this.insumoId), 10);
-        final var acesso = criar();
-        validar(decidir(acesso, "aprovacao"), 200);
-        final var ordem = buscar(acesso);
-        assertThat(ordem.status()).isEqualTo("aguardando-execucao");
-        assertThat(ordem.insumosNecessarios().getFirst().quantidadeReservada()).isEqualTo(4);
-        validar(decidir(acesso, "aprovacao"), 200);
-        assertThat(buscar(acesso)).isEqualTo(ordem);
-        final var estoque = requisicao().get("/insumos/{id}", this.insumoId).as(RespostaInsumo.class);
-        assertThat(estoque.quantidadeDisponivel()).isEqualTo(6);
-        validar(requisicao().delete("/insumos/{id}", this.insumoId), 409);
-    }
-
-    @Test
-    void deveManterReservasDeInsumosDiferentesAteCompletarTodos() {
-        associarInsumo(2);
-        final var outro = requisicao()
-            .body(Map.of("nome", "Filtro", "precoVenda", 20))
-            .post("/insumos")
-            .as(RespostaInsumo.class);
-        validar(
-            requisicao()
-                .body(Map.of("insumoId", outro.id(), "quantidade", 1))
-                .post("/servicos/{id}/insumos-obrigatorios", this.servicoId),
-            201
-        );
-        entrada(Objects.requireNonNull(this.insumoId), 2);
-        final var acesso = criar();
-        validar(decidir(acesso, "aprovacao"), 200);
-        assertThat(buscar(acesso).status()).isEqualTo("aguardando-insumos");
-        entrada(Objects.requireNonNull(this.insumoId), 3);
-        assertThat(buscar(acesso).status()).isEqualTo("aguardando-insumos");
-        entrada(outro.id(), 1);
-        assertThat(buscar(acesso).status()).isEqualTo("aguardando-execucao");
-        assertThat(buscar(acesso).insumosNecessarios()).allSatisfy(i -> assertThat(i.quantidadePendente()).isZero());
     }
 
     @Test

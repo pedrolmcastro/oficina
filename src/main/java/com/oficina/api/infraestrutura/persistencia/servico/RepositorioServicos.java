@@ -47,6 +47,19 @@ public class RepositorioServicos extends RepositorioEntidades<Servico> {
             .executeUpdate();
     }
 
+    public boolean atualizarInsumoObrigatorio(final UUID servicoId, final UUID insumoId, final Quantidade quantidade) {
+        return this.entityManager
+            .createNativeQuery(
+                "UPDATE oficina.servicos_insumos_obrigatorios SET quantidade = :quantidade "
+                    + "WHERE servico_id = :servico AND insumo_id = :insumo",
+                Void.class
+            )
+            .setParameter(PARAMETRO_SERVICO, servicoId)
+            .setParameter("insumo", insumoId)
+            .setParameter("quantidade", quantidade.valor())
+            .executeUpdate() > 0;
+    }
+
     public boolean removerInsumoObrigatorio(final UUID servicoId, final UUID insumoId) {
         return this.entityManager
             .createNativeQuery(

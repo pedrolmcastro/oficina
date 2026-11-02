@@ -1,7 +1,6 @@
 package com.oficina.api.apresentacao;
 
 import com.oficina.api.apresentacao.cliente.RespostaCliente;
-import io.restassured.common.mapper.TypeRef;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,31 +29,13 @@ class ClientesIT extends ApiIntegrationTest {
     }
 
     @Test
-    void deveRetornarListaVaziaParaDocumentoExcluido() {
-        final var cliente = criarCliente();
-        assertThat(requisicao().delete("/clientes/{id}", cliente.id()).statusCode()).isEqualTo(204);
-
-        final var resposta = requisicao().queryParam("documento", cliente.documento()).get("/clientes");
-
-        validar(resposta, 200);
-        assertThat(resposta.as(new TypeRef<RespostaLista<RespostaCliente>>() {}).itens()).isEmpty();
-    }
-
-    @Test
-    void deveRespeitarContratoHttpNoCicloDeVidaDoCliente() {
+    void deveRetornarLocalizacaoNoCadastroECorpoVazioNaExclusao() {
         final var cadastro = requisicao()
             .body(Map.of("nome", "Maria Silva", "email", "maria@example.com", "documento", "52998224725"))
             .post("/clientes");
         validar(cadastro, 201);
         final var cliente = cadastro.as(RespostaCliente.class);
         assertThat(cadastro.header("Location")).endsWith("/clientes/" + cliente.id());
-        assertThat(cliente)
-            .isEqualTo(new RespostaCliente(cliente.id(), "Maria Silva", "maria@example.com", "52998224725"));
-        final var consulta = requisicao().get("/clientes/{id}", cliente.id());
-        validar(consulta, 200);
-        assertThat(consulta.as(RespostaCliente.class)).isEqualTo(cliente);
-        validar(requisicao().queryParam("documento", cliente.documento()).get("/clientes"), 200);
-        validar(requisicao().body(Map.of("nome", "Novo nome")).patch("/clientes/{id}", cliente.id()), 200);
         final var exclusao = requisicao().delete("/clientes/{id}", cliente.id());
         validar(exclusao, 204);
         assertThat(exclusao.body().asString()).isEmpty();

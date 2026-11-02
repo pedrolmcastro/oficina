@@ -14,7 +14,7 @@
     "from": "now-30m",
     "to": "now"
   },
-  "description": "Volume, duração e erros HTTP de catálogo de serviços e associações de insumos obrigatórios, incluindo todas as subrotas. Duração das operações transacionais por operação e erro. Médias ponderadas por requisição nos últimos 5 minutos; sem requisições na janela, a média fica sem dados. As rotas usam os templates da API, sem IDs, tokens ou dados pessoais nos rótulos.",
+  "description": "Volume, duração e erros HTTP de cadastro de serviços e associações de insumos obrigatórios, incluindo todas as subrotas. Duração das operações transacionais por operação e erro. Médias ponderadas por requisição nos últimos 5 minutos; sem requisições na janela, a média fica sem dados. As rotas usam os templates da API, sem IDs, tokens ou dados pessoais nos rótulos.",
   "panels": [
     {
       "id": 1,

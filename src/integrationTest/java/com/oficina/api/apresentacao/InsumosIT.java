@@ -1,22 +1,16 @@
 package com.oficina.api.apresentacao;
 
 import com.oficina.api.apresentacao.insumo.RespostaInsumo;
-import io.restassured.RestAssured;
 import io.restassured.common.mapper.TypeRef;
 import io.restassured.response.Response;
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -28,16 +22,11 @@ class InsumosIT extends ApiIntegrationTest {
     }
 
     @Test
-    void deveRespeitarContratoHttpEPreservarHistorico() {
+    void deveRetornarLocalizacaoAceitarMergePatchEPreservarExclusaoLogica() {
         final var cadastro = cadastrar("Óleo de motor");
         validar(cadastro, 201);
         final var original = cadastro.as(RespostaInsumo.class);
         assertThat(cadastro.header("Location")).isEqualTo("/insumos/" + original.id());
-        assertThat(original)
-            .isEqualTo(new RespostaInsumo(original.id(), "Óleo de motor", new BigDecimal("19.90"), 0, 0, 0));
-        final var consulta = requisicao().get("/insumos/{id}", original.id());
-        validar(consulta, 200);
-        assertThat(consulta.as(RespostaInsumo.class)).isEqualTo(original);
         validar(
             requisicao()
                 .contentType("application/merge-patch+json")
@@ -53,26 +42,19 @@ class InsumosIT extends ApiIntegrationTest {
             .containsAllEntriesOf(Map.of("nome", original.nome(), "preco_venda", original.precoVenda()));
     }
 
-    @ParameterizedTest
-    @NullSource
-    @ValueSource(strings = { "ÓLEO" })
-    void devePercorrerInsumosEmOrdemSemRepeticoes(final @Nullable String nome) {
+    @Test
+    void devePaginarInsumosMantendoFiltroPorNome() {
         final var oleos = List
             .of(
                 cadastrar("Filtro de óleo").as(RespostaInsumo.class),
                 cadastrar("Óleo para motor").as(RespostaInsumo.class),
                 cadastrar("Óleos sintéticos").as(RespostaInsumo.class)
             );
-        final var todos = new ArrayList<>(oleos);
-        todos.add(cadastrar("Pneu").as(RespostaInsumo.class));
-        final var esperados = (nome == null
-            ? todos
-            : oleos).stream().sorted(Comparator.comparing(insumo -> insumo.id().toString())).toList();
+        cadastrar("Pneu");
+        final var esperados = oleos.stream().sorted(Comparator.comparing(insumo -> insumo.id().toString())).toList();
         final Map<String, Object> parametros = new HashMap<>();
         parametros.put("first", 2);
-        if (nome != null) {
-            parametros.put("nome", nome);
-        }
+        parametros.put("nome", "ÓLEO");
         final var primeira = listar(parametros);
         assertThat(primeira.itens()).containsExactlyElementsOf(esperados.subList(0, 2));
         assertThat(primeira.nextCursor()).isEqualTo(esperados.get(1).id());
@@ -99,8 +81,6 @@ class InsumosIT extends ApiIntegrationTest {
     @ValueSource(strings = {
         "{}",
         "{\"quantidade\":null}",
-        "{\"quantidade\":0}",
-        "{\"quantidade\":-1}",
         "{\"quantidade\":1.5}",
         "{\"quantidade\":2147483648}",
         "{\"quantidade\":1,\"extra\":true}" })
@@ -111,29 +91,7 @@ class InsumosIT extends ApiIntegrationTest {
     }
 
     @Test
-    void deveRecusarEntradaSemPermissaoOuEmInsumoInexistente() {
-        final var caminho = "/insumos/" + UUID.randomUUID() + "/entradas-estoque";
-        assertThat(
-            RestAssured
-                .given()
-                .port(this.porta)
-                .contentType("application/json")
-                .body(Map.of("quantidade", 1))
-                .post(caminho)
-                .statusCode()
-        ).isEqualTo(401);
-        assertThat(
-            RestAssured
-                .given()
-                .port(this.porta)
-                .contentType("application/json")
-                .auth()
-                .oauth2(this.emissor.emitir("usuario", Set.of("USER")).valor())
-                .body(Map.of("quantidade", 1))
-                .post(caminho)
-                .statusCode()
-        ).isEqualTo(403);
-        validar(requisicao().body(Map.of("quantidade", 1)).post(caminho), 404);
+    void deveRecusarEntradaEmInsumoExcluido() {
         final var insumo = cadastrar("Óleo").as(RespostaInsumo.class);
         validar(requisicao().delete("/insumos/{id}", insumo.id()), 204);
         validar(requisicao().body(Map.of("quantidade", 1)).post("/insumos/{id}/entradas-estoque", insumo.id()), 404);

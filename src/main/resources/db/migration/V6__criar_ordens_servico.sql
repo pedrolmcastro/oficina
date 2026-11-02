@@ -42,7 +42,7 @@ CREATE TABLE oficina.ordens_servico_servicos (
     UNIQUE (ordem_servico_id, id)
 );
 
-CREATE INDEX idx_ordens_servico_servicos_catalogo ON oficina.ordens_servico_servicos (servico_id);
+CREATE INDEX idx_ordens_servico_servicos_servico ON oficina.ordens_servico_servicos (servico_id);
 
 CREATE TABLE oficina.ordens_servico_insumos (
     id UUID PRIMARY KEY CHECK (uuid_extract_version(id) = 7),
@@ -60,7 +60,7 @@ CREATE TABLE oficina.ordens_servico_insumos (
     UNIQUE NULLS NOT DISTINCT (ordem_servico_id, servico_contratado_id, insumo_id)
 );
 
-CREATE INDEX idx_ordens_servico_insumos_catalogo ON oficina.ordens_servico_insumos (insumo_id);
+CREATE INDEX idx_ordens_servico_insumos_insumo ON oficina.ordens_servico_insumos (insumo_id);
 
 CREATE TABLE oficina.ordens_servico_eventos (
     ordem_servico_id UUID NOT NULL REFERENCES oficina.ordens_servico (id),

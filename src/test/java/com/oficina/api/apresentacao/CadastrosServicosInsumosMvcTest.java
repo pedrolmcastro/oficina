@@ -33,7 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(controllers = { ControladorInsumos.class, ControladorServicos.class, ControladorInsumosObrigatorios.class })
 @AutoConfigureMockMvc(addFilters = false)
-class CatalogosMvcTest {
+class CadastrosServicosInsumosMvcTest {
     @Autowired
     private MockMvc mvc;
     @MockitoBean

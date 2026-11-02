@@ -4,6 +4,7 @@ import com.oficina.api.apresentacao.RespostaLista;
 import com.oficina.api.apresentacao.cliente.RespostaCliente;
 import com.oficina.api.infraestrutura.seguranca.EmissorTokenJwt;
 import io.cucumber.datatable.DataTable;
+import io.cucumber.java.After;
 import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -14,7 +15,6 @@ import java.util.Objects;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.JdbcTemplate;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ClientesSteps {
@@ -22,18 +22,85 @@ public class ClientesSteps {
     private HttpSteps http;
 
     @Autowired
-    private JdbcTemplate jdbc;
+    private EmissorTokenJwt emissor;
 
     @Autowired
-    private EmissorTokenJwt emissor;
+    private OrdensServicoSteps ordens;
 
     private @Nullable RespostaCliente clienteOriginal;
 
     @Before(value = "@clientes")
     public void prepararCenario() {
-        this.jdbc.update("DELETE FROM oficina.veiculos");
-        this.jdbc.update("DELETE FROM oficina.clientes");
+        this.ordens.limpar();
         this.http.autenticar(this.emissor.emitir("admin", Set.of("ADMIN")).valor());
+    }
+
+    @After(value = "@clientes")
+    public void limpar() {
+        this.ordens.limpar();
+    }
+
+    @Given("que o cliente possui uma OS em {string}")
+    public void prepararOrdem(final String status) {
+        this.ordens
+            .prepararStatus(
+                "entregue".equals(status)
+                    ? "aguardando-retirada"
+                    : status
+            );
+        if ("entregue".equals(status)) {
+            this.ordens.prepararRetirada();
+        }
+        consultarDocumento("52998224725");
+        this.http.validarStatus(200);
+        this.clienteOriginal = this.http
+            .resposta()
+            .as(new TypeRef<RespostaLista<RespostaCliente>>() {})
+            .itens()
+            .getFirst();
+    }
+
+    @Given("que o cliente possui outra OS aguardando diagnóstico")
+    public void prepararOutraOrdem() {
+        this.ordens.criar();
+        this.http.validarStatus(201);
+    }
+
+    @Given("que o cliente possui uma OS com orçamento rejeitado aguardando retirada")
+    public void prepararOrdemRejeitada() {
+        prepararOrdem("aguardando-confirmacao");
+        this.ordens.prepararDecisao("rejeitado");
+    }
+
+    @Then("a OS do cliente deve permanecer em {string}")
+    public void validarOrdemPreservada(final String status) {
+        this.ordens.consultar();
+        this.http.validarStatus(200);
+        this.ordens.validarStatusOrdem(status);
+        this.ordens.validarClienteOriginal();
+    }
+
+    @Given("que existe outro cliente")
+    public void cadastrarOutroCliente() {
+        cadastrarCliente("Outro cliente", "outro@example.com", "11144477735");
+        this.http.validarStatus(201);
+    }
+
+    @Given("que existe um cliente")
+    public void cadastrarClienteExistente() {
+        cadastrarClienteExistente("52998224725");
+    }
+
+    @Given("que existe um cliente com os dados:")
+    public void cadastrarClienteExistente(final DataTable dados) {
+        final var cliente = dados.asMaps().getFirst();
+        cadastrarCliente(
+            Objects.requireNonNull(cliente.get("nome")),
+            Objects.requireNonNull(cliente.get("email")),
+            Objects.requireNonNull(cliente.get("documento"))
+        );
+        this.http.validarStatus(201);
+        this.clienteOriginal = this.http.resposta().as(RespostaCliente.class);
     }
 
     @Given("que existe um cliente com documento {string}")
@@ -56,7 +123,12 @@ public class ClientesSteps {
 
     @When("consulto o cliente cadastrado pelo ID")
     public void consultarCliente() {
-        this.http.receber(this.http.requisicao().get("/clientes/{id}", clienteOriginal().id()));
+        consultarCliente(clienteOriginal().id().toString());
+    }
+
+    @When("consulto o cliente pelo ID {string}")
+    public void consultarCliente(final String id) {
+        this.http.receber(this.http.requisicao().get("/clientes/{id}", id));
     }
 
     @When("consulto clientes pelo documento {string}")
@@ -66,15 +138,40 @@ public class ClientesSteps {
 
     @When("atualizo o cliente cadastrado com:")
     public void atualizarCliente(final DataTable dados) {
-        this.http
-            .receber(
-                this.http.requisicao().body(dados.asMaps().getFirst()).patch("/clientes/{id}", clienteOriginal().id())
-            );
+        enviarAtualizacao(clienteOriginal().id().toString(), dados.asMaps().getFirst());
+    }
+
+    @When("atualizo o cliente cadastrado com nome {string}, email {string} e documento {string}")
+    public void atualizarCliente(final String nome, final String email, final String documento) {
+        enviarAtualizacao(
+            clienteOriginal().id().toString(),
+            Map.of("nome", nome, "email", email, "documento", documento)
+        );
+    }
+
+    @When("atualizo o cliente cadastrado sem campos definidos")
+    public void atualizarClienteSemCampos() {
+        enviarAtualizacao(clienteOriginal().id().toString(), Map.of());
+    }
+
+    @When("atualizo o cliente pelo ID {string} com:")
+    public void atualizarClientePorId(final String id, final DataTable dados) {
+        enviarAtualizacao(id, dados.asMaps().getFirst());
     }
 
     @When("excluo o cliente cadastrado")
     public void excluirCliente() {
-        this.http.receber(this.http.requisicao().delete("/clientes/{id}", clienteOriginal().id()));
+        excluirCliente(clienteOriginal().id().toString());
+    }
+
+    @When("excluo o cliente pelo ID {string}")
+    public void excluirCliente(final String id) {
+        this.http.receber(this.http.requisicao().delete("/clientes/{id}", id));
+    }
+
+    @Then("a resposta deve conter o ID do cliente cadastrado")
+    public void validarIdCliente() {
+        assertThat(this.http.resposta().as(RespostaCliente.class).id()).isEqualTo(clienteOriginal().id());
     }
 
     @Then("a resposta deve conter o cliente:")
@@ -92,7 +189,9 @@ public class ClientesSteps {
 
     @Then("a resposta deve conter uma lista vazia de clientes")
     public void validarListaVazia() {
-        assertThat(this.http.resposta().as(new TypeRef<RespostaLista<RespostaCliente>>() {}).itens()).isEmpty();
+        final var lista = this.http.resposta().as(new TypeRef<RespostaLista<RespostaCliente>>() {});
+        assertThat(lista.itens()).isEmpty();
+        assertThat(lista.nextCursor()).isNull();
     }
 
     @Then("o cliente original deve permanecer inalterado")
@@ -108,12 +207,15 @@ public class ClientesSteps {
         assertThat(this.http.resposta().as(RespostaCliente.class).id()).isNotEqualTo(clienteOriginal().id());
     }
 
+    private void enviarAtualizacao(final String id, final Map<?, ?> dados) {
+        this.http.receber(this.http.requisicao().body(dados).patch("/clientes/{id}", id));
+    }
+
     private void validarDadosCliente(final RespostaCliente cliente, final DataTable tabela) {
         final var esperado = tabela.asMaps().getFirst();
         assertThat(cliente.id()).isNotNull();
-        assertThat(cliente.nome()).isEqualTo(esperado.get("nome"));
-        assertThat(cliente.email()).isEqualTo(esperado.get("email"));
-        assertThat(cliente.documento()).isEqualTo(esperado.get("documento"));
+        assertThat(Map.of("nome", cliente.nome(), "email", cliente.email(), "documento", cliente.documento()))
+            .containsAllEntriesOf(esperado);
     }
 
     private RespostaCliente clienteOriginal() {
