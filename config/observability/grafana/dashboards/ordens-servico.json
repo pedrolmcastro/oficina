@@ -159,6 +159,48 @@
           "range": true
         }
       ]
+    },
+    {
+      "id": 5,
+      "title": "Tempo médio da criação até a entrega — últimas 24 horas",
+      "type": "timeseries",
+      "description": "Ciclo de vida completo das OS entregues, incluindo esperas, em uma janela móvel de 24 horas. Registrado após confirmar a entrega; não recupera entregas anteriores à implantação. Sem entregas na janela, a média fica sem dados.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 18,
+        "w": 24,
+        "h": 9
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(ordens_servico_ciclo_seconds_sum{job=\"oficina\"}[24h])) / sum(increase(ordens_servico_ciclo_seconds_count{job=\"oficina\"}[24h]))",
+          "legendFormat": "Criação até entrega",
+          "instant": false,
+          "range": true
+        }
+      ]
     }
   ]
 }

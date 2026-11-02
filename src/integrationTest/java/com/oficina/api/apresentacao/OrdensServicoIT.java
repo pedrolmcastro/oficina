@@ -12,6 +12,7 @@ import com.oficina.api.apresentacao.veiculo.RespostaVeiculo;
 import com.oficina.api.dominio.Quantidade;
 import com.oficina.api.infraestrutura.email.EnvioEmails;
 import com.oficina.api.infraestrutura.seguranca.TokenAcompanhamento;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.restassured.RestAssured;
 import io.restassured.common.mapper.TypeRef;
 import io.restassured.response.Response;
@@ -26,6 +27,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
@@ -58,12 +60,33 @@ class OrdensServicoIT extends ApiIntegrationTest {
     private ServicoInsumos servicoInsumos;
     @Autowired
     private PlatformTransactionManager transacoes;
+    @Autowired
+    private MeterRegistry metricas;
     @MockitoBean
     private EnvioEmails emails;
     private @Nullable UUID clienteId;
     private @Nullable UUID veiculoId;
     private @Nullable UUID servicoId;
     private @Nullable UUID insumoId;
+
+    @Test
+    void deveMedirCicloSomenteAposConfirmarEntrega() {
+        final var timer = this.metricas.timer("ordens_servico.ciclo");
+        final var contagem = timer.count();
+        final var tempo = timer.totalTime(TimeUnit.SECONDS);
+        final var acesso = criar();
+        final var id = acesso.ordemServico().id();
+        this.jdbc.update("UPDATE oficina.ordens_servico SET criada_em = now() - interval '2 hours' WHERE id = ?", id);
+        validar(decidir(acesso, "rejeicao"), 200);
+        new TransactionTemplate(this.transacoes).executeWithoutResult(status -> {
+            this.servicoOrdens.executar(id, "entregar", o -> o.retirarVeiculo("admin"));
+            status.setRollbackOnly();
+        });
+        assertThat(timer.count()).isEqualTo(contagem);
+        validar(requisicao().post("/ordens-servico/{id}/retirada-veiculo", id), 200);
+        assertThat(timer.count()).isEqualTo(contagem + 1);
+        assertThat(timer.totalTime(TimeUnit.SECONDS) - tempo).isBetween(7200.0, 7230.0);
+    }
 
     @BeforeEach
     void preparar() {
