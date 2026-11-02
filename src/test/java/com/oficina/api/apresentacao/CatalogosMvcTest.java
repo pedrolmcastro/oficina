@@ -78,6 +78,20 @@ class CatalogosMvcTest {
         verifyNoInteractions(this.servicos);
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = { "", ",\"quantidade\":null" })
+    void deveExigirQuantidadeNaAssociacao(final String quantidade) throws Exception {
+        final var json = "{\"insumoId\":\"%s\"%s}".formatted(UUID.randomUUID(), quantidade);
+        this.mvc
+            .perform(
+                post("/servicos/{id}/insumos-obrigatorios", UUID.randomUUID())
+                    .contentType("application/json")
+                    .content(json)
+            )
+            .andExpect(status().isBadRequest());
+        verifyNoInteractions(this.servicos);
+    }
+
     @Test
     void deveRejeitarInsumosNoPatchDoServico() throws Exception {
         this.mvc

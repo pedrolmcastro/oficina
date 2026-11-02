@@ -3,7 +3,8 @@ package com.oficina.api.aplicacao.servico;
 import com.oficina.api.aplicacao.OperacoesTransacionais;
 import com.oficina.api.aplicacao.Pagina;
 import com.oficina.api.aplicacao.insumo.InsumoNaoEncontradoException;
-import com.oficina.api.dominio.insumo.Insumo;
+import com.oficina.api.dominio.Quantidade;
+import com.oficina.api.dominio.servico.InsumoObrigatorio;
 import com.oficina.api.dominio.servico.Nome;
 import com.oficina.api.dominio.servico.PrecoVenda;
 import com.oficina.api.dominio.servico.Servico;
@@ -74,18 +75,22 @@ public class ServicoServicos {
         this.operacoes.escrita("excluir", () -> encontrar(id, LockModeType.PESSIMISTIC_WRITE).excluir());
     }
 
-    public Insumo associarInsumoObrigatorio(final UUID servicoId, final UUID insumoId) {
+    public InsumoObrigatorio associarInsumoObrigatorio(
+        final UUID servicoId,
+        final UUID insumoId,
+        final Quantidade quantidade
+    ) {
         return this.operacoes.escrita("associar_insumo_obrigatorio", () -> {
             encontrar(servicoId, LockModeType.PESSIMISTIC_WRITE);
-            final var insumo = this.insumos
-                .buscar(insumoId, LockModeType.PESSIMISTIC_WRITE)
-                .orElseThrow(InsumoNaoEncontradoException::new);
-            this.repositorio.associarInsumoObrigatorio(servicoId, insumoId);
-            return insumo;
+            if (this.insumos.buscar(insumoId, LockModeType.PESSIMISTIC_WRITE).isEmpty()) {
+                throw new InsumoNaoEncontradoException();
+            }
+            this.repositorio.associarInsumoObrigatorio(servicoId, insumoId, quantidade);
+            return new InsumoObrigatorio(insumoId, quantidade);
         });
     }
 
-    public Pagina<Insumo> listarInsumosObrigatorios(
+    public Pagina<InsumoObrigatorio> listarInsumosObrigatorios(
         final UUID servicoId,
         final @Nullable UUID after,
         final Pagina.Limite limite
@@ -93,7 +98,7 @@ public class ServicoServicos {
         return this.operacoes.pagina("listar_insumos_obrigatorios", limite, () -> {
             encontrar(servicoId, LockModeType.NONE);
             return this.repositorio.listarInsumosObrigatorios(servicoId, after, limite);
-        });
+        }, InsumoObrigatorio::insumoId);
     }
 
     public void removerInsumoObrigatorio(final UUID servicoId, final UUID insumoId) {

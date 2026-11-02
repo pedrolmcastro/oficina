@@ -5,6 +5,8 @@ import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -36,7 +38,16 @@ public final class OperacoesTransacionais {
         final Pagina.Limite limite,
         final Supplier<List<T>> consulta
     ) {
-        return leitura(operacao, () -> Pagina.de(consulta.get(), limite));
+        return pagina(operacao, limite, consulta, entidade -> entidade.id());
+    }
+
+    public <T> Pagina<T> pagina(
+        final String operacao,
+        final Pagina.Limite limite,
+        final Supplier<List<T>> consulta,
+        final Function<? super T, UUID> cursor
+    ) {
+        return leitura(operacao, () -> Pagina.de(consulta.get(), limite, cursor));
     }
 
     public <T> T escrita(final String operacao, final Supplier<T> acao) {

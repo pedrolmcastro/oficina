@@ -2,8 +2,11 @@ package com.oficina.api.aplicacao;
 
 import com.oficina.api.dominio.DadoInvalidoException;
 import com.oficina.api.dominio.Entidade;
+import com.oficina.api.dominio.Quantidade;
+import com.oficina.api.dominio.servico.InsumoObrigatorio;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -42,6 +45,16 @@ class PaginaTest {
         final var pagina = Pagina.de(encontrados, new Pagina.Limite(first));
         assertThat(pagina.itens()).containsExactlyElementsOf(encontrados.subList(0, first));
         assertThat(pagina.nextCursor()).isEqualTo(encontrados.get(first - 1).id());
+    }
+
+    @Test
+    void devePaginarAssociacoesUsandoReferenciaComoCursor() {
+        final var primeiro = new InsumoObrigatorio(UUID.randomUUID(), new Quantidade(1));
+        final var segundo = new InsumoObrigatorio(UUID.randomUUID(), new Quantidade(2));
+        final var encontrados = List.of(primeiro, segundo);
+        final var pagina = Pagina.de(encontrados, new Pagina.Limite(1), insumo -> insumo.insumoId());
+        assertThat(pagina.itens()).containsExactly(primeiro);
+        assertThat(pagina.nextCursor()).isEqualTo(primeiro.insumoId());
     }
 
     @Test

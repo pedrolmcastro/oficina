@@ -4,7 +4,7 @@ import com.oficina.api.aplicacao.Pagina;
 import com.oficina.api.aplicacao.servico.ServicoServicos;
 import com.oficina.api.apresentacao.RespostaLista;
 import com.oficina.api.apresentacao.RespostasHttp;
-import com.oficina.api.apresentacao.insumo.RespostaInsumo;
+import com.oficina.api.dominio.Quantidade;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -48,15 +48,16 @@ public class ControladorInsumosObrigatorios {
     @Operation(summary = "Associar insumo obrigatório ao serviço")
     @ApiResponse(responseCode = "201", description = "Insumo obrigatório associado")
     @ApiResponse(responseCode = "409", description = "Insumo já é obrigatório para o serviço")
-    public ResponseEntity<RespostaInsumo> associar(
+    public ResponseEntity<RespostaInsumoObrigatorio> associar(
         @PathVariable final UUID servicoId,
         @Valid @RequestBody final RequisicaoCriarInsumoObrigatorio requisicao
     ) {
-        final var insumo = this.servico.associarInsumoObrigatorio(servicoId, requisicao.insumoId());
+        final var insumo = this.servico
+            .associarInsumoObrigatorio(servicoId, requisicao.insumoId(), new Quantidade(requisicao.quantidade()));
         return RespostasHttp
             .criada(
-                URI.create("/servicos/" + servicoId + "/insumos-obrigatorios/" + insumo.id()),
-                RespostaInsumo.de(insumo)
+                URI.create("/servicos/" + servicoId + "/insumos-obrigatorios/" + insumo.insumoId()),
+                RespostaInsumoObrigatorio.de(insumo)
             );
     }
 
@@ -65,7 +66,7 @@ public class ControladorInsumosObrigatorios {
         description = "Retorna em itens até first insumos obrigatórios "
             + "(padrão 25, entre 1 e 25), em ordem crescente de ID, após after. "
             + "Use nextCursor em after; null indica o fim da listagem.")
-    public ResponseEntity<RespostaLista<RespostaInsumo>> listar(
+    public ResponseEntity<RespostaLista<RespostaInsumoObrigatorio>> listar(
         @PathVariable final UUID servicoId,
         @RequestParam(required = false) final @Nullable UUID after,
         @RequestParam(defaultValue = "25") @Schema(minimum = "1", maximum = "25") final int first
@@ -75,7 +76,7 @@ public class ControladorInsumosObrigatorios {
                 RespostaLista
                     .de(
                         this.servico.listarInsumosObrigatorios(servicoId, after, new Pagina.Limite(first)),
-                        RespostaInsumo::de
+                        RespostaInsumoObrigatorio::de
                     )
             );
     }

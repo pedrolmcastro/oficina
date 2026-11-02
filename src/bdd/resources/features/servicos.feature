@@ -102,11 +102,11 @@ Funcionalidade: Gerenciar serviços
     Então a API deve retornar 200
     E o serviço deve estar sem insumos obrigatórios
     Dado que existe um insumo disponível para o serviço com nome "Óleo" e preço "19.90"
-    Quando associo o insumo disponível como obrigatório ao serviço cadastrado
+    Quando associo o insumo disponível como obrigatório ao serviço cadastrado com quantidade "4"
     Então a API deve retornar 201
     Quando listo os insumos obrigatórios do serviço cadastrado
     Então a API deve retornar 200
-    E o serviço deve ter o insumo disponível como obrigatório
+    E o serviço deve ter o insumo disponível como obrigatório com quantidade "4"
     Quando removo o insumo obrigatório do serviço cadastrado
     Então a API deve retornar 204
     E a resposta não deve conter conteúdo nem permitir cache
