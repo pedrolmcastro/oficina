@@ -2,8 +2,18 @@ CREATE TABLE oficina.ordens_servico (
     id UUID PRIMARY KEY CHECK (uuid_extract_version(id) = 7),
     cliente_id UUID NOT NULL REFERENCES oficina.clientes (id),
     veiculo_id UUID NOT NULL REFERENCES oficina.veiculos (id),
-    status TEXT NOT NULL CHECK (status IN ('AGUARDANDO_DIAGNOSTICO', 'EM_DIAGNOSTICO',
-        'AGUARDANDO_CONFIRMACAO', 'AGUARDANDO_EXECUCAO', 'EM_EXECUCAO', 'AGUARDANDO_RETIRADA', 'ENTREGUE')),
+    status TEXT NOT NULL CHECK (
+        status IN (
+            'AGUARDANDO_DIAGNOSTICO',
+            'EM_DIAGNOSTICO',
+            'AGUARDANDO_CONFIRMACAO',
+            'AGUARDANDO_INSUMOS',
+            'AGUARDANDO_EXECUCAO',
+            'EM_EXECUCAO',
+            'AGUARDANDO_RETIRADA',
+            'ENTREGUE'
+        )
+    ),
     resultado TEXT CHECK (resultado IN ('ORCAMENTO_REJEITADO', 'EXECUCAO_CONCLUIDA')),
     criada_em TIMESTAMPTZ NOT NULL,
     hash_token TEXT NOT NULL UNIQUE,
@@ -16,6 +26,8 @@ CREATE TABLE oficina.ordens_servico (
 );
 
 CREATE INDEX idx_ordens_servico_status_id ON oficina.ordens_servico (status, id);
+CREATE INDEX idx_ordens_servico_fila_insumos ON oficina.ordens_servico (criada_em, id)
+    WHERE status = 'AGUARDANDO_INSUMOS';
 CREATE INDEX idx_ordens_servico_cliente ON oficina.ordens_servico (cliente_id);
 CREATE INDEX idx_ordens_servico_veiculo ON oficina.ordens_servico (veiculo_id);
 
@@ -39,6 +51,9 @@ CREATE TABLE oficina.ordens_servico_insumos (
     insumo_id UUID NOT NULL REFERENCES oficina.insumos (id),
     nome TEXT NOT NULL,
     quantidade INTEGER NOT NULL CHECK (quantidade > 0),
+    quantidade_reservada INTEGER NOT NULL DEFAULT 0 CHECK (quantidade_reservada >= 0),
+    quantidade_consumida INTEGER NOT NULL DEFAULT 0 CHECK (quantidade_consumida >= 0),
+    CHECK (quantidade_reservada + quantidade_consumida <= quantidade),
     preco_unitario NUMERIC(19, 2) NOT NULL CHECK (preco_unitario >= 0),
     FOREIGN KEY (ordem_servico_id, servico_contratado_id)
         REFERENCES oficina.ordens_servico_servicos (ordem_servico_id, id) DEFERRABLE INITIALLY DEFERRED,

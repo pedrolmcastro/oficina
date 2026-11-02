@@ -5,6 +5,7 @@ import com.oficina.api.aplicacao.insumo.ServicoInsumos;
 import com.oficina.api.apresentacao.RespostaLista;
 import com.oficina.api.apresentacao.RespostasHttp;
 import com.oficina.api.dominio.Preco;
+import com.oficina.api.dominio.Quantidade;
 import com.oficina.api.dominio.TextoNormalizado;
 import com.oficina.api.dominio.insumo.Nome;
 import com.oficina.api.dominio.insumo.PrecoVenda;
@@ -102,10 +103,23 @@ public class ControladorInsumos {
         return RespostasHttp.ok(RespostaInsumo.de(insumo));
     }
 
+    @PostMapping(value = "/{id}/entradas-estoque", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Incrementar estoque e reservar para OS por ordem de criação",
+        description = "A quantidade é adicionada ao saldo físico. Reservas parciais são mantidas até a execução.")
+    @ApiResponse(responseCode = "200", description = "Estoque incrementado e fila de reservas processada")
+    @ApiResponse(responseCode = "404", description = "Insumo inexistente ou excluído")
+    public ResponseEntity<RespostaInsumo> incrementarEstoque(
+        @PathVariable final UUID id,
+        @Valid @RequestBody final RequisicaoEntradaEstoque requisicao
+    ) {
+        return RespostasHttp
+            .ok(RespostaInsumo.de(this.servico.incrementarEstoque(id, new Quantidade(requisicao.quantidade()))));
+    }
+
     @DeleteMapping(value = "/{id}")
     @Operation(summary = "Excluir insumo")
     @ApiResponse(responseCode = "204", description = "Insumo excluído", content = { @Content })
-    @ApiResponse(responseCode = "409", description = "Insumo obrigatório de um serviço ativo")
+    @ApiResponse(responseCode = "409", description = "Insumo obrigatório de serviço ativo ou necessário para OS ativa")
     @ApiResponse(responseCode = "404", description = "Insumo inexistente ou já excluído")
     public ResponseEntity<Void> excluir(@PathVariable final UUID id) {
         this.servico.excluir(id);

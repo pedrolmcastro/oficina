@@ -2,6 +2,8 @@ package com.oficina.api.aplicacao.insumo;
 
 import com.oficina.api.aplicacao.OperacoesTransacionais;
 import com.oficina.api.aplicacao.Pagina;
+import com.oficina.api.aplicacao.estoque.ServicoReservasInsumos;
+import com.oficina.api.dominio.Quantidade;
 import com.oficina.api.dominio.insumo.Insumo;
 import com.oficina.api.dominio.insumo.Nome;
 import com.oficina.api.dominio.insumo.PrecoVenda;
@@ -16,14 +18,17 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 @Service
 public class ServicoInsumos {
+    private final ServicoReservasInsumos reservas;
     private final RepositorioInsumos repositorio;
     private final OperacoesTransacionais operacoes;
 
     public ServicoInsumos(
         final RepositorioInsumos repositorio,
+        final ServicoReservasInsumos reservas,
         final ObservationRegistry observacoes,
         final PlatformTransactionManager transacoes
     ) {
+        this.reservas = reservas;
         this.repositorio = repositorio;
         this.operacoes = new OperacoesTransacionais("insumos.operacao", observacoes, transacoes);
     }
@@ -57,11 +62,19 @@ public class ServicoInsumos {
         });
     }
 
+    public Insumo incrementarEstoque(final UUID id, final Quantidade quantidade) {
+        return this.operacoes.escrita("incrementar_estoque", () -> {
+            this.reservas.bloquear();
+            return this.reservas.incrementar(id, quantidade);
+        });
+    }
+
     public void excluir(final UUID id) {
         this.operacoes.escrita("excluir", () -> {
+            this.reservas.bloquear();
             final var insumo = encontrar(id, LockModeType.PESSIMISTIC_WRITE);
-            if (this.repositorio.obrigatorioParaServicoAtivo(id)) {
-                throw new DataIntegrityViolationException("Insumo obrigatório de serviço ativo");
+            if (this.repositorio.obrigatorioParaServicoAtivo(id) || this.repositorio.necessarioParaOrdemAtiva(id)) {
+                throw new DataIntegrityViolationException("Insumo necessário para serviço ou OS ativa");
             }
             insumo.excluir();
         });

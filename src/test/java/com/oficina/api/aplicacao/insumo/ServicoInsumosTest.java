@@ -1,5 +1,6 @@
 package com.oficina.api.aplicacao.insumo;
 
+import com.oficina.api.aplicacao.estoque.ServicoReservasInsumos;
 import com.oficina.api.dominio.Preco;
 import com.oficina.api.dominio.TextoNormalizado;
 import com.oficina.api.dominio.insumo.Insumo;
@@ -26,6 +27,7 @@ class ServicoInsumosTest {
     private final PlatformTransactionManager transacoes = mock(PlatformTransactionManager.class);
     private final ServicoInsumos servico = new ServicoInsumos(
         this.repositorio,
+        mock(ServicoReservasInsumos.class),
         ObservationRegistry.NOOP,
         this.transacoes
     );

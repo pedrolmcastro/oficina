@@ -1,6 +1,8 @@
 package com.oficina.api.dominio.insumo;
 
+import com.oficina.api.dominio.DadoInvalidoException;
 import com.oficina.api.dominio.Entidade;
+import com.oficina.api.dominio.Quantidade;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
@@ -13,6 +15,8 @@ import org.hibernate.annotations.SQLRestriction;
 public class Insumo extends Entidade {
     @Column(name = "deletado", nullable = false)
     private boolean deletado;
+    private int quantidadeEmEstoque;
+    private int quantidadeReservada;
     @Embedded
     private Nome nome;
     @Embedded
@@ -40,6 +44,40 @@ public class Insumo extends Entidade {
 
     public void setPrecoVenda(final PrecoVenda precoVenda) {
         this.precoVenda = precoVenda;
+    }
+
+    public int quantidadeEmEstoque() {
+        return this.quantidadeEmEstoque;
+    }
+
+    public int quantidadeReservada() {
+        return this.quantidadeReservada;
+    }
+
+    public int quantidadeDisponivel() {
+        return this.quantidadeEmEstoque - this.quantidadeReservada;
+    }
+
+    public void incrementarEstoque(final Quantidade quantidade) {
+        if (quantidade.valor() > Integer.MAX_VALUE - this.quantidadeEmEstoque) {
+            throw new DadoInvalidoException("Estoque excede o limite permitido");
+        }
+        this.quantidadeEmEstoque += quantidade.valor();
+    }
+
+    public void reservar(final Quantidade quantidade) {
+        if (quantidade.valor() > quantidadeDisponivel()) {
+            throw new DadoInvalidoException("Estoque disponível insuficiente");
+        }
+        this.quantidadeReservada += quantidade.valor();
+    }
+
+    public void consumirReserva(final Quantidade quantidade) {
+        if (quantidade.valor() > this.quantidadeReservada) {
+            throw new DadoInvalidoException("Quantidade excede o estoque reservado");
+        }
+        this.quantidadeReservada -= quantidade.valor();
+        this.quantidadeEmEstoque -= quantidade.valor();
     }
 
     public void excluir() {

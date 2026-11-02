@@ -164,8 +164,15 @@ public class OrdensServicoSteps {
         if ("aguardando-confirmacao".equals(status)) {
             return;
         }
+        if (!"aguardando-insumos".equals(status)) {
+            incrementarEstoque(4);
+            this.http.validarStatus(200);
+        }
         decidir("aprovacao");
         this.http.validarStatus(200);
+        if ("aguardando-insumos".equals(status)) {
+            return;
+        }
         if ("aguardando-execucao".equals(status)) {
             return;
         }
@@ -177,6 +184,27 @@ public class OrdensServicoSteps {
         acao("fim-execucao");
         this.http.validarStatus(200);
         assertThat(status).isEqualTo("aguardando-retirada");
+    }
+
+    @Given("uma entrada de {int} unidades do insumo")
+    @When("incremento o estoque do insumo em {int} unidades")
+    public void incrementarEstoque(final int quantidade) {
+        administrar();
+        this.http
+            .receber(
+                this.http
+                    .requisicao()
+                    .body(Map.of("quantidade", quantidade))
+                    .post("/insumos/{id}/entradas-estoque", this.insumoId)
+            );
+    }
+
+    @Then("a OS possui {int} unidades reservadas e {int} pendentes")
+    public void validarReservas(final int reservada, final int pendente) {
+        consultar();
+        final var itens = this.http.resposta().as(RespostaOrdemServico.class).insumosNecessarios();
+        assertThat(itens.stream().mapToInt(RespostaInsumoNecessario::quantidadeReservada).sum()).isEqualTo(reservada);
+        assertThat(itens.stream().mapToInt(RespostaInsumoNecessario::quantidadePendente).sum()).isEqualTo(pendente);
     }
 
     @Given("um insumo avulso incluído com quantidade {int}")
