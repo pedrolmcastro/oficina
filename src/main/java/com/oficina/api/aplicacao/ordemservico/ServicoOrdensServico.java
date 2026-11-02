@@ -159,6 +159,14 @@ public class ServicoOrdensServico {
             if (anterior != ordem.status() && ordem.status() == StatusOrdemServico.AGUARDANDO_CONFIRMACAO) {
                 emitirDecisao(ordem);
             }
+            if (anterior != ordem.status() && ordem.status() == StatusOrdemServico.ENTREGUE) {
+                this.eventos
+                    .publishEvent(
+                        new EntregaOrdemServico(
+                            Duration.between(ordem.criadaEm(), ordem.eventos().getLast().ocorridoEm())
+                        )
+                    );
+            }
             return ordem;
         });
     }
