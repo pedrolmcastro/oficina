@@ -12,6 +12,9 @@ public record RespostaInsumoNecessario(
     UUID servicoContratadoId,
     String nome,
     int quantidade,
+    int quantidadeReservada,
+    int quantidadeConsumida,
+    int quantidadePendente,
     BigDecimal precoUnitario,
     BigDecimal subtotal
 ) {
@@ -22,6 +25,9 @@ public record RespostaInsumoNecessario(
             item.servicoContratadoId(),
             item.nome().texto().valor(),
             item.quantidade().valor(),
+            item.quantidadeReservada(),
+            item.quantidadeConsumida(),
+            item.quantidadePendente(),
             item.precoUnitario().preco().valor(),
             item.subtotal()
         );

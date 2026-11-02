@@ -1,6 +1,7 @@
 package com.oficina.api.apresentacao;
 
 import com.oficina.api.apresentacao.insumo.RespostaInsumo;
+import io.restassured.RestAssured;
 import io.restassured.common.mapper.TypeRef;
 import io.restassured.response.Response;
 import java.math.BigDecimal;
@@ -9,6 +10,8 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,7 +33,8 @@ class InsumosIT extends ApiIntegrationTest {
         validar(cadastro, 201);
         final var original = cadastro.as(RespostaInsumo.class);
         assertThat(cadastro.header("Location")).isEqualTo("/insumos/" + original.id());
-        assertThat(original).isEqualTo(new RespostaInsumo(original.id(), "Óleo de motor", new BigDecimal("19.90")));
+        assertThat(original)
+            .isEqualTo(new RespostaInsumo(original.id(), "Óleo de motor", new BigDecimal("19.90"), 0, 0, 0));
         final var consulta = requisicao().get("/insumos/{id}", original.id());
         validar(consulta, 200);
         assertThat(consulta.as(RespostaInsumo.class)).isEqualTo(original);
@@ -86,9 +90,67 @@ class InsumosIT extends ApiIntegrationTest {
             .patch("/insumos/{id}", original.id());
         validar(resposta, 200);
         assertThat(resposta.as(RespostaInsumo.class))
-            .isEqualTo(new RespostaInsumo(original.id(), original.nome(), new BigDecimal("0.00")));
+            .isEqualTo(new RespostaInsumo(original.id(), original.nome(), new BigDecimal("0.00"), 0, 0, 0));
         assertThat(requisicao().get("/insumos/{id}", original.id()).as(RespostaInsumo.class))
             .isEqualTo(resposta.as(RespostaInsumo.class));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "{}",
+        "{\"quantidade\":null}",
+        "{\"quantidade\":0}",
+        "{\"quantidade\":-1}",
+        "{\"quantidade\":1.5}",
+        "{\"quantidade\":2147483648}",
+        "{\"quantidade\":1,\"extra\":true}" })
+    void deveValidarEntradaDeEstoque(final String corpo) {
+        final var insumo = cadastrar("Óleo").as(RespostaInsumo.class);
+        validar(requisicao().body(corpo).post("/insumos/{id}/entradas-estoque", insumo.id()), 400);
+        assertThat(requisicao().get("/insumos/{id}", insumo.id()).as(RespostaInsumo.class)).isEqualTo(insumo);
+    }
+
+    @Test
+    void deveRecusarEntradaSemPermissaoOuEmInsumoInexistente() {
+        final var caminho = "/insumos/" + UUID.randomUUID() + "/entradas-estoque";
+        assertThat(
+            RestAssured
+                .given()
+                .port(this.porta)
+                .contentType("application/json")
+                .body(Map.of("quantidade", 1))
+                .post(caminho)
+                .statusCode()
+        ).isEqualTo(401);
+        assertThat(
+            RestAssured
+                .given()
+                .port(this.porta)
+                .contentType("application/json")
+                .auth()
+                .oauth2(this.emissor.emitir("usuario", Set.of("USER")).valor())
+                .body(Map.of("quantidade", 1))
+                .post(caminho)
+                .statusCode()
+        ).isEqualTo(403);
+        validar(requisicao().body(Map.of("quantidade", 1)).post(caminho), 404);
+        final var insumo = cadastrar("Óleo").as(RespostaInsumo.class);
+        validar(requisicao().delete("/insumos/{id}", insumo.id()), 204);
+        validar(requisicao().body(Map.of("quantidade", 1)).post("/insumos/{id}/entradas-estoque", insumo.id()), 404);
+    }
+
+    @Test
+    void deveRecusarOverflowDeEstoqueSemAlterarSaldo() {
+        final var insumo = cadastrar("Óleo").as(RespostaInsumo.class);
+        validar(
+            requisicao()
+                .body(Map.of("quantidade", Integer.MAX_VALUE))
+                .post("/insumos/{id}/entradas-estoque", insumo.id()),
+            200
+        );
+        validar(requisicao().body(Map.of("quantidade", 1)).post("/insumos/{id}/entradas-estoque", insumo.id()), 400);
+        assertThat(requisicao().get("/insumos/{id}", insumo.id()).as(RespostaInsumo.class).quantidadeEmEstoque())
+            .isEqualTo(Integer.MAX_VALUE);
     }
 
     private Response cadastrar(final String nome) {

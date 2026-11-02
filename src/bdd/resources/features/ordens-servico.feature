@@ -62,6 +62,8 @@ Funcionalidade: Conduzir uma ordem de serviço
       | DIAGNOSTICO_INICIADO  |
       | DIAGNOSTICO_CONCLUIDO |
       | ORCAMENTO_APROVADO    |
+      | INSUMO_RESERVADO      |
+      | INSUMOS_RESERVADOS    |
       | EXECUCAO_INICIADA     |
       | EXECUCAO_CONCLUIDA    |
       | VEICULO_RETIRADO      |
@@ -128,6 +130,7 @@ Funcionalidade: Conduzir uma ordem de serviço
 
   Cenário: Aprovar orçamento
     Dado uma OS em "aguardando-confirmacao"
+    E uma entrada de 4 unidades do insumo
     Quando o cliente envia "aprovacao" pelo link
     Então a API deve retornar 200
     E a OS está em "aguardando-execucao" com total "140.00"
@@ -393,3 +396,26 @@ Funcionalidade: Conduzir uma ordem de serviço
     E o acesso do cliente está expirado
     Quando o cliente envia "aprovacao" pelo link
     Então a API deve retornar 404
+
+  Cenário: Aguardar insumos após aprovação sem estoque
+    Dado uma OS em "aguardando-confirmacao"
+    Quando o cliente envia "aprovacao" pelo link
+    Então a API deve retornar 200
+    E a OS está em "aguardando-insumos" com total "140.00"
+    E a OS possui 0 unidades reservadas e 4 pendentes
+
+  Cenário: Completar reservas parciais automaticamente após reposição
+    Dado uma OS em "aguardando-insumos"
+    Quando incremento o estoque do insumo em 2 unidades
+    Então a API deve retornar 200
+    E a OS possui 2 unidades reservadas e 2 pendentes
+    E a OS está em "aguardando-insumos" com total "140.00"
+    Quando incremento o estoque do insumo em 3 unidades
+    Então a API deve retornar 200
+    E a OS possui 4 unidades reservadas e 0 pendentes
+    E a OS está em "aguardando-execucao" com total "140.00"
+
+  Cenário: Impedir execução enquanto faltam insumos
+    Dado uma OS em "aguardando-insumos"
+    Quando executo a ação administrativa "inicio-execucao" na OS
+    Então a API deve retornar 409

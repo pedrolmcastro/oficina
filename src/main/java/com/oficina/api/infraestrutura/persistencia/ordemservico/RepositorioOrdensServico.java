@@ -82,6 +82,24 @@ public class RepositorioOrdensServico extends RepositorioEntidades<OrdemServico>
             .toList();
     }
 
+    public List<OrdemServico> aguardandoInsumo(final UUID insumoId) {
+        return this.entityManager
+            .createQuery(
+                "SELECT o FROM OrdemServico o WHERE o.status = :status AND EXISTS "
+                    + "(SELECT i.id FROM InsumoNecessario i WHERE i MEMBER OF o.insumos AND i.insumoId = :insumoId "
+                    + "AND i.quantidadeReservada + i.quantidadeConsumida < i.quantidade.valor) "
+                    + "ORDER BY o.criadaEm ASC, o.id ASC",
+                OrdemServico.class
+            )
+            .setParameter("status", StatusOrdemServico.AGUARDANDO_INSUMOS)
+            .setParameter("insumoId", insumoId)
+            .setLockMode(LockModeType.PESSIMISTIC_WRITE)
+            .getResultList()
+            .stream()
+            .map(RepositorioOrdensServico::carregar)
+            .toList();
+    }
+
     private static OrdemServico carregar(final OrdemServico ordem) {
         // A API recebe o agregado completo antes do encerramento da transação
         // (open-in-view desabilitado).

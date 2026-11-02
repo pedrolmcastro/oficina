@@ -60,6 +60,26 @@ class OrdemServicoTest {
         assertThat(ordem.decisaoExpiraEm()).isNull();
     }
 
+    @Test
+    void deveRecusarReservaAcimaDaNecessidadeSemAlterarItem() {
+        final var contratado = contratado();
+        final var ordem = criar(List.of(contratado));
+        final var insumo = new Insumo(
+            new com.oficina.api.dominio.insumo.Nome(new TextoNormalizado("Óleo")),
+            new com.oficina.api.dominio.insumo.PrecoVenda(new Preco(BigDecimal.TEN))
+        );
+        ordem.associarObrigatorio(insumo, contratado.id(), new Quantidade(2));
+        ordem.iniciarDiagnostico("admin");
+        ordem.concluirDiagnostico("admin");
+        ordem.aprovar();
+        final var item = ordem.insumos().getFirst();
+        final var quantidade = new Quantidade(3);
+        assertThatThrownBy(() -> ordem.reservarInsumo(item.id(), quantidade))
+            .isInstanceOf(ConflitoOrdemServicoException.class);
+        assertThat(item.quantidadeReservada()).isZero();
+        assertThat(item.quantidadePendente()).isEqualTo(2);
+    }
+
     private static ServicoContratado contratado() {
         return new ServicoContratado(
             new Servico(new Nome(new TextoNormalizado("Revisão")), new PrecoVenda(new Preco(BigDecimal.TEN)), true)

@@ -235,15 +235,36 @@ public class OrdemServico extends Entidade {
     }
 
     public void aprovar() {
-        if (this.status == StatusOrdemServico.AGUARDANDO_EXECUCAO) {
+        if (this.eventos.stream().anyMatch(evento -> "ORCAMENTO_APROVADO".equals(evento.tipo()))) {
             return;
         }
         transicionar(
             StatusOrdemServico.AGUARDANDO_CONFIRMACAO,
-            StatusOrdemServico.AGUARDANDO_EXECUCAO,
+            this.insumos.isEmpty()
+                ? StatusOrdemServico.AGUARDANDO_EXECUCAO
+                : StatusOrdemServico.AGUARDANDO_INSUMOS,
             "ORCAMENTO_APROVADO",
             "CLIENTE"
         );
+    }
+
+    public void reservarInsumo(final UUID itemId, final Quantidade quantidade) {
+        exigirStatus(StatusOrdemServico.AGUARDANDO_INSUMOS);
+        final var item = encontrarInsumo(itemId);
+        item.reservar(quantidade);
+        registrar(
+            "INSUMO_RESERVADO",
+            "SISTEMA",
+            Map.of(ITEM_ID, itemId.toString(), "quantidade", Integer.toString(quantidade.valor()))
+        );
+        if (this.insumos.stream().allMatch(i -> i.quantidadePendente() == 0)) {
+            transicionar(
+                StatusOrdemServico.AGUARDANDO_INSUMOS,
+                StatusOrdemServico.AGUARDANDO_EXECUCAO,
+                "INSUMOS_RESERVADOS",
+                "SISTEMA"
+            );
+        }
     }
 
     public void rejeitar() {
@@ -266,6 +287,13 @@ public class OrdemServico extends Entidade {
             "EXECUCAO_INICIADA",
             autor
         );
+    }
+
+    public void consumirReservas() {
+        exigirStatus(StatusOrdemServico.EM_EXECUCAO);
+        for (final var item : this.insumos) {
+            item.consumirReserva();
+        }
     }
 
     public void concluirExecucao(final String autor) {

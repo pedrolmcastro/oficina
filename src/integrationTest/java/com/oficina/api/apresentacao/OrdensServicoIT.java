@@ -1,5 +1,6 @@
 package com.oficina.api.apresentacao;
 
+import com.oficina.api.aplicacao.insumo.ServicoInsumos;
 import com.oficina.api.aplicacao.ordemservico.ServicoOrdensServico;
 import com.oficina.api.apresentacao.cliente.RespostaCliente;
 import com.oficina.api.apresentacao.insumo.RespostaInsumo;
@@ -8,6 +9,7 @@ import com.oficina.api.apresentacao.ordemservico.RespostaInsumoNecessario;
 import com.oficina.api.apresentacao.ordemservico.RespostaOrdemServico;
 import com.oficina.api.apresentacao.servico.RespostaServico;
 import com.oficina.api.apresentacao.veiculo.RespostaVeiculo;
+import com.oficina.api.dominio.Quantidade;
 import com.oficina.api.infraestrutura.email.EnvioEmails;
 import com.oficina.api.infraestrutura.seguranca.TokenAcompanhamento;
 import io.restassured.RestAssured;
@@ -39,6 +41,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
@@ -51,6 +54,8 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 class OrdensServicoIT extends ApiIntegrationTest {
     @Autowired
     private ServicoOrdensServico servicoOrdens;
+    @Autowired
+    private ServicoInsumos servicoInsumos;
     @Autowired
     private PlatformTransactionManager transacoes;
     @MockitoBean
@@ -573,6 +578,321 @@ class OrdensServicoIT extends ApiIntegrationTest {
                 400
             );
         }
+    }
+
+    @Test
+    void deveReservarParcialmenteNaOrdemDeCriacaoMesmoComAprovacoesInvertidasEConsumirNaExecucao() {
+        associarInsumo(4);
+        final var primeira = criar();
+        final var segunda = criar();
+        validar(decidir(segunda, "aprovacao"), 200);
+        validar(decidir(primeira, "aprovacao"), 200);
+        assertThat(buscar(primeira).status()).isEqualTo("aguardando-insumos");
+        validar(requisicao().post("/ordens-servico/{id}/inicio-execucao", primeira.ordemServico().id()), 409);
+        final var estoque = entrada(Objects.requireNonNull(this.insumoId), 5);
+        assertThat(estoque.quantidadeEmEstoque()).isEqualTo(5);
+        assertThat(estoque.quantidadeReservada()).isEqualTo(5);
+        assertThat(estoque.quantidadeDisponivel()).isZero();
+        assertThat(buscar(primeira).status()).isEqualTo("aguardando-execucao");
+        assertThat(buscar(segunda).status()).isEqualTo("aguardando-insumos");
+        assertThat(buscar(segunda).insumosNecessarios().getFirst().quantidadeReservada()).isEqualTo(1);
+        final var eventos = buscar(segunda).eventos();
+        validar(decidir(segunda, "aprovacao"), 200);
+        assertThat(buscar(segunda).eventos()).isEqualTo(eventos);
+        entrada(Objects.requireNonNull(this.insumoId), 3);
+        assertThat(buscar(segunda).status()).isEqualTo("aguardando-execucao");
+        validar(requisicao().post("/ordens-servico/{id}/inicio-execucao", primeira.ordemServico().id()), 200);
+        final var consumida = buscar(primeira).insumosNecessarios().getFirst();
+        assertThat(consumida.quantidadeReservada()).isZero();
+        assertThat(consumida.quantidadeConsumida()).isEqualTo(4);
+        assertThat(consumida.quantidadePendente()).isZero();
+        final var saldo = requisicao().get("/insumos/{id}", this.insumoId).as(RespostaInsumo.class);
+        assertThat(saldo.quantidadeEmEstoque()).isEqualTo(4);
+        assertThat(saldo.quantidadeReservada()).isEqualTo(4);
+        validar(requisicao().post("/ordens-servico/{id}/inicio-execucao", primeira.ordemServico().id()), 409);
+        validar(decidir(primeira, "aprovacao"), 200);
+        assertThat(requisicao().get("/insumos/{id}", this.insumoId).as(RespostaInsumo.class)).isEqualTo(saldo);
+    }
+
+    @Test
+    void deveReservarNaAprovacaoSemDuplicarEManterSobraDisponivel() {
+        associarInsumo(4);
+        entrada(Objects.requireNonNull(this.insumoId), 10);
+        final var acesso = criar();
+        validar(decidir(acesso, "aprovacao"), 200);
+        final var ordem = buscar(acesso);
+        assertThat(ordem.status()).isEqualTo("aguardando-execucao");
+        assertThat(ordem.insumosNecessarios().getFirst().quantidadeReservada()).isEqualTo(4);
+        validar(decidir(acesso, "aprovacao"), 200);
+        assertThat(buscar(acesso)).isEqualTo(ordem);
+        final var estoque = requisicao().get("/insumos/{id}", this.insumoId).as(RespostaInsumo.class);
+        assertThat(estoque.quantidadeDisponivel()).isEqualTo(6);
+        validar(requisicao().delete("/insumos/{id}", this.insumoId), 409);
+    }
+
+    @Test
+    void deveManterReservasDeInsumosDiferentesAteCompletarTodos() {
+        associarInsumo(2);
+        final var outro = requisicao()
+            .body(Map.of("nome", "Filtro", "precoVenda", 20))
+            .post("/insumos")
+            .as(RespostaInsumo.class);
+        validar(
+            requisicao()
+                .body(Map.of("insumoId", outro.id(), "quantidade", 1))
+                .post("/servicos/{id}/insumos-obrigatorios", this.servicoId),
+            201
+        );
+        entrada(Objects.requireNonNull(this.insumoId), 2);
+        final var acesso = criar();
+        validar(decidir(acesso, "aprovacao"), 200);
+        assertThat(buscar(acesso).status()).isEqualTo("aguardando-insumos");
+        entrada(Objects.requireNonNull(this.insumoId), 3);
+        assertThat(buscar(acesso).status()).isEqualTo("aguardando-insumos");
+        entrada(outro.id(), 1);
+        assertThat(buscar(acesso).status()).isEqualTo("aguardando-execucao");
+        assertThat(buscar(acesso).insumosNecessarios()).allSatisfy(i -> assertThat(i.quantidadePendente()).isZero());
+    }
+
+    @Test
+    void deveSomarMesmoInsumoDeServicosEAvulsoSemReservarEmDuplicidade() {
+        associarInsumo(2);
+        final var outro = requisicao()
+            .body(Map.of("nome", "Complemento", "precoVenda", 20, "requerDiagnostico", false))
+            .post("/servicos")
+            .as(RespostaServico.class);
+        validar(
+            requisicao()
+                .body(Map.of("insumoId", Objects.requireNonNull(this.insumoId), "quantidade", 3))
+                .post("/servicos/{id}/insumos-obrigatorios", outro.id()),
+            201
+        );
+        validar(requisicao().body(Map.of("requerDiagnostico", true)).patch("/servicos/{id}", this.servicoId), 200);
+        final var acesso = requisicao()
+            .body(
+                Map
+                    .of(
+                        "veiculoId",
+                        Objects.requireNonNull(this.veiculoId),
+                        "servicoIds",
+                        List.of(this.servicoId, outro.id())
+                    )
+            )
+            .post("/ordens-servico")
+            .as(RespostaAcessoOrdemServico.class);
+        final var id = acesso.ordemServico().id();
+        validar(requisicao().post("/ordens-servico/{id}/inicio-diagnostico", id), 200);
+        validar(
+            requisicao()
+                .body(Map.of("insumoId", Objects.requireNonNull(this.insumoId), "quantidade", 4))
+                .post("/ordens-servico/{id}/insumos-necessarios", id),
+            201
+        );
+        validar(requisicao().post("/ordens-servico/{id}/fim-diagnostico", id), 200);
+        entrada(Objects.requireNonNull(this.insumoId), 6);
+        validar(decidir(acesso, "aprovacao"), 200);
+        assertThat(buscar(acesso).status()).isEqualTo("aguardando-insumos");
+        assertThat(
+            buscar(acesso).insumosNecessarios().stream().mapToInt(RespostaInsumoNecessario::quantidadeReservada).sum()
+        ).isEqualTo(6);
+        entrada(Objects.requireNonNull(this.insumoId), 3);
+        assertThat(buscar(acesso).status()).isEqualTo("aguardando-execucao");
+        validar(requisicao().post("/ordens-servico/{id}/inicio-execucao", id), 200);
+        assertThat(
+            buscar(acesso).insumosNecessarios().stream().mapToInt(RespostaInsumoNecessario::quantidadeConsumida).sum()
+        ).isEqualTo(9);
+        assertThat(requisicao().get("/insumos/{id}", this.insumoId).as(RespostaInsumo.class).quantidadeEmEstoque())
+            .isZero();
+    }
+
+    @Test
+    void deveDesempatarCriacoesPorId() {
+        associarInsumo(1);
+        final var primeira = criar();
+        final var segunda = criar();
+        validar(decidir(segunda, "aprovacao"), 200);
+        validar(decidir(primeira, "aprovacao"), 200);
+        this.jdbc.update("UPDATE oficina.ordens_servico SET criada_em = '2026-01-01T00:00:00Z'");
+        entrada(Objects.requireNonNull(this.insumoId), 1);
+        assertThat(buscar(primeira).status()).isEqualTo("aguardando-execucao");
+        assertThat(buscar(segunda).status()).isEqualTo("aguardando-insumos");
+    }
+
+    @Test
+    void deveProtegerInsumoAvulsoDeOrdemAtivaMesmoSemServicoAssociado() {
+        final var acesso = criarComDiagnostico();
+        validar(requisicao().post("/ordens-servico/{id}/inicio-diagnostico", acesso.ordemServico().id()), 200);
+        validar(
+            requisicao()
+                .body(Map.of("insumoId", Objects.requireNonNull(this.insumoId), "quantidade", 1))
+                .post("/ordens-servico/{id}/insumos-necessarios", acesso.ordemServico().id()),
+            201
+        );
+        validar(requisicao().delete("/insumos/{id}", this.insumoId), 409);
+        validar(requisicao().post("/ordens-servico/{id}/fim-diagnostico", acesso.ordemServico().id()), 200);
+        validar(decidir(acesso, "rejeicao"), 200);
+        validar(requisicao().delete("/insumos/{id}", this.insumoId), 204);
+    }
+
+    @Test
+    void deveDisputarUltimasUnidadesSemReservaDupla() throws InterruptedException, ExecutionException {
+        associarInsumo(2);
+        entrada(Objects.requireNonNull(this.insumoId), 2);
+        final var primeira = criar();
+        final var segunda = criar();
+        final var primeiroToken = tokenDecisao(primeira);
+        final var segundoToken = tokenDecisao(segunda);
+        final var inicio = new CountDownLatch(1);
+        try (final var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            final var uma = executor.submit(() -> {
+                inicio.await();
+                return decidir(primeiroToken, "aprovacao");
+            });
+            final var outra = executor.submit(() -> {
+                inicio.await();
+                return decidir(segundoToken, "aprovacao");
+            });
+            inicio.countDown();
+            validar(uma.get(), 200);
+            validar(outra.get(), 200);
+        }
+        assertThat(List.of(buscar(primeira).status(), buscar(segunda).status()))
+            .containsExactlyInAnyOrder("aguardando-execucao", "aguardando-insumos");
+        assertThat(requisicao().get("/insumos/{id}", this.insumoId).as(RespostaInsumo.class).quantidadeReservada())
+            .isEqualTo(2);
+    }
+
+    @Test
+    void deveSerializarReposicoesConcorrentesSemPerderSaldo() throws InterruptedException, ExecutionException {
+        associarInsumo(3);
+        final var primeira = criar();
+        final var segunda = criar();
+        validar(decidir(primeira, "aprovacao"), 200);
+        validar(decidir(segunda, "aprovacao"), 200);
+        final var insumo = Objects.requireNonNull(this.insumoId);
+        final var inicio = new CountDownLatch(1);
+        try (final var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            final var uma = executor.submit(() -> {
+                inicio.await();
+                return entrada(insumo, 2);
+            });
+            final var outra = executor.submit(() -> {
+                inicio.await();
+                return entrada(insumo, 2);
+            });
+            inicio.countDown();
+            uma.get();
+            outra.get();
+        }
+        assertThat(buscar(primeira).status()).isEqualTo("aguardando-execucao");
+        assertThat(buscar(segunda).insumosNecessarios().getFirst().quantidadeReservada()).isEqualTo(1);
+        final var saldo = requisicao().get("/insumos/{id}", insumo).as(RespostaInsumo.class);
+        assertThat(saldo.quantidadeEmEstoque()).isEqualTo(4);
+        assertThat(saldo.quantidadeReservada()).isEqualTo(4);
+    }
+
+    @Test
+    void deveRenovarAcessoSemConsumirOuLiberarReservasDeOrdemPronta() {
+        associarInsumo(2);
+        entrada(Objects.requireNonNull(this.insumoId), 3);
+        final var acesso = criar();
+        validar(decidir(acesso, "aprovacao"), 200);
+        final var aprovada = buscar(acesso);
+        validar(requisicao().post("/ordens-servico/{id}/acesso-cliente", aprovada.id()), 200);
+        final var renovada = buscar(acesso);
+        assertThat(renovada.status()).isEqualTo("aguardando-execucao");
+        assertThat(renovada.criadaEm()).isEqualTo(aprovada.criadaEm());
+        assertThat(renovada.insumosNecessarios()).isEqualTo(aprovada.insumosNecessarios());
+        final var estoque = requisicao().get("/insumos/{id}", this.insumoId).as(RespostaInsumo.class);
+        assertThat(estoque.quantidadeEmEstoque()).isEqualTo(3);
+        assertThat(estoque.quantidadeReservada()).isEqualTo(2);
+    }
+
+    @Test
+    void deveReverterSaldoReservasEStatusSeTransacaoDaReposicaoFalhar() {
+        associarInsumo(2);
+        final var acesso = criar();
+        validar(decidir(acesso, "aprovacao"), 200);
+        final var antes = buscar(acesso);
+        final var insumo = Objects.requireNonNull(this.insumoId);
+        final var quantidade = new Quantidade(2);
+        final var transacao = new TransactionTemplate(this.transacoes);
+        assertThatThrownBy(() -> transacao.executeWithoutResult(_ -> {
+            this.servicoInsumos.incrementarEstoque(insumo, quantidade);
+            throw new IllegalStateException("Falha após alocação");
+        })).isInstanceOf(IllegalStateException.class);
+        assertThat(buscar(acesso)).isEqualTo(antes);
+        final var estoque = requisicao().get("/insumos/{id}", insumo).as(RespostaInsumo.class);
+        assertThat(estoque.quantidadeEmEstoque()).isZero();
+        assertThat(estoque.quantidadeReservada()).isZero();
+    }
+
+    @Test
+    void deveCoordenarAprovacaoComReposicaoConcorrente() throws InterruptedException, ExecutionException {
+        associarInsumo(2);
+        final var primeira = criar();
+        final var segunda = criar();
+        validar(decidir(primeira, "aprovacao"), 200);
+        final var token = tokenDecisao(segunda);
+        final var insumo = Objects.requireNonNull(this.insumoId);
+        final var inicio = new CountDownLatch(1);
+        try (final var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            final var aprovacao = executor.submit(() -> {
+                inicio.await();
+                return decidir(token, "aprovacao");
+            });
+            final var reposicao = executor.submit(() -> {
+                inicio.await();
+                return entrada(insumo, 3);
+            });
+            inicio.countDown();
+            validar(aprovacao.get(), 200);
+            reposicao.get();
+        }
+        assertThat(buscar(primeira).status()).isEqualTo("aguardando-execucao");
+        assertThat(buscar(segunda).status()).isEqualTo("aguardando-insumos");
+        assertThat(buscar(segunda).insumosNecessarios().getFirst().quantidadeReservada()).isEqualTo(1);
+        assertThat(requisicao().get("/insumos/{id}", insumo).as(RespostaInsumo.class).quantidadeReservada())
+            .isEqualTo(3);
+    }
+
+    @Test
+    void devePriorizarDataDeCriacaoMesmoQuandoIdsTemOutraOrdem() {
+        associarInsumo(1);
+        final var primeiroId = criar();
+        final var segundoId = criar();
+        this.jdbc
+            .update(
+                "UPDATE oficina.ordens_servico SET criada_em = '2026-01-02T00:00:00Z' WHERE id = ?",
+                primeiroId.ordemServico().id()
+            );
+        this.jdbc
+            .update(
+                "UPDATE oficina.ordens_servico SET criada_em = '2026-01-01T00:00:00Z' WHERE id = ?",
+                segundoId.ordemServico().id()
+            );
+        validar(decidir(primeiroId, "aprovacao"), 200);
+        validar(decidir(segundoId, "aprovacao"), 200);
+        entrada(Objects.requireNonNull(this.insumoId), 1);
+        assertThat(buscar(segundoId).status()).isEqualTo("aguardando-execucao");
+        assertThat(buscar(primeiroId).status()).isEqualTo("aguardando-insumos");
+    }
+
+    private void associarInsumo(final int quantidade) {
+        validar(
+            requisicao()
+                .body(Map.of("insumoId", Objects.requireNonNull(this.insumoId), "quantidade", quantidade))
+                .post("/servicos/{id}/insumos-obrigatorios", this.servicoId),
+            201
+        );
+    }
+
+    private RespostaInsumo entrada(final UUID id, final int quantidade) {
+        final var resposta = requisicao()
+            .body(Map.of("quantidade", quantidade))
+            .post("/insumos/{id}/entradas-estoque", id);
+        validar(resposta, 200);
+        return resposta.as(RespostaInsumo.class);
     }
 
     private RespostaAcessoOrdemServico criarComDiagnostico() {

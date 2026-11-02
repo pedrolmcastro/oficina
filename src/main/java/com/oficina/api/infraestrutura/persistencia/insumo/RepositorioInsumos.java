@@ -27,6 +27,27 @@ public class RepositorioInsumos extends RepositorioEntidades<Insumo> {
         );
     }
 
+    public void bloquearEstoque() {
+        // Deve ser o primeiro bloqueio de aprovação, reposição e execução.
+        this.entityManager
+            .unwrap(Session.class)
+            .createNativeQuery("SELECT id FROM oficina.lock_alocacao_estoque WHERE id = 1 FOR UPDATE", Integer.class)
+            .getSingleResult();
+    }
+
+    public boolean necessarioParaOrdemAtiva(final UUID id) {
+        return this.entityManager
+            .unwrap(Session.class)
+            .createNativeQuery(
+                "SELECT EXISTS (SELECT 1 FROM oficina.ordens_servico_insumos i "
+                    + "JOIN oficina.ordens_servico o ON o.id = i.ordem_servico_id "
+                    + "WHERE i.insumo_id = :id AND o.status NOT IN ('AGUARDANDO_RETIRADA', 'ENTREGUE'))",
+                Boolean.class
+            )
+            .setParameter("id", id)
+            .getSingleResult();
+    }
+
     public boolean obrigatorioParaServicoAtivo(final UUID id) {
         return this.entityManager
             .unwrap(Session.class)

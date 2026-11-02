@@ -17,6 +17,8 @@ import org.jspecify.annotations.Nullable;
 @Entity
 @Table(name = "ordens_servico_insumos", schema = "oficina")
 public class InsumoNecessario extends Entidade {
+    private int quantidadeReservada;
+    private int quantidadeConsumida;
     private UUID insumoId;
     private @Nullable UUID servicoContratadoId;
     @Embedded
@@ -64,6 +66,30 @@ public class InsumoNecessario extends Entidade {
     }
     public BigDecimal subtotal() {
         return this.precoUnitario.preco().valor().multiply(BigDecimal.valueOf(this.quantidade.valor()));
+    }
+
+    public int quantidadeReservada() {
+        return this.quantidadeReservada;
+    }
+
+    public int quantidadeConsumida() {
+        return this.quantidadeConsumida;
+    }
+
+    public int quantidadePendente() {
+        return this.quantidade.valor() - this.quantidadeReservada - this.quantidadeConsumida;
+    }
+
+    void reservar(final Quantidade quantidade) {
+        if (quantidade.valor() > quantidadePendente()) {
+            throw new ConflitoOrdemServicoException("Reserva excede a necessidade do item");
+        }
+        this.quantidadeReservada += quantidade.valor();
+    }
+
+    void consumirReserva() {
+        this.quantidadeConsumida += this.quantidadeReservada;
+        this.quantidadeReservada = 0;
     }
 
     void setQuantidade(final Quantidade novaQuantidade) {

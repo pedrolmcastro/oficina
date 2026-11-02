@@ -82,7 +82,15 @@ public class InsumosSteps {
         assertThat(insumo.id()).isNotNull();
         assertThat(insumo.nome()).isEqualTo(esperado.get("nome"));
         assertThat(insumo.precoVenda()).isEqualByComparingTo(esperado.get("precoVenda"));
-        assertThat(this.http.resposta().jsonPath().getMap("")).containsOnlyKeys("id", "nome", "precoVenda");
+        assertThat(this.http.resposta().jsonPath().getMap(""))
+            .containsOnlyKeys(
+                "id",
+                "nome",
+                "precoVenda",
+                "quantidadeEmEstoque",
+                "quantidadeReservada",
+                "quantidadeDisponivel"
+            );
     }
 
     @Then("a lista de insumos deve conter os nomes:")

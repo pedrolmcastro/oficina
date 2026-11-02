@@ -3,6 +3,7 @@ package com.oficina.api.aplicacao.ordemservico;
 import com.oficina.api.aplicacao.OperacoesTransacionais;
 import com.oficina.api.aplicacao.Pagina;
 import com.oficina.api.aplicacao.cliente.ClienteNaoEncontradoException;
+import com.oficina.api.aplicacao.estoque.ServicoReservasInsumos;
 import com.oficina.api.aplicacao.insumo.InsumoNaoEncontradoException;
 import com.oficina.api.aplicacao.servico.ServicoNaoEncontradoException;
 import com.oficina.api.aplicacao.veiculo.VeiculoNaoEncontradoException;
@@ -37,6 +38,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 @Service
 public class ServicoOrdensServico {
     private static final Logger LOG = LoggerFactory.getLogger(ServicoOrdensServico.class);
+    private final ServicoReservasInsumos reservas;
     private final RepositorioOrdensServico repositorio;
     private final RepositorioClientes clientes;
     private final RepositorioVeiculos veiculos;
@@ -48,6 +50,7 @@ public class ServicoOrdensServico {
 
     public ServicoOrdensServico(
         final RepositorioOrdensServico repositorio,
+        final ServicoReservasInsumos reservas,
         final RepositorioClientes clientes,
         final RepositorioVeiculos veiculos,
         final RepositorioServicos servicos,
@@ -57,6 +60,7 @@ public class ServicoOrdensServico {
         final PlatformTransactionManager transacoes,
         @Value(value = "${app.ordens-servico.validade-acesso:30d}") final Duration validadeAcesso
     ) {
+        this.reservas = reservas;
         this.eventos = eventos;
         this.repositorio = repositorio;
         this.clientes = clientes;
@@ -142,11 +146,16 @@ public class ServicoOrdensServico {
 
     public OrdemServico executar(final UUID id, final String operacao, final Consumer<OrdemServico> acao) {
         return this.operacoes.escrita(operacao, () -> {
+            this.reservas.bloquear();
             final var ordem = this.repositorio
                 .buscar(id, LockModeType.PESSIMISTIC_WRITE)
                 .orElseThrow(OrdemServicoNaoEncontradaException::new);
             final var anterior = ordem.status();
             acao.accept(ordem);
+            if (anterior == StatusOrdemServico.AGUARDANDO_EXECUCAO
+                && ordem.status() == StatusOrdemServico.EM_EXECUCAO) {
+                this.reservas.consumir(ordem);
+            }
             if (anterior != ordem.status() && ordem.status() == StatusOrdemServico.AGUARDANDO_CONFIRMACAO) {
                 emitirDecisao(ordem);
             }
@@ -161,6 +170,7 @@ public class ServicoOrdensServico {
         final String autor
     ) {
         return this.operacoes.escrita("adicionar_insumo", () -> {
+            this.reservas.bloquear();
             final var ordem = this.repositorio
                 .buscar(id, LockModeType.PESSIMISTIC_WRITE)
                 .orElseThrow(OrdemServicoNaoEncontradaException::new);
@@ -200,9 +210,13 @@ public class ServicoOrdensServico {
 
     public OrdemServico decidir(final String token, final boolean aprovar) {
         return this.operacoes.escrita("decidir", () -> {
+            this.reservas.bloquear();
             final var ordem = encontrarPorTokenDecisao(token, LockModeType.PESSIMISTIC_WRITE);
             if (aprovar) {
                 ordem.aprovar();
+                if (ordem.status() == StatusOrdemServico.AGUARDANDO_INSUMOS) {
+                    this.reservas.reservar(ordem);
+                }
             } else {
                 ordem.rejeitar();
             }
