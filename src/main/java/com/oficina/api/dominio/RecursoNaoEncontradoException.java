@@ -1,4 +1,4 @@
-package com.oficina.api.aplicacao;
+package com.oficina.api.dominio;
 
 public abstract class RecursoNaoEncontradoException extends RuntimeException {
     private static final long serialVersionUID = 1L;

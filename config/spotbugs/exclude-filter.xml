@@ -10,6 +10,13 @@
             <Field type="io.micrometer.observation.ObservationRegistry"/>
             <Field type="com.oficina.api.infraestrutura.persistencia.servico.RepositorioServicos"/>
             <Field type="com.oficina.api.aplicacao.servico.ServicoServicos"/>
+            <Field type="com.oficina.api.aplicacao.ordemservico.ServicoOrdensServico"/>
         </Or>
+    </Match>
+    <!-- O resultado de criação pareia o agregado JPA com sua credencial recém-gerada.
+         A referência ao agregado é intencional, como nos retornos dos serviços de aplicação. -->
+    <Match>
+        <Class name="com.oficina.api.aplicacao.ordemservico.AcessoOrdemServico"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
     </Match>
 </FindBugsFilter>

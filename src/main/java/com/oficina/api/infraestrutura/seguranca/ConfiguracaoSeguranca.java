@@ -28,6 +28,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
 
 @Configuration(proxyBeanMethods = false)
 public class ConfiguracaoSeguranca {
@@ -43,7 +44,8 @@ public class ConfiguracaoSeguranca {
         conversor.setJwtGrantedAuthoritiesConverter(perfis);
 
         return http
-            .csrf(config -> config.disable()) // NOSONAR: S4502 Só aceita Bearer explícito; cookies não autenticam.
+            .csrf(config -> config.disable()) // NOSONAR: S4502 Credenciais explícitas; cookies não autenticam.
+            .headers(config -> config.referrerPolicy(referrer -> referrer.policy(ReferrerPolicy.NO_REFERRER)))
             .formLogin(config -> config.disable())
             .httpBasic(config -> config.disable())
             .logout(config -> config.disable())
@@ -54,6 +56,14 @@ public class ConfiguracaoSeguranca {
                     .dispatcherTypeMatchers(DispatcherType.ERROR)
                     .permitAll()
                     .requestMatchers(EndpointRequest.to("prometheus"))
+                    .permitAll()
+                    .requestMatchers(HttpMethod.GET, "/ordens-servico/acompanhamento/*")
+                    .permitAll()
+                    .requestMatchers(
+                        HttpMethod.POST,
+                        "/ordens-servico/acompanhamento/*/aprovacao",
+                        "/ordens-servico/acompanhamento/*/rejeicao"
+                    )
                     .permitAll()
                     .requestMatchers(HttpMethod.POST, "/login")
                     .permitAll()
