@@ -1,11 +1,13 @@
 package com.oficina.api.apresentacao;
 
-import com.oficina.api.aplicacao.RecursoNaoEncontradoException;
 import com.oficina.api.aplicacao.cliente.ClienteNaoEncontradoException;
 import com.oficina.api.aplicacao.insumo.InsumoNaoEncontradoException;
+import com.oficina.api.aplicacao.ordemservico.OrdemServicoNaoEncontradaException;
 import com.oficina.api.aplicacao.servico.InsumoObrigatorioNaoEncontradoException;
 import com.oficina.api.aplicacao.servico.ServicoNaoEncontradoException;
 import com.oficina.api.aplicacao.veiculo.VeiculoNaoEncontradoException;
+import com.oficina.api.dominio.RecursoNaoEncontradoException;
+import com.oficina.api.dominio.ordemservico.InsumoNecessarioNaoEncontradoException;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -30,6 +32,8 @@ class ExceptionHandlersTest {
                 Arguments.of(new VeiculoNaoEncontradoException(), "Veículo não encontrado"),
                 Arguments.of(new InsumoNaoEncontradoException(), "Insumo não encontrado"),
                 Arguments.of(new ServicoNaoEncontradoException(), "Serviço não encontrado"),
+                Arguments.of(new OrdemServicoNaoEncontradaException(), "Ordem de serviço não encontrada"),
+                Arguments.of(new InsumoNecessarioNaoEncontradoException(), "Insumo necessário não encontrado nesta OS"),
                 Arguments
                     .of(
                         new InsumoObrigatorioNaoEncontradoException(),

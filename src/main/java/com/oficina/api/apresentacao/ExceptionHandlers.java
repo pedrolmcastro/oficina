@@ -1,7 +1,8 @@
 package com.oficina.api.apresentacao;
 
-import com.oficina.api.aplicacao.RecursoNaoEncontradoException;
 import com.oficina.api.dominio.DadoInvalidoException;
+import com.oficina.api.dominio.RecursoNaoEncontradoException;
+import com.oficina.api.dominio.ordemservico.ConflitoOrdemServicoException;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,13 @@ public class ExceptionHandlers {
     @ExceptionHandler(value = RecursoNaoEncontradoException.class)
     public ResponseEntity<ProblemDetail> naoEncontrado(final Throwable erro) {
         return buildRespostaFalha(HttpStatus.NOT_FOUND, Objects.requireNonNull(erro.getMessage()));
+    }
+
+    @ExceptionHandler(value = ConflitoOrdemServicoException.class)
+    public ResponseEntity<ProblemDetail> conflitoOrdemServico(
+        final ConflitoOrdemServicoException erro // NOSONAR S3242: Prefer most specific type for handler
+    ) {
+        return buildRespostaFalha(HttpStatus.CONFLICT, Objects.requireNonNull(erro.getMessage()));
     }
 
     @ExceptionHandler(value = DataIntegrityViolationException.class)

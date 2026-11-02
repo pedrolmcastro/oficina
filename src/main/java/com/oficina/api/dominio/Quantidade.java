@@ -1,5 +1,8 @@
 package com.oficina.api.dominio;
 
+import jakarta.persistence.Embeddable;
+
+@Embeddable
 public record Quantidade(int valor) {
     public Quantidade {
         if (valor <= 0) {
