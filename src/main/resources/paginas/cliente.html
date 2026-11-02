@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Ordem de serviço</title>
+  <link rel="stylesheet" href="../../swagger-ui/swagger-ui.css">
+</head>
+<body>
+  <div id="swagger-ui"></div>
+  <script src="../../swagger-ui/swagger-ui-bundle.js"></script>
+  <script>
+    const [token, pagina] = window.location.pathname.split('/').slice(-2);
+    const servidor = new URL('../../', window.location.href).pathname;
+    const status = pagina === 'status';
+    const titulo = status ? 'Acompanhar ordem de serviço'
+      : pagina === 'aprovacao' ? 'Aprovar orçamento' : 'Rejeitar orçamento';
+    const consulta = status ? `/ordens-servico/acompanhamento/${token}`
+      : `/ordens-servico/decisao/${token}`;
+    const respostas = {
+      '200': { description: 'Operação realizada. Consulte o status e os valores no corpo da resposta.' },
+      '404': { description: 'Link inválido, expirado ou substituído.' },
+      '409': { description: 'A ordem não aguarda confirmação ou já recebeu decisão oposta.' }
+    };
+    const paths = {
+      [consulta]: { get: { summary: 'Consultar status e orçamento', responses: respostas } }
+    };
+    if (!status) {
+      paths[`/ordens-servico/acompanhamento/${token}/${pagina}`] = {
+        post: { summary: titulo, description: 'Confira o orçamento acima antes de executar a decisão.',
+          responses: respostas }
+      };
+    }
+    SwaggerUIBundle({
+      dom_id: '#swagger-ui',
+      spec: {
+        openapi: '3.0.3',
+        servers: [{ url: servidor }],
+        info: { title: titulo, version: '1',
+          description: 'Use Execute para consultar. Aprovação e rejeição só ocorrem ao executar o POST.' },
+        paths
+      },
+      tryItOutEnabled: true,
+      docExpansion: 'full',
+      supportedSubmitMethods: ['get', 'post'],
+      validatorUrl: null,
+      persistAuthorization: false
+    });
+  </script>
+</body>
+</html>

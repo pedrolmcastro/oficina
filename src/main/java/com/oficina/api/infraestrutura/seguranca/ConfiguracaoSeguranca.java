@@ -57,7 +57,14 @@ public class ConfiguracaoSeguranca {
                     .permitAll()
                     .requestMatchers(EndpointRequest.to("prometheus"))
                     .permitAll()
-                    .requestMatchers(HttpMethod.GET, "/ordens-servico/acompanhamento/*")
+                    .requestMatchers(
+                        HttpMethod.GET,
+                        "/ordens-servico/acompanhamento/*",
+                        "/ordens-servico/decisao/*",
+                        "/cliente/*/status",
+                        "/cliente/*/aprovacao",
+                        "/cliente/*/rejeicao"
+                    )
                     .permitAll()
                     .requestMatchers(
                         HttpMethod.POST,

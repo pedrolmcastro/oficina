@@ -34,13 +34,15 @@ public class ControladorAcompanhamento {
     }
 
     @PostMapping(value = "/aprovacao")
-    @Operation(summary = "Aprovar orçamento e liberar execução")
+    @Operation(summary = "Aprovar orçamento e liberar execução",
+        description = "Utiliza o token de decisão enviado por e-mail, distinto do token de acompanhamento.")
     public ResponseEntity<RespostaAcompanhamento> aprovar(@PathVariable final String token) {
         return RespostasHttp.ok(RespostaAcompanhamento.de(this.servico.decidir(token, true)));
     }
 
     @PostMapping(value = "/rejeicao")
-    @Operation(summary = "Rejeitar orçamento e aguardar retirada do veículo")
+    @Operation(summary = "Rejeitar orçamento e aguardar retirada do veículo",
+        description = "Utiliza o token de decisão enviado por e-mail, distinto do token de acompanhamento.")
     public ResponseEntity<RespostaAcompanhamento> rejeitar(@PathVariable final String token) {
         return RespostasHttp.ok(RespostaAcompanhamento.de(this.servico.decidir(token, false)));
     }

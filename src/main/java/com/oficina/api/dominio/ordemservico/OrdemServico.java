@@ -25,6 +25,7 @@ import org.jspecify.annotations.Nullable;
 @Entity
 @Table(name = "ordens_servico", schema = "oficina")
 public class OrdemServico extends Entidade {
+    private static final String EXECUCAO_CONCLUIDA = "EXECUCAO_CONCLUIDA";
     private static final String ITEM_ID = "itemId";
     private static final String ORCAMENTO_REJEITADO = "ORCAMENTO_REJEITADO";
     private UUID clienteId;
@@ -35,6 +36,8 @@ public class OrdemServico extends Entidade {
     private @Nullable String resultado;
     private String hashToken;
     private Instant tokenExpiraEm;
+    private @Nullable String hashTokenDecisao;
+    private @Nullable Instant decisaoExpiraEm;
     @OneToMany(cascade = CascadeType.ALL)
     @JoinColumn(name = "ordem_servico_id", nullable = false, updatable = false)
     @OrderBy(value = "id ASC")
@@ -69,7 +72,7 @@ public class OrdemServico extends Entidade {
         this.status = servicos.stream().anyMatch(servico -> servico.requerDiagnostico())
             ? StatusOrdemServico.AGUARDANDO_DIAGNOSTICO
             : StatusOrdemServico.AGUARDANDO_CONFIRMACAO;
-        registrar("OS_CRIADA", autor, Map.of());
+        registrar("CRIADA", autor, Map.of());
         if (this.status == StatusOrdemServico.AGUARDANDO_CONFIRMACAO) {
             registrar("DIAGNOSTICO_DISPENSADO", "SISTEMA", Map.of());
         }
@@ -118,6 +121,14 @@ public class OrdemServico extends Entidade {
         return this.tokenExpiraEm;
     }
 
+    public @Nullable String hashTokenDecisao() {
+        return this.hashTokenDecisao;
+    }
+
+    public @Nullable Instant decisaoExpiraEm() {
+        return this.decisaoExpiraEm;
+    }
+
     public List<ServicoContratado> servicos() {
         return List.copyOf(this.servicos);
     }
@@ -158,7 +169,7 @@ public class OrdemServico extends Entidade {
         final var item = new InsumoNecessario(insumo, null, quantidade);
         this.insumos.add(item);
         registrar(
-            "INSUMO_ADICIONADO",
+            "INSUMO_AVULSO_ADICIONADO",
             autor,
             Map
                 .of(
@@ -182,7 +193,7 @@ public class OrdemServico extends Entidade {
             return item;
         }
         registrar(
-            "QUANTIDADE_ALTERADA",
+            "INSUMO_AVULSO_ALTERADO",
             autor,
             Map
                 .of(
@@ -202,7 +213,7 @@ public class OrdemServico extends Entidade {
         final var item = encontrarInsumo(itemId);
         item.exigirAvulso();
         this.insumos.remove(item);
-        registrar("INSUMO_REMOVIDO", autor, Map.of(ITEM_ID, itemId.toString()));
+        registrar("INSUMO_AVULSO_REMOVIDO", autor, Map.of(ITEM_ID, itemId.toString()));
     }
 
     public void iniciarDiagnostico(final String autor) {
@@ -258,20 +269,23 @@ public class OrdemServico extends Entidade {
     }
 
     public void concluirExecucao(final String autor) {
-        transicionar(
-            StatusOrdemServico.EM_EXECUCAO,
-            StatusOrdemServico.AGUARDANDO_RETIRADA,
-            "EXECUCAO_CONCLUIDA",
-            autor
-        );
-        this.resultado = "SERVICO_CONCLUIDO";
+        transicionar(StatusOrdemServico.EM_EXECUCAO, StatusOrdemServico.AGUARDANDO_RETIRADA, EXECUCAO_CONCLUIDA, autor);
+        this.resultado = EXECUCAO_CONCLUIDA;
     }
 
     public void retirarVeiculo(final String autor) {
         transicionar(StatusOrdemServico.AGUARDANDO_RETIRADA, StatusOrdemServico.ENTREGUE, "VEICULO_RETIRADO", autor);
     }
 
+    public void emitirAcessoDecisao(final String hash, final Instant expiraEm) {
+        exigirStatus(StatusOrdemServico.AGUARDANDO_CONFIRMACAO);
+        this.hashTokenDecisao = hash;
+        this.decisaoExpiraEm = expiraEm;
+    }
+
     public void renovarAcesso(final String hash, final Instant expiraEm, final String autor) {
+        this.hashTokenDecisao = null;
+        this.decisaoExpiraEm = null;
         this.hashToken = hash;
         this.tokenExpiraEm = expiraEm;
         registrar("ACESSO_REEMITIDO", autor, Map.of());

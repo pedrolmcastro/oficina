@@ -84,7 +84,7 @@ Funcionalidade: Gerenciar serviços
     Então a API deve retornar 200
     E a lista de serviços deve estar vazia
 
-  Cenário: Alterar a exigência de diagnóstico preservando os outros dados
+  Cenário: Alterar se o serviço requer diagnóstico preservando os outros dados
     Dado que existe um serviço com nome "Troca de óleo" e preço "100.00"
     Quando atualizo o serviço cadastrado com:
       | requerDiagnostico |

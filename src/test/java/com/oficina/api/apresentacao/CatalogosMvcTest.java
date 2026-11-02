@@ -105,7 +105,7 @@ class CatalogosMvcTest {
     }
 
     @Test
-    void deveAceitarAtualizacaoSomenteDaExigenciaDeDiagnostico() throws Exception {
+    void deveAceitarAtualizacaoSomenteDoCampoRequerDiagnostico() throws Exception {
         final var servico = new Servico(
             new Nome(new TextoNormalizado("Troca de óleo")),
             new PrecoVenda(new Preco(new BigDecimal("100.00"))),

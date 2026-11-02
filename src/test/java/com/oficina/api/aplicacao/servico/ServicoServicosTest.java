@@ -72,7 +72,7 @@ class ServicoServicosTest {
 
     @ParameterizedTest
     @ValueSource(booleans = { true, false })
-    void deveAtualizarExigenciaDeDiagnostico(final boolean requerDiagnostico) {
+    void deveAtualizarSeServicoRequerDiagnostico(final boolean requerDiagnostico) {
         final var existente = new Servico(
             new Nome(new TextoNormalizado("Troca de óleo")),
             new PrecoVenda(new Preco(BigDecimal.TEN)),

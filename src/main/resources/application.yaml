@@ -1,4 +1,7 @@
 app:
+  notificacoes:
+    url-base: ${APP_URL_BASE:http://localhost:8080}
+    remetente: ${EMAIL_REMETENTE:oficina@example.test}
   clientes:
     chave-criptografia: ${CLIENTES_CHAVE_CRIPTOGRAFIA}
     chave-hash: ${CLIENTES_CHAVE_HASH}
@@ -13,6 +16,13 @@ app:
       segredo: ${JWT_SEGREDO}
       validade: 30m
 spring:
+  mail:
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:1025}
+    properties:
+      mail.smtp.connectiontimeout: 3000
+      mail.smtp.timeout: 3000
+      mail.smtp.writetimeout: 3000
   jackson:
     deserialization:
       fail-on-unknown-properties: true

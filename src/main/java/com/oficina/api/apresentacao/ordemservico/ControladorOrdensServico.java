@@ -46,14 +46,14 @@ public class ControladorOrdensServico {
     }
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary = "Criar OS com serviços e insumos obrigatórios; retorna acesso do cliente")
+    @Operation(summary = "Criar OS com serviços e insumos obrigatórios; retorna acesso do cliente",
+        description = "Informe o veículo e os serviços. O cliente é obtido do cadastro do veículo.")
     @ApiResponse(responseCode = "201", description = "OS criada")
     public ResponseEntity<RespostaAcessoOrdemServico> criar(
         @Valid @RequestBody final RequisicaoCriarOrdemServico requisicao,
         final Principal autor
     ) {
-        final var acesso = this.servico
-            .criar(requisicao.clienteId(), requisicao.veiculoId(), requisicao.servicoIds(), autor.getName());
+        final var acesso = this.servico.criar(requisicao.veiculoId(), requisicao.servicoIds(), autor.getName());
         return RespostasHttp
             .criada(URI.create("/ordens-servico/" + acesso.ordemServico().id()), RespostaAcessoOrdemServico.de(acesso));
     }
