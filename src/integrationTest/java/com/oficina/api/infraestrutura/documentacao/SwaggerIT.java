@@ -8,6 +8,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -26,10 +27,19 @@ class SwaggerIT {
     }
 
     @Test
+    void deveDocumentarCriacaoDeOsSemClienteInformado() {
+        final var documento = documento();
+        final var requisicao = documento.path("components").path("schemas").path("RequisicaoCriarOrdemServico");
+        assertThat(requisicao.path("properties").has("clienteId")).isFalse();
+        assertThat(requisicao.path("properties").has("veiculoId")).isTrue();
+        assertThat(requisicao.path("required"))
+            .extracting(campo -> campo.asString())
+            .containsExactlyInAnyOrder("veiculoId", "servicoIds");
+    }
+
+    @Test
     void deveDocumentarCrudDeVeiculos() {
-        final var resposta = RestAssured.given().port(this.porta).get("/v3/api-docs");
-        assertThat(resposta.statusCode()).isEqualTo(200);
-        final var documento = JsonMapper.builder().build().readTree(resposta.asString());
+        final var documento = documento();
         final var cadastro = documento.path("paths").path("/veiculos");
         final var porId = documento.path("paths").path("/veiculos/{id}");
         assertThat(cadastro.path("post").path("responses").has("201")).isTrue();
@@ -70,9 +80,7 @@ class SwaggerIT {
 
     @Test
     void deveDocumentarServicosEAssociacoesDeInsumos() {
-        final var resposta = RestAssured.given().port(this.porta).get("/v3/api-docs");
-        assertThat(resposta.statusCode()).isEqualTo(200);
-        final var documento = JsonMapper.builder().build().readTree(resposta.asString());
+        final var documento = documento();
         final var caminhos = documento.path("paths");
         assertThat(caminhos.path("/servicos").has("post")).isTrue();
         assertThat(caminhos.path("/servicos").has("get")).isTrue();
@@ -91,5 +99,10 @@ class SwaggerIT {
             .extracting(campo -> campo.asString())
             .containsExactlyInAnyOrder("nome", "precoVenda", "requerDiagnostico");
         assertThat(cadastro.path("properties").path("requerDiagnostico").path("type").asString()).isEqualTo("boolean");
+    }
+    private JsonNode documento() {
+        final var resposta = RestAssured.given().port(this.porta).get("/v3/api-docs");
+        assertThat(resposta.statusCode()).isEqualTo(200);
+        return JsonMapper.builder().build().readTree(resposta.asString());
     }
 }

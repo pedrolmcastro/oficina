@@ -7,8 +7,6 @@ import java.util.UUID;
 
 public record RequisicaoCriarOrdemServico(
     @NotNull
-    UUID clienteId,
-    @NotNull
     UUID veiculoId,
     @NotEmpty
     List<@NotNull UUID> servicoIds

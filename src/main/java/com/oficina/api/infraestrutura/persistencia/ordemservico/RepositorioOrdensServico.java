@@ -39,6 +39,21 @@ public class RepositorioOrdensServico extends RepositorioEntidades<OrdemServico>
             .map(RepositorioOrdensServico::carregar);
     }
 
+    public Optional<OrdemServico> buscarPorTokenDecisao(final String hash, final LockModeType modo) {
+        return this.entityManager
+            .createQuery(
+                "SELECT o FROM OrdemServico o WHERE o.hashTokenDecisao = :hash AND o.decisaoExpiraEm > :agora",
+                OrdemServico.class
+            )
+            .setParameter("hash", hash)
+            .setParameter("agora", Instant.now())
+            .setLockMode(modo)
+            .getResultList()
+            .stream()
+            .findFirst()
+            .map(RepositorioOrdensServico::carregar);
+    }
+
     public List<OrdemServico> listar(
         final @Nullable StatusOrdemServico status,
         final @Nullable UUID after,

@@ -6,7 +6,6 @@ import com.oficina.api.aplicacao.cliente.ClienteNaoEncontradoException;
 import com.oficina.api.aplicacao.insumo.InsumoNaoEncontradoException;
 import com.oficina.api.aplicacao.servico.ServicoNaoEncontradoException;
 import com.oficina.api.aplicacao.veiculo.VeiculoNaoEncontradoException;
-import com.oficina.api.dominio.DadoInvalidoException;
 import com.oficina.api.dominio.Quantidade;
 import com.oficina.api.dominio.insumo.Insumo;
 import com.oficina.api.dominio.ordemservico.InsumoNecessario;
@@ -28,12 +27,16 @@ import java.util.Collection;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 
 @Service
 public class ServicoOrdensServico {
+    private static final Logger LOG = LoggerFactory.getLogger(ServicoOrdensServico.class);
     private final RepositorioOrdensServico repositorio;
     private final RepositorioClientes clientes;
     private final RepositorioVeiculos veiculos;
@@ -41,6 +44,7 @@ public class ServicoOrdensServico {
     private final RepositorioInsumos insumos;
     private final OperacoesTransacionais operacoes;
     private final Duration validadeAcesso;
+    private final ApplicationEventPublisher eventos;
 
     public ServicoOrdensServico(
         final RepositorioOrdensServico repositorio,
@@ -48,10 +52,12 @@ public class ServicoOrdensServico {
         final RepositorioVeiculos veiculos,
         final RepositorioServicos servicos,
         final RepositorioInsumos insumos,
+        final ApplicationEventPublisher eventos,
         final ObservationRegistry observacoes,
         final PlatformTransactionManager transacoes,
         @Value(value = "${app.ordens-servico.validade-acesso:30d}") final Duration validadeAcesso
     ) {
+        this.eventos = eventos;
         this.repositorio = repositorio;
         this.clientes = clientes;
         this.veiculos = veiculos;
@@ -61,21 +67,14 @@ public class ServicoOrdensServico {
         this.validadeAcesso = validadeAcesso;
     }
 
-    public AcessoOrdemServico criar(
-        final UUID clienteId,
-        final UUID veiculoId,
-        final Collection<UUID> servicoIds,
-        final String autor
-    ) {
+    public AcessoOrdemServico criar(final UUID veiculoId, final Collection<UUID> servicoIds, final String autor) {
         return this.operacoes.escrita("criar", () -> {
-            if (this.clientes.buscar(clienteId, LockModeType.PESSIMISTIC_READ).isEmpty()) {
-                throw new ClienteNaoEncontradoException();
-            }
             final var veiculo = this.veiculos
                 .buscar(veiculoId, LockModeType.PESSIMISTIC_READ)
                 .orElseThrow(VeiculoNaoEncontradoException::new);
-            if (!veiculo.clienteId().equals(clienteId)) {
-                throw new DadoInvalidoException("Veículo não pertence ao cliente informado");
+            final var clienteId = veiculo.clienteId();
+            if (this.clientes.buscar(clienteId, LockModeType.PESSIMISTIC_READ).isEmpty()) {
+                throw new ClienteNaoEncontradoException();
             }
             final var contratados = servicoIds
                 .stream()
@@ -121,6 +120,10 @@ public class ServicoOrdensServico {
                 } while (after != null);
             }
             this.repositorio.adicionar(ordem);
+            notificar(ordem, token, false);
+            if (ordem.status() == StatusOrdemServico.AGUARDANDO_CONFIRMACAO) {
+                emitirDecisao(ordem);
+            }
             return new AcessoOrdemServico(ordem, token);
         });
     }
@@ -142,7 +145,11 @@ public class ServicoOrdensServico {
             final var ordem = this.repositorio
                 .buscar(id, LockModeType.PESSIMISTIC_WRITE)
                 .orElseThrow(OrdemServicoNaoEncontradaException::new);
+            final var anterior = ordem.status();
             acao.accept(ordem);
+            if (anterior != ordem.status() && ordem.status() == StatusOrdemServico.AGUARDANDO_CONFIRMACAO) {
+                emitirDecisao(ordem);
+            }
             return ordem;
         });
     }
@@ -177,11 +184,13 @@ public class ServicoOrdensServico {
 
     public AcessoOrdemServico renovarAcesso(final UUID id, final String autor) {
         final var token = TokenAcompanhamento.gerar();
-        final var ordem = executar(
-            id,
-            "renovar_acesso",
-            o -> o.renovarAcesso(TokenAcompanhamento.hash(token), Instant.now().plus(this.validadeAcesso), autor)
-        );
+        final var ordem = executar(id, "renovar_acesso", o -> {
+            o.renovarAcesso(TokenAcompanhamento.hash(token), Instant.now().plus(this.validadeAcesso), autor);
+            notificar(o, token, false);
+            if (o.status() == StatusOrdemServico.AGUARDANDO_CONFIRMACAO) {
+                emitirDecisao(o);
+            }
+        });
         return new AcessoOrdemServico(ordem, token);
     }
 
@@ -191,7 +200,7 @@ public class ServicoOrdensServico {
 
     public OrdemServico decidir(final String token, final boolean aprovar) {
         return this.operacoes.escrita("decidir", () -> {
-            final var ordem = encontrarPorToken(token, LockModeType.PESSIMISTIC_WRITE);
+            final var ordem = encontrarPorTokenDecisao(token, LockModeType.PESSIMISTIC_WRITE);
             if (aprovar) {
                 ordem.aprovar();
             } else {
@@ -199,6 +208,34 @@ public class ServicoOrdensServico {
             }
             return ordem;
         });
+    }
+
+    public OrdemServico consultarDecisao(final String token) {
+        return this.operacoes.leitura("consultar_decisao", () -> encontrarPorTokenDecisao(token, LockModeType.NONE));
+    }
+
+    private void emitirDecisao(final OrdemServico ordem) {
+        final var token = TokenAcompanhamento.gerar();
+        ordem.emitirAcessoDecisao(TokenAcompanhamento.hash(token), Instant.now().plus(this.validadeAcesso));
+        notificar(ordem, token, true);
+    }
+
+    private void notificar(final OrdemServico ordem, final String token, final boolean decisao) {
+        final var cliente = this.clientes.buscar(ordem.clienteId(), LockModeType.NONE);
+        if (cliente.isEmpty()) {
+            LOG.warn("Notificação da OS {} não emitida: cliente indisponível", ordem.id());
+            return;
+        }
+        this.eventos.publishEvent(new EmailOrdemServico(ordem.id(), cliente.get().email().valor(), token, decisao));
+    }
+
+    private OrdemServico encontrarPorTokenDecisao(final String token, final LockModeType modo) {
+        if (!token.matches("[A-Za-z0-9_-]{43}")) {
+            throw new OrdemServicoNaoEncontradaException();
+        }
+        return this.repositorio
+            .buscarPorTokenDecisao(TokenAcompanhamento.hash(token), modo)
+            .orElseThrow(OrdemServicoNaoEncontradaException::new);
     }
 
     private OrdemServico encontrar(final UUID id) {

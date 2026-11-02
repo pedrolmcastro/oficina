@@ -40,13 +40,24 @@ class OrdemServicoTest {
     }
 
     @Test
-    void devePreservarHashSemExporTokenOriginalNoAgregado() {
+    void deveSepararTokensERevogarDecisaoAoRenovarAcompanhamento() {
         final var ordem = criar(List.of(contratado()));
-        assertThat(ordem.hashToken()).isEqualTo("hash");
+        assertThat(ordem.hashTokenDecisao()).isNull();
+        assertThat(ordem.decisaoExpiraEm()).isNull();
         final var validade = Instant.now().plusSeconds(60);
-        ordem.renovarAcesso("outro-hash", validade, "admin");
-        assertThat(ordem.hashToken()).isEqualTo("outro-hash");
+        assertThatThrownBy(() -> ordem.emitirAcessoDecisao("hash-decisao", validade))
+            .isInstanceOf(com.oficina.api.dominio.ordemservico.ConflitoOrdemServicoException.class);
+        ordem.iniciarDiagnostico("admin");
+        ordem.concluirDiagnostico("admin");
+        ordem.emitirAcessoDecisao("hash-decisao", validade);
+        assertThat(ordem.hashTokenDecisao()).isEqualTo("hash-decisao");
+        assertThat(ordem.decisaoExpiraEm()).isEqualTo(validade);
+        assertThat(ordem.hashToken()).isEqualTo("hash");
+        ordem.renovarAcesso("novo-hash", validade, "admin");
+        assertThat(ordem.hashToken()).isEqualTo("novo-hash");
         assertThat(ordem.tokenExpiraEm()).isEqualTo(validade);
+        assertThat(ordem.hashTokenDecisao()).isNull();
+        assertThat(ordem.decisaoExpiraEm()).isNull();
     }
 
     private static ServicoContratado contratado() {

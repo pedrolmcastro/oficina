@@ -11,10 +11,10 @@ class EventoOrdemServicoTest {
     @Test
     void deveCompararEventosPelosValores() {
         final var instante = Instant.now();
-        final var evento = new EventoOrdemServico(0, "OS_CRIADA", instante, "admin", Map.of());
+        final var evento = new EventoOrdemServico(0, "CRIADA", instante, "admin", Map.of());
         assertThat(evento)
-            .isEqualTo(new EventoOrdemServico(0, "OS_CRIADA", instante, "admin", Map.of()))
-            .isNotEqualTo(new EventoOrdemServico(1, "OS_CRIADA", instante, "admin", Map.of()));
+            .isEqualTo(new EventoOrdemServico(0, "CRIADA", instante, "admin", Map.of()))
+            .isNotEqualTo(new EventoOrdemServico(1, "CRIADA", instante, "admin", Map.of()));
     }
 
     @Test

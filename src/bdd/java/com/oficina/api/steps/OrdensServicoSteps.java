@@ -8,6 +8,7 @@ import com.oficina.api.apresentacao.ordemservico.RespostaInsumoNecessario;
 import com.oficina.api.apresentacao.ordemservico.RespostaOrdemServico;
 import com.oficina.api.apresentacao.servico.RespostaServico;
 import com.oficina.api.apresentacao.veiculo.RespostaVeiculo;
+import com.oficina.api.infraestrutura.email.EnvioEmails;
 import com.oficina.api.infraestrutura.seguranca.EmissorTokenJwt;
 import com.oficina.api.infraestrutura.seguranca.TokenAcompanhamento;
 import io.cucumber.datatable.DataTable;
@@ -24,11 +25,18 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.IntStream;
 import org.jspecify.annotations.Nullable;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.verify;
 
 public class OrdensServicoSteps {
+    @Autowired
+    private EnvioEmails emails;
     @Autowired
     private HttpSteps http;
     @Autowired
@@ -103,20 +111,33 @@ public class OrdensServicoSteps {
         }
     }
 
-    @Given("uma OS com dois serviços que {string} diagnóstico")
-    public void criarOrdem(final String exigencia) {
+    @Given("uma OS com um serviço que {string} diagnóstico")
+    public void criarOrdem(final String requisitoDiagnostico) {
         administrar();
-        final var primeiro = cadastrarServico("Troca de óleo", "exigem".equals(exigencia));
+        final var servico = cadastrarServico("Troca de óleo", "requer".equals(requisitoDiagnostico));
+        this.servicoIds = List.of(servico);
+        associar(servico, 4);
+        criarComAcesso();
+    }
+
+    @Given("uma OS com dois serviços, dos quais apenas um requer diagnóstico")
+    public void criarOrdemComDoisServicos() {
+        administrar();
+        final var primeiro = cadastrarServico("Troca de óleo", true);
         final var segundo = cadastrarServico("Limpeza", false);
         this.servicoIds = List.of(primeiro, segundo);
         associar(primeiro, 4);
         associar(segundo, 1);
+        criarComAcesso();
+    }
+
+    private void criarComAcesso() {
         criar();
         this.http.validarStatus(201);
         this.acesso = this.http.resposta().as(RespostaAcessoOrdemServico.class);
         assertThat(this.http.resposta().header("Location")).isEqualTo("/ordens-servico/" + ordemId());
         final var itens = acesso().ordemServico().insumosNecessarios();
-        assertThat(itens).hasSize(2);
+        assertThat(itens).hasSize(this.servicoIds.size());
         assertThat(itens).allSatisfy(i -> assertThat(i.servicoContratadoId()).isNotNull());
         this.automaticoId = itens.getFirst().id();
     }
@@ -125,6 +146,71 @@ public class OrdensServicoSteps {
     public void acao(final String acao) {
         administrar();
         this.http.receber(this.http.requisicao().post("/ordens-servico/{id}/{acao}", ordemId(), acao));
+    }
+
+    @Given("uma OS em {string}")
+    public void prepararStatus(final String status) {
+        criarOrdem("requer");
+        if ("aguardando-diagnostico".equals(status)) {
+            return;
+        }
+        acao("inicio-diagnostico");
+        this.http.validarStatus(200);
+        if ("em-diagnostico".equals(status)) {
+            return;
+        }
+        acao("fim-diagnostico");
+        this.http.validarStatus(200);
+        if ("aguardando-confirmacao".equals(status)) {
+            return;
+        }
+        decidir("aprovacao");
+        this.http.validarStatus(200);
+        if ("aguardando-execucao".equals(status)) {
+            return;
+        }
+        acao("inicio-execucao");
+        this.http.validarStatus(200);
+        if ("em-execucao".equals(status)) {
+            return;
+        }
+        acao("fim-execucao");
+        this.http.validarStatus(200);
+        assertThat(status).isEqualTo("aguardando-retirada");
+    }
+
+    @Given("um insumo avulso incluído com quantidade {int}")
+    public void prepararAvulso(final int quantidade) {
+        adicionar(quantidade);
+        this.http.validarStatus(201);
+    }
+
+    @Given("o orçamento já foi {string} pelo cliente")
+    public void prepararDecisao(final String decisao) {
+        decidir(switch (decisao) {
+            case "aprovado" -> "aprovacao";
+            case "rejeitado" -> "rejeicao";
+            default -> throw new IllegalArgumentException("Decisão desconhecida: " + decisao);
+        });
+        this.http.validarStatus(200);
+    }
+
+    @Given("o diagnóstico foi concluído")
+    public void prepararFimDiagnostico() {
+        acao("fim-diagnostico");
+        this.http.validarStatus(200);
+    }
+
+    @Given("o veículo já foi retirado")
+    public void prepararRetirada() {
+        acao("retirada-veiculo");
+        this.http.validarStatus(200);
+    }
+
+    @Given("o insumo avulso já foi removido")
+    public void prepararRemocaoAvulso() {
+        remover("avulso");
+        this.http.validarStatus(204);
     }
 
     @When("consulto a OS administrativamente")
@@ -153,7 +239,7 @@ public class OrdensServicoSteps {
                     .requisicao()
                     .auth()
                     .none()
-                    .post("/ordens-servico/acompanhamento/{token}/{decisao}", acesso().tokenAcompanhamento(), decisao)
+                    .post("/ordens-servico/acompanhamento/{token}/{decisao}", tokenDecisao(), decisao)
             );
     }
 
@@ -234,11 +320,23 @@ public class OrdensServicoSteps {
         this.http.receber(this.http.requisicao().get("/ordens-servico/{id}/insumos-necessarios", ordemId()));
     }
 
-    @Then("existem {int} itens de insumos com quantidade total {int}")
+    @Then("existe(m) {int} item/itens de insumo(s) com quantidade total {int}")
     public void validarItens(final int itens, final int quantidade) {
         final var lista = this.http.resposta().as(new TypeRef<RespostaLista<RespostaInsumoNecessario>>() {});
         assertThat(lista.itens()).hasSize(itens);
         assertThat(lista.itens().stream().mapToInt(RespostaInsumoNecessario::quantidade).sum()).isEqualTo(quantidade);
+    }
+
+    @Then("o insumo obrigatório mantém a quantidade de cada serviço contratado")
+    public void validarInsumoPorServico() {
+        final var itens = this.http.resposta().as(RespostaOrdemServico.class).insumosNecessarios();
+        assertThat(itens).hasSize(2);
+        assertThat(itens).extracting(RespostaInsumoNecessario::insumoId).containsOnly(this.insumoId);
+        assertThat(itens)
+            .extracting(RespostaInsumoNecessario::servicoContratadoId)
+            .doesNotHaveDuplicates()
+            .doesNotContainNull();
+        assertThat(itens).extracting(RespostaInsumoNecessario::quantidade).containsExactlyInAnyOrder(4, 1);
     }
 
     @Then("o histórico da OS contém em ordem:")
@@ -281,11 +379,11 @@ public class OrdensServicoSteps {
     @Then("os nomes contratados são preservados")
     public void validarNomes() {
         final var ordem = this.http.resposta().as(RespostaOrdemServico.class);
-        assertThat(ordem.servicos()).extracting(s -> s.nome()).containsExactlyInAnyOrder("Troca de óleo", "Limpeza");
+        assertThat(ordem.servicos()).extracting(s -> s.nome()).containsExactly("Troca de óleo");
         assertThat(ordem.insumosNecessarios()).extracting(i -> i.nome()).containsOnly("Óleo");
     }
 
-    @When("reemitimos o link de acompanhamento")
+    @Given("o link de acompanhamento foi reemitido")
     public void renovar() {
         this.tokenAnterior = acesso().tokenAcompanhamento();
         acao("acesso-cliente");
@@ -303,11 +401,12 @@ public class OrdensServicoSteps {
         this.http.receber(this.http.requisicao().auth().none().get("/ordens-servico/acompanhamento/{token}", token));
     }
 
-    @When("o acesso do cliente expira")
+    @Given("o acesso do cliente está expirado")
     public void expirar() {
         this.jdbc
             .update(
-                "UPDATE oficina.ordens_servico SET token_expira_em = now() - interval '1 second' WHERE id = ?",
+                "UPDATE oficina.ordens_servico SET token_expira_em = now() - interval '1 second', "
+                    + "decisao_expira_em = now() - interval '1 second' WHERE id = ?",
                 ordemId()
             );
     }
@@ -336,9 +435,6 @@ public class OrdensServicoSteps {
     @When("tento criar OS com referência {string}")
     public void criarInvalida(final String tipo) {
         administrar();
-        final var cliente = "cliente inexistente".equals(tipo)
-            ? UUID.randomUUID()
-            : this.clienteId;
         final var veiculo = "veículo inexistente".equals(tipo)
             ? UUID.randomUUID()
             : this.veiculoId;
@@ -348,25 +444,11 @@ public class OrdensServicoSteps {
             case "sem serviços" -> List.<UUID>of();
             default -> this.servicoIds;
         };
-        if ("veículo de outro cliente".equals(tipo)) {
-            this.jdbc
-                .update("UPDATE oficina.veiculos SET cliente_id = ? WHERE id = ?", criarOutroCliente(), this.veiculoId);
-        }
         this.http
             .receber(
                 this.http
                     .requisicao()
-                    .body(
-                        Map
-                            .of(
-                                "clienteId",
-                                Objects.requireNonNull(cliente),
-                                "veiculoId",
-                                Objects.requireNonNull(veiculo),
-                                "servicoIds",
-                                servicos
-                            )
-                    )
+                    .body(Map.of("veiculoId", Objects.requireNonNull(veiculo), "servicoIds", servicos))
                     .post("/ordens-servico")
             );
     }
@@ -378,46 +460,6 @@ public class OrdensServicoSteps {
             .isEqualTo(acesso().ordemServico().eventos().size());
     }
 
-    @Then("as operações administrativas exigem JWT com perfil ADMIN")
-    public void validarAutorizacao() {
-        final var base = "/ordens-servico/" + ordemId();
-        final var operacoes = Map
-            .of(
-                "GET",
-                List.of("/ordens-servico", base, base + "/insumos-necessarios"),
-                "POST",
-                List
-                    .of(
-                        "/ordens-servico",
-                        base + "/inicio-diagnostico",
-                        base + "/fim-diagnostico",
-                        base + "/inicio-execucao",
-                        base + "/fim-execucao",
-                        base + "/retirada-veiculo",
-                        base + "/acesso-cliente",
-                        base + "/insumos-necessarios"
-                    ),
-                "PATCH",
-                List.of(base + "/insumos-necessarios/" + this.automaticoId),
-                "DELETE",
-                List.of(base + "/insumos-necessarios/" + this.automaticoId)
-            );
-        for (final var operacao : operacoes.entrySet()) {
-            for (final var caminho : operacao.getValue()) {
-                assertThat(this.http.requisicao().auth().none().request(operacao.getKey(), caminho).statusCode())
-                    .isEqualTo(401);
-                assertThat(
-                    this.http
-                        .requisicao()
-                        .auth()
-                        .oauth2(this.emissor.emitir("usuario", Set.of("USER")).valor())
-                        .request(operacao.getKey(), caminho)
-                        .statusCode()
-                ).isEqualTo(403);
-            }
-        }
-    }
-
     @Given("outro insumo disponível para inclusão como avulso")
     public void outroInsumo() {
         administrar();
@@ -426,16 +468,16 @@ public class OrdensServicoSteps {
         this.insumoId = this.http.resposta().as(RespostaInsumo.class).id();
     }
 
-    private UUID criarOutroCliente() {
-        this.http
-            .receber(
-                this.http
-                    .requisicao()
-                    .body(Map.of("nome", "João", "email", "joao@example.com", "documento", "11144477735"))
-                    .post("/clientes")
-            );
-        this.http.validarStatus(201);
-        return this.http.resposta().as(RespostaCliente.class).id();
+    private String tokenDecisao() {
+        final var corpos = ArgumentCaptor.forClass(String.class);
+        verify(this.emails, atLeastOnce()).enviar(eq(ordemId()), anyString(), corpos.capture());
+        return corpos
+            .getAllValues()
+            .stream()
+            .filter(c -> c.contains("/aprovacao"))
+            .reduce((_, ultimo) -> ultimo)
+            .map(c -> c.split("/", -1)[4])
+            .orElse(acesso().tokenAcompanhamento());
     }
 
     private void criar() {
@@ -443,17 +485,7 @@ public class OrdensServicoSteps {
             .receber(
                 this.http
                     .requisicao()
-                    .body(
-                        Map
-                            .of(
-                                "clienteId",
-                                Objects.requireNonNull(this.clienteId),
-                                "veiculoId",
-                                Objects.requireNonNull(this.veiculoId),
-                                "servicoIds",
-                                this.servicoIds
-                            )
-                    )
+                    .body(Map.of("veiculoId", Objects.requireNonNull(this.veiculoId), "servicoIds", this.servicoIds))
                     .post("/ordens-servico")
             );
     }

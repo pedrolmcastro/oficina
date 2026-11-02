@@ -4,10 +4,15 @@ CREATE TABLE oficina.ordens_servico (
     veiculo_id UUID NOT NULL REFERENCES oficina.veiculos (id),
     status TEXT NOT NULL CHECK (status IN ('AGUARDANDO_DIAGNOSTICO', 'EM_DIAGNOSTICO',
         'AGUARDANDO_CONFIRMACAO', 'AGUARDANDO_EXECUCAO', 'EM_EXECUCAO', 'AGUARDANDO_RETIRADA', 'ENTREGUE')),
-    resultado TEXT CHECK (resultado IN ('ORCAMENTO_REJEITADO', 'SERVICO_CONCLUIDO')),
+    resultado TEXT CHECK (resultado IN ('ORCAMENTO_REJEITADO', 'EXECUCAO_CONCLUIDA')),
     criada_em TIMESTAMPTZ NOT NULL,
     hash_token TEXT NOT NULL UNIQUE,
-    token_expira_em TIMESTAMPTZ NOT NULL
+    token_expira_em TIMESTAMPTZ NOT NULL,
+    hash_token_decisao TEXT UNIQUE,
+    decisao_expira_em TIMESTAMPTZ,
+    CONSTRAINT ck_token_decisao CHECK (
+        (hash_token_decisao IS NULL) = (decisao_expira_em IS NULL)
+    )
 );
 
 CREATE INDEX idx_ordens_servico_status_id ON oficina.ordens_servico (status, id);
