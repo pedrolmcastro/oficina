@@ -4,7 +4,12 @@ import com.oficina.api.aplicacao.ordemservico.EmailOrdemServico;
 import com.oficina.api.aplicacao.ordemservico.VeiculoDisponivelRetirada;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.mail.MailSendException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -30,12 +35,19 @@ class EnvioEmailsTest {
         assertThat(evento.toString()).doesNotContain("cliente@example.test");
     }
 
-    @Test
-    void deveEnviarSomenteLinksSemAssunto() {
+    @ParameterizedTest
+    @CsvSource(value = {
+        "http://localhost:8080,http://localhost:8080",
+        "http://localhost:8080/,http://localhost:8080",
+        "http://localhost:8080////,http://localhost:8080",
+        "'',''",
+        "/,''",
+        "////,''" })
+    void deveEnviarSomenteLinksSemAssunto(final String urlBase, final String baseEsperada) {
         final var smtp = mock(JavaMailSender.class);
         final var envio = new EnvioEmails(smtp, "oficina@example.test");
         final var id = UUID.randomUUID();
-        final var notificacoes = new NotificacoesOrdensServico(envio, "http://localhost:8080/");
+        final var notificacoes = new NotificacoesOrdensServico(envio, urlBase);
         notificacoes.enviar(new EmailOrdemServico(id, "cliente@example.test", "segredo", true));
         final var mensagem = ArgumentCaptor.forClass(SimpleMailMessage.class);
         verify(smtp).send(mensagem.capture());
@@ -43,19 +55,25 @@ class EnvioEmailsTest {
         assertThat(mensagem.getValue().getTo()).containsExactly("cliente@example.test");
         assertThat(mensagem.getValue().getSubject()).isNull();
         assertThat(mensagem.getValue().getText())
-            .isEqualTo(
-                "http://localhost:8080/cliente/segredo/aprovacao\nhttp://localhost:8080/cliente/segredo/rejeicao"
-            );
+            .isEqualTo(baseEsperada + "/cliente/segredo/aprovacao\n" + baseEsperada + "/cliente/segredo/rejeicao");
         assertThat(new EmailOrdemServico(id, "cliente@example.test", "segredo", true).toString())
             .doesNotContain("cliente@example.test", "segredo");
     }
 
     @Test
-    void deveConterFalhaSmtpSemFalharOperacaoConfirmada() {
+    @ExtendWith(value = OutputCaptureExtension.class)
+    void deveConterFalhaSmtpSemFalharOperacaoConfirmada(final CapturedOutput saida) {
         final var smtp = mock(JavaMailSender.class);
-        doThrow(new MailSendException("Falha SMTP")).when(smtp).send(any(SimpleMailMessage.class));
+        final var erro = new MailSendException(
+            "Falha SMTP para cliente@example.test com link-secreto",
+            new IllegalStateException("causa com dados privados")
+        );
+        doThrow(erro).when(smtp).send(any(SimpleMailMessage.class));
         final var envio = new EnvioEmails(smtp, "oficina@example.test");
-        assertThatCode(() -> envio.enviar(UUID.randomUUID(), "cliente@example.test", "link"))
-            .doesNotThrowAnyException();
+        final var ordemId = UUID.randomUUID();
+        assertThatCode(() -> envio.enviar(ordemId, "cliente@example.test", "link-secreto")).doesNotThrowAnyException();
+        assertThat(saida.getOut())
+            .contains(ordemId.toString(), "MailSendException", "EnvioEmails.enviar(EnvioEmails.java:")
+            .doesNotContain("cliente@example.test", "link-secreto", "causa com dados privados");
     }
 }

@@ -73,8 +73,8 @@ public class OrdensServicoSteps {
                     .post("/clientes")
             );
         this.http.validarStatus(201);
-        final var clienteId = this.http.resposta().as(RespostaCliente.class).id();
-        this.clienteId = clienteId;
+        final var clienteCadastradoId = this.http.resposta().as(RespostaCliente.class).id();
+        this.clienteId = clienteCadastradoId;
         this.http
             .receber(
                 this.http
@@ -91,7 +91,7 @@ public class OrdensServicoSteps {
                                 "ano",
                                 2024,
                                 "clienteId",
-                                clienteId
+                                clienteCadastradoId
                             )
                     )
                     .post("/veiculos")
@@ -233,8 +233,8 @@ public class OrdensServicoSteps {
         consultar();
         this.http.validarStatus(200);
         final var itens = this.http.resposta().as(RespostaOrdemServico.class).insumosNecessarios();
-        assertThat(itens.stream().mapToInt(RespostaInsumoNecessario::quantidadeReservada).sum()).isEqualTo(reservada);
-        assertThat(itens.stream().mapToInt(RespostaInsumoNecessario::quantidadePendente).sum()).isEqualTo(pendente);
+        assertThat(itens.stream().mapToInt(item -> item.quantidadeReservada()).sum()).isEqualTo(reservada);
+        assertThat(itens.stream().mapToInt(item -> item.quantidadePendente()).sum()).isEqualTo(pendente);
     }
 
     @Given("um insumo avulso incluído com quantidade {int}")
@@ -390,19 +390,16 @@ public class OrdensServicoSteps {
     public void validarInsumosNecessarios(final int itens, final int quantidade) {
         final var lista = this.http.resposta().as(new TypeRef<RespostaLista<RespostaInsumoNecessario>>() {});
         assertThat(lista.itens()).hasSize(itens);
-        assertThat(lista.itens().stream().mapToInt(RespostaInsumoNecessario::quantidade).sum()).isEqualTo(quantidade);
+        assertThat(lista.itens().stream().mapToInt(item -> item.quantidade()).sum()).isEqualTo(quantidade);
     }
 
     @Then("o insumo obrigatório mantém a quantidade de cada serviço contratado")
     public void validarInsumoPorServico() {
         final var itens = this.http.resposta().as(RespostaOrdemServico.class).insumosNecessarios();
         assertThat(itens).hasSize(2);
-        assertThat(itens).extracting(RespostaInsumoNecessario::insumoId).containsOnly(this.insumoId);
-        assertThat(itens)
-            .extracting(RespostaInsumoNecessario::servicoContratadoId)
-            .doesNotHaveDuplicates()
-            .doesNotContainNull();
-        assertThat(itens).extracting(RespostaInsumoNecessario::quantidade).containsExactlyInAnyOrder(4, 1);
+        assertThat(itens).extracting(item -> item.insumoId()).containsOnly(this.insumoId);
+        assertThat(itens).extracting(item -> item.servicoContratadoId()).doesNotHaveDuplicates().doesNotContainNull();
+        assertThat(itens).extracting(item -> item.quantidade()).containsExactlyInAnyOrder(4, 1);
     }
 
     @Then("o histórico da OS contém em ordem:")
@@ -669,12 +666,10 @@ public class OrdensServicoSteps {
     public void validarPagina(final int posicao) {
         final var ordens = this.ordensCadastradas
             .stream()
-            .map(RespostaAcessoOrdemServico::ordemServico)
+            .map(ordem -> ordem.ordemServico())
             .sorted(Comparator.comparing(ordem -> ordem.id().toString()))
             .toList();
-        assertThat(listaOrdens().itens())
-            .extracting(RespostaOrdemServico::id)
-            .containsExactly(ordens.get(posicao - 1).id());
+        assertThat(listaOrdens().itens()).extracting(item -> item.id()).containsExactly(ordens.get(posicao - 1).id());
     }
 
     @Then("a resposta deve indicar a próxima página de OS")
@@ -822,9 +817,11 @@ public class OrdensServicoSteps {
     private RespostaAcessoOrdemServico acesso() {
         return Objects.requireNonNull(this.acesso);
     }
+
     private UUID ordemId() {
         return acesso().ordemServico().id();
     }
+
     private UUID item(final String origem) {
         return Objects
             .requireNonNull(
