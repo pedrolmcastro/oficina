@@ -34,9 +34,9 @@ class OrdemServicoTest {
         );
         final var servicoContratadoId = UUID.randomUUID();
         final var quantidade = new Quantidade(1);
-        assertThatThrownBy(() -> ordem.associarObrigatorio(insumo, servicoContratadoId, quantidade))
+        assertThatThrownBy(() -> ordem.associarInsumoObrigatorio(insumo, servicoContratadoId, quantidade))
             .isInstanceOf(DadoInvalidoException.class);
-        assertThat(ordem.insumos()).isEmpty();
+        assertThat(ordem.insumosNecessarios()).isEmpty();
     }
 
     @Test
@@ -61,24 +61,24 @@ class OrdemServicoTest {
     }
 
     @Test
-    void deveRecusarReservaAcimaDaNecessidadeSemAlterarItem() {
+    void deveRecusarReservaAcimaDaNecessidadeSemAlterarInsumoNecessario() {
         final var contratado = contratado();
         final var ordem = criar(List.of(contratado));
         final var insumo = new Insumo(
             new com.oficina.api.dominio.insumo.Nome(new TextoNormalizado("Óleo")),
             new com.oficina.api.dominio.insumo.PrecoVenda(new Preco(BigDecimal.TEN))
         );
-        ordem.associarObrigatorio(insumo, contratado.id(), new Quantidade(2));
+        ordem.associarInsumoObrigatorio(insumo, contratado.id(), new Quantidade(2));
         ordem.iniciarDiagnostico("admin");
         ordem.concluirDiagnostico("admin");
         ordem.aprovar();
-        final var item = ordem.insumos().getFirst();
+        final var insumoNecessario = ordem.insumosNecessarios().getFirst();
         final var quantidade = new Quantidade(3);
-        final var itemId = item.id();
-        assertThatThrownBy(() -> ordem.reservarInsumo(itemId, quantidade))
+        final var insumoNecessarioId = insumoNecessario.id();
+        assertThatThrownBy(() -> ordem.reservarInsumo(insumoNecessarioId, quantidade))
             .isInstanceOf(ConflitoOrdemServicoException.class);
-        assertThat(item.quantidadeReservada()).isZero();
-        assertThat(item.quantidadePendente()).isEqualTo(2);
+        assertThat(insumoNecessario.quantidadeReservada()).isZero();
+        assertThat(insumoNecessario.quantidadePendente()).isEqualTo(2);
     }
 
     private static ServicoContratado contratado() {

@@ -86,7 +86,7 @@ class InsumosIT extends ApiIntegrationTest {
         "{\"quantidade\":1,\"extra\":true}" })
     void deveValidarEntradaDeEstoque(final String corpo) {
         final var insumo = cadastrar("Óleo").as(RespostaInsumo.class);
-        validar(requisicao().body(corpo).post("/insumos/{id}/entradas-estoque", insumo.id()), 400);
+        validar(requisicao().body(corpo).post("/insumos/{id}/reposicoes-estoque", insumo.id()), 400);
         assertThat(requisicao().get("/insumos/{id}", insumo.id()).as(RespostaInsumo.class)).isEqualTo(insumo);
     }
 
@@ -94,11 +94,14 @@ class InsumosIT extends ApiIntegrationTest {
     void deveRecusarEntradaEmInsumoExcluido() {
         final var insumo = cadastrar("Óleo").as(RespostaInsumo.class);
         validar(requisicao().delete("/insumos/{id}", insumo.id()), 204);
-        validar(requisicao().body(Map.of("quantidade", 1)).post("/insumos/{id}/entradas-estoque", insumo.id()), 404);
+        validar(requisicao().body(Map.of("quantidade", 1)).post("/insumos/{id}/reposicoes-estoque", insumo.id()), 404);
         assertThat(
             this.jdbc
-                .queryForMap("SELECT deletado, quantidade_em_estoque FROM oficina.insumos WHERE id = ?", insumo.id())
-        ).containsAllEntriesOf(Map.of("deletado", true, "quantidade_em_estoque", 0));
+                .queryForMap(
+                    "SELECT deletado, quantidade_estoque_fisico FROM oficina.insumos WHERE id = ?",
+                    insumo.id()
+                )
+        ).containsAllEntriesOf(Map.of("deletado", true, "quantidade_estoque_fisico", 0));
     }
 
     @Test
@@ -107,11 +110,11 @@ class InsumosIT extends ApiIntegrationTest {
         validar(
             requisicao()
                 .body(Map.of("quantidade", Integer.MAX_VALUE))
-                .post("/insumos/{id}/entradas-estoque", insumo.id()),
+                .post("/insumos/{id}/reposicoes-estoque", insumo.id()),
             200
         );
-        validar(requisicao().body(Map.of("quantidade", 1)).post("/insumos/{id}/entradas-estoque", insumo.id()), 400);
-        assertThat(requisicao().get("/insumos/{id}", insumo.id()).as(RespostaInsumo.class).quantidadeEmEstoque())
+        validar(requisicao().body(Map.of("quantidade", 1)).post("/insumos/{id}/reposicoes-estoque", insumo.id()), 400);
+        assertThat(requisicao().get("/insumos/{id}", insumo.id()).as(RespostaInsumo.class).quantidadeEstoqueFisico())
             .isEqualTo(Integer.MAX_VALUE);
     }
 

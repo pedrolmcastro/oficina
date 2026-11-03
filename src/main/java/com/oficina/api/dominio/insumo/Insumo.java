@@ -15,7 +15,7 @@ import org.hibernate.annotations.SQLRestriction;
 public class Insumo extends Entidade {
     @Column(name = "deletado", nullable = false)
     private boolean deletado;
-    private int quantidadeEmEstoque;
+    private int quantidadeEstoqueFisico;
     private int quantidadeReservada;
     @Embedded
     private Nome nome;
@@ -46,8 +46,8 @@ public class Insumo extends Entidade {
         this.precoVenda = precoVenda;
     }
 
-    public int quantidadeEmEstoque() {
-        return this.quantidadeEmEstoque;
+    public int quantidadeEstoqueFisico() {
+        return this.quantidadeEstoqueFisico;
     }
 
     public int quantidadeReservada() {
@@ -55,14 +55,14 @@ public class Insumo extends Entidade {
     }
 
     public int quantidadeDisponivel() {
-        return this.quantidadeEmEstoque - this.quantidadeReservada;
+        return this.quantidadeEstoqueFisico - this.quantidadeReservada;
     }
 
-    public void incrementarEstoque(final Quantidade quantidade) {
-        if (quantidade.valor() > Integer.MAX_VALUE - this.quantidadeEmEstoque) {
+    public void reporEstoque(final Quantidade quantidade) {
+        if (quantidade.valor() > Integer.MAX_VALUE - this.quantidadeEstoqueFisico) {
             throw new DadoInvalidoException("Estoque excede o limite permitido");
         }
-        this.quantidadeEmEstoque += quantidade.valor();
+        this.quantidadeEstoqueFisico += quantidade.valor();
     }
 
     public void reservar(final Quantidade quantidade) {
@@ -77,7 +77,7 @@ public class Insumo extends Entidade {
             throw new DadoInvalidoException("Quantidade excede o estoque reservado");
         }
         this.quantidadeReservada -= quantidade.valor();
-        this.quantidadeEmEstoque -= quantidade.valor();
+        this.quantidadeEstoqueFisico -= quantidade.valor();
     }
 
     public void excluir() {

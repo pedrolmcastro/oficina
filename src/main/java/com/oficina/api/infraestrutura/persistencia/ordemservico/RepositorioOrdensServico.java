@@ -86,7 +86,8 @@ public class RepositorioOrdensServico extends RepositorioEntidades<OrdemServico>
         return this.entityManager
             .createQuery(
                 "SELECT o FROM OrdemServico o WHERE o.status = :status AND EXISTS "
-                    + "(SELECT i.id FROM InsumoNecessario i WHERE i MEMBER OF o.insumos AND i.insumoId = :insumoId "
+                    + "(SELECT i.id FROM InsumoNecessario i WHERE i MEMBER OF o.insumosNecessarios "
+                    + "AND i.insumoId = :insumoId "
                     + "AND i.quantidadeReservada + i.quantidadeConsumida < i.quantidade.valor) "
                     + "ORDER BY o.criadaEm ASC, o.id ASC",
                 OrdemServico.class
@@ -103,8 +104,8 @@ public class RepositorioOrdensServico extends RepositorioEntidades<OrdemServico>
     private static OrdemServico carregar(final OrdemServico ordem) {
         // A API recebe o agregado completo antes do encerramento da transação
         // (open-in-view desabilitado).
-        ordem.servicos();
-        ordem.insumos();
+        ordem.servicosContratados();
+        ordem.insumosNecessarios();
         ordem.eventos();
         return ordem;
     }

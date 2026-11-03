@@ -8,10 +8,10 @@ Funcionalidade: Conduzir uma ordem de serviço
     Quando abro a OS para o veículo com o serviço cadastrado
     Então a API deve retornar 201
     E a OS criada deve pertencer ao veículo e ao cliente cadastrados
-    E a OS deve estar em "<status>" com total "140.00"
+    E a OS deve estar em "<status>" com orçamento "140.00"
     E os insumos necessários da OS devem ter as quantidades:
       | nome | origem      | quantidade | reservada | consumida | pendente |
-      | Óleo | obrigatório |          4 |         0 |         0 |        4 |
+      | Óleo | obrigatório | 4          | 0         | 0         | 4        |
 
     Exemplos:
       | diagnostico | status                 |
@@ -28,23 +28,23 @@ Funcionalidade: Conduzir uma ordem de serviço
 
     Exemplos:
       | referencia          | status |
-      | veículo inexistente |    404 |
-      | serviço inexistente |    404 |
-      | serviço repetido    |    400 |
-      | sem serviços        |    400 |
+      | veículo inexistente | 404    |
+      | serviço inexistente | 404    |
+      | serviço repetido    | 400    |
+      | sem serviços        | 400    |
 
   Cenário: Manter o mesmo insumo obrigatório separado por serviço contratado
     Dado uma OS com dois serviços, dos quais apenas um requer diagnóstico
     Quando consulto a OS administrativamente
     Então a API deve retornar 200
-    E a OS deve estar em "aguardando-diagnostico" com total "250.00"
+    E a OS deve estar em "aguardando-diagnostico" com orçamento "250.00"
     E o insumo obrigatório mantém a quantidade de cada serviço contratado
 
   Cenário: Iniciar diagnóstico
     Dado uma OS em "aguardando-diagnostico"
     Quando executo a ação administrativa "inicio-diagnostico" na OS
     Então a API deve retornar 200
-    E a OS deve estar em "em-diagnostico" com total "140.00"
+    E a OS deve estar em "em-diagnostico" com orçamento "140.00"
     E o histórico da OS contém em ordem:
       | CRIADA               |
       | DIAGNOSTICO_INICIADO |
@@ -54,7 +54,7 @@ Funcionalidade: Conduzir uma ordem de serviço
     E um insumo avulso incluído com quantidade 3
     Quando executo a ação administrativa "fim-diagnostico" na OS
     Então a API deve retornar 200
-    E a OS deve estar em "aguardando-confirmacao" com total "170.00"
+    E a OS deve estar em "aguardando-confirmacao" com orçamento "170.00"
     E o histórico da OS contém em ordem:
       | CRIADA                   |
       | DIAGNOSTICO_INICIADO     |
@@ -66,15 +66,15 @@ Funcionalidade: Conduzir uma ordem de serviço
     Quando executo a ação administrativa "fim-execucao" na OS
     Então a API deve retornar 200
     E a resposta deve conter a OS:
-      | status              | total  | resultado          |
-      | aguardando-retirada | 140.00 | EXECUCAO_CONCLUIDA |
+      | status              | orcamento | resultado          |
+      | aguardando-retirada | 140.00    | EXECUCAO_CONCLUIDA |
     E o cliente original recebe 1 email de acompanhamento, 1 email de decisão e 1 email de retirada
 
   Cenário: Entregar veículo após a execução
     Dado uma OS em "aguardando-retirada"
     Quando executo a ação administrativa "retirada-veiculo" na OS
     Então a API deve retornar 200
-    E a OS deve estar em "entregue" com total "140.00"
+    E a OS deve estar em "entregue" com orçamento "140.00"
     E o cliente original recebe 1 email de acompanhamento, 1 email de decisão e 1 email de retirada
     E o histórico da OS contém em ordem:
       | CRIADA                |
@@ -92,8 +92,8 @@ Funcionalidade: Conduzir uma ordem de serviço
     E o orçamento já foi "rejeitado" pelo cliente
     Quando executo a ação administrativa "retirada-veiculo" na OS
     Então a resposta deve conter a OS:
-      | status   | total  | resultado           |
-      | entregue | 140.00 | ORCAMENTO_REJEITADO |
+      | status   | orcamento | resultado           |
+      | entregue | 140.00    | ORCAMENTO_REJEITADO |
     E o histórico da OS contém em ordem:
       | CRIADA                 |
       | DIAGNOSTICO_DISPENSADO |
@@ -125,11 +125,11 @@ Funcionalidade: Conduzir uma ordem de serviço
     Dado uma OS com um serviço que "requer" diagnóstico
     Quando os preços e nomes dos serviços e insumos mudam nos cadastros
     E consulto a OS administrativamente
-    Então a OS deve estar em "aguardando-diagnostico" com total "140.00"
+    Então a OS deve estar em "aguardando-diagnostico" com orçamento "140.00"
     E os nomes contratados são preservados
     Quando o cliente consulta sua OS pelo link
     Então a API deve retornar 200
-    E o orçamento do cliente deve conter os itens contratados
+    E o orçamento do cliente deve conter os serviços contratados e insumos necessários
 
   Esquema do Cenário: Consultar OS por status
     Dado uma OS em "<statusAtual>"
@@ -139,9 +139,9 @@ Funcionalidade: Conduzir uma ordem de serviço
 
     Exemplos:
       | statusAtual            | filtro                 | quantidade |
-      | aguardando-diagnostico | aguardando-diagnostico |          1 |
-      | aguardando-diagnostico | em-diagnostico         |          0 |
-      | em-diagnostico         | em-diagnostico         |          1 |
+      | aguardando-diagnostico | aguardando-diagnostico | 1          |
+      | aguardando-diagnostico | em-diagnostico         | 0          |
+      | em-diagnostico         | em-diagnostico         | 1          |
 
   Cenário: Rejeitar filtro de status inexistente
     Quando consulto as OS com status "inexistente"
@@ -182,7 +182,7 @@ Funcionalidade: Conduzir uma ordem de serviço
     Cenário: Adicionar insumo avulso
       Quando adiciono um insumo avulso com quantidade 3
       Então a API deve retornar 201
-      E o item avulso tem quantidade 3
+      E o insumo avulso tem quantidade 3
 
     Cenário: Rejeitar inclusão duplicada de insumo avulso
       Dado um insumo avulso incluído com quantidade 3
@@ -191,43 +191,43 @@ Funcionalidade: Conduzir uma ordem de serviço
 
     Esquema do Cenário: Alterar quantidade de insumo avulso
       Dado um insumo avulso incluído com quantidade 3
-      Quando altero o item "avulso" para quantidade <quantidade>
+      Quando altero o insumo "avulso" para quantidade <quantidade>
       Então a API deve retornar 200
-      E o item avulso tem quantidade <quantidade>
-      E o item avulso tem preço unitário "10.00" e subtotal "<subtotal>"
+      E o insumo avulso tem quantidade <quantidade>
+      E o insumo avulso tem preço de venda "10.00" e subtotal "<subtotal>"
       Quando consulto a OS administrativamente
       Então a API deve retornar 200
-      E a OS deve estar em "em-diagnostico" com total "<total>"
+      E a OS deve estar em "em-diagnostico" com orçamento "<orcamento>"
       Quando executo a ação administrativa "fim-diagnostico" na OS
       Então a API deve retornar 200
       Quando o cliente consulta o orçamento pelo link de decisão
       Então a API deve retornar 200
-      E a OS deve estar em "aguardando-confirmacao" com total "<total>"
+      E a OS deve estar em "aguardando-confirmacao" com orçamento "<orcamento>"
       E o orçamento do cliente contém o avulso com quantidade <quantidade> e subtotal "<subtotal>"
 
       Exemplos:
-        | quantidade | subtotal | total  |
-        |          5 | 50.00    | 190.00 |
-        |          1 | 10.00    | 150.00 |
-        |          3 | 30.00    | 170.00 |
+        | quantidade | subtotal | orcamento |
+        | 5          | 50.00    | 190.00    |
+        | 1          | 10.00    | 150.00    |
+        | 3          | 30.00    | 170.00    |
 
     Cenário: Consultar insumos necessários
       Dado um insumo avulso incluído com quantidade 1
       Quando consulto os insumos necessários da OS
       Então a API deve retornar 200
-      E existem 2 itens de insumos necessários com quantidade total 5
+      E existem 2 insumos necessários com quantidade total 5
 
     Cenário: Rejeitar alteração de insumo obrigatório
-      Quando altero o item "automático" para quantidade 2
+      Quando altero o insumo "automático" para quantidade 2
       Então a API deve retornar 409
 
     Cenário: Rejeitar remoção de insumo obrigatório
-      Quando removo o item "automático"
+      Quando removo o insumo "automático"
       Então a API deve retornar 409
 
     Cenário: Remover insumo avulso
       Dado um insumo avulso incluído com quantidade 3
-      Quando removo o item "avulso"
+      Quando removo o insumo "avulso"
       Então a API deve retornar 204
       E o histórico da OS contém em ordem:
         | CRIADA                   |
@@ -236,16 +236,16 @@ Funcionalidade: Conduzir uma ordem de serviço
         | INSUMO_AVULSO_REMOVIDO   |
       Quando consulto os insumos necessários da OS
       Então a API deve retornar 200
-      E existe 1 item de insumo necessário com quantidade total 4
+      E existe 1 insumo necessário com quantidade total 4
       Quando consulto a OS administrativamente
       Então a API deve retornar 200
-      E a OS deve estar em "em-diagnostico" com total "140.00"
+      E a OS deve estar em "em-diagnostico" com orçamento "140.00"
       Quando executo a ação administrativa "fim-diagnostico" na OS
       Então a API deve retornar 200
       Quando o cliente consulta o orçamento pelo link de decisão
       Então a API deve retornar 200
-      E a OS deve estar em "aguardando-confirmacao" com total "140.00"
-      E o orçamento do cliente deve conter os itens contratados
+      E a OS deve estar em "aguardando-confirmacao" com orçamento "140.00"
+      E o orçamento do cliente deve conter os serviços contratados e insumos necessários
 
     Cenário: Rejeitar remoção de insumo avulso inexistente
       Quando removo o insumo necessário pelo ID "00000000-0000-0000-0000-000000000001"
@@ -257,20 +257,20 @@ Funcionalidade: Conduzir uma ordem de serviço
 
       Exemplos:
         | quantidade |
-        |          0 |
-        |         -1 |
+        | 0          |
+        | -1         |
 
     Esquema do Cenário: Rejeitar alteração com dados inválidos
       Dado um insumo avulso incluído com quantidade 1
-      Quando altero o item "avulso" para quantidade <quantidade>
+      Quando altero o insumo "avulso" para quantidade <quantidade>
       Então a API deve retornar 400
       Quando consulto os insumos necessários da OS
-      Então existem 2 itens de insumos necessários com quantidade total 5
+      Então existem 2 insumos necessários com quantidade total 5
 
       Exemplos:
         | quantidade |
-        |          0 |
-        |         -1 |
+        | 0          |
+        | -1         |
 
     Cenário: Manter quantidades independentes para insumos avulsos diferentes
       Dado um insumo avulso incluído com quantidade 1
@@ -278,10 +278,10 @@ Funcionalidade: Conduzir uma ordem de serviço
       Quando adiciono um insumo avulso com quantidade 2
       Então a API deve retornar 201
       Quando consulto os insumos necessários da OS
-      Então existem 3 itens de insumos necessários com quantidade total 7
+      Então existem 3 insumos necessários com quantidade total 7
       Quando consulto a OS administrativamente
       Então a API deve retornar 200
-      E a OS deve estar em "em-diagnostico" com total "190.00"
+      E a OS deve estar em "em-diagnostico" com orçamento "190.00"
 
   Regra: Após concluir o diagnóstico, os insumos do orçamento não podem ser alterados
 
@@ -296,11 +296,11 @@ Funcionalidade: Conduzir uma ordem de serviço
     Cenário: Rejeitar alteração de insumo após o diagnóstico
       Dado um insumo avulso incluído com quantidade 1
       E o diagnóstico foi concluído
-      Quando altero o item "avulso" para quantidade 3
+      Quando altero o insumo "avulso" para quantidade 3
       Então a API deve retornar 409
 
     Cenário: Rejeitar remoção de insumo após o diagnóstico
       Dado um insumo avulso incluído com quantidade 1
       E o diagnóstico foi concluído
-      Quando removo o item "avulso"
+      Quando removo o insumo "avulso"
       Então a API deve retornar 409

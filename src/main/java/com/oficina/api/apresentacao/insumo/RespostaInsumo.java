@@ -8,7 +8,7 @@ public record RespostaInsumo(
     UUID id,
     String nome,
     BigDecimal precoVenda,
-    int quantidadeEmEstoque,
+    int quantidadeEstoqueFisico,
     int quantidadeReservada,
     int quantidadeDisponivel
 ) {
@@ -17,7 +17,7 @@ public record RespostaInsumo(
             insumo.id(),
             insumo.nome().texto().valor(),
             insumo.precoVenda().preco().valor(),
-            insumo.quantidadeEmEstoque(),
+            insumo.quantidadeEstoqueFisico(),
             insumo.quantidadeReservada(),
             insumo.quantidadeDisponivel()
         );

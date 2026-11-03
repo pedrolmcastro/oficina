@@ -9,12 +9,12 @@ public record RespostaAcompanhamento(
     String status,
     @Nullable
     String resultado,
-    BigDecimal total,
-    List<RespostaServicoContratadoAcompanhamento> servicos,
+    BigDecimal orcamento,
+    List<RespostaServicoContratadoAcompanhamento> servicosContratados,
     List<RespostaInsumoNecessarioAcompanhamento> insumosNecessarios
 ) {
     public RespostaAcompanhamento {
-        servicos = List.copyOf(servicos);
+        servicosContratados = List.copyOf(servicosContratados);
         insumosNecessarios = List.copyOf(insumosNecessarios);
     }
 
@@ -22,9 +22,9 @@ public record RespostaAcompanhamento(
         return new RespostaAcompanhamento(
             ordem.status().valor(),
             ordem.resultado(),
-            ordem.total(),
-            ordem.servicos().stream().map(RespostaServicoContratadoAcompanhamento::de).toList(),
-            ordem.insumos().stream().map(RespostaInsumoNecessarioAcompanhamento::de).toList()
+            ordem.orcamento(),
+            ordem.servicosContratados().stream().map(RespostaServicoContratadoAcompanhamento::de).toList(),
+            ordem.insumosNecessarios().stream().map(RespostaInsumoNecessarioAcompanhamento::de).toList()
         );
     }
 }

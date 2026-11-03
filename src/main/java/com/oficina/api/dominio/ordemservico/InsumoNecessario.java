@@ -24,9 +24,9 @@ public class InsumoNecessario extends Entidade {
     @Embedded
     private Nome nome;
     @Embedded
-    @AttributeOverride(name = "preco.valor", column = @Column(name = "preco_unitario", nullable = false, precision = 19,
+    @AttributeOverride(name = "preco.valor", column = @Column(name = "preco_venda", nullable = false, precision = 19,
         scale = 2))
-    private PrecoVenda precoUnitario;
+    private PrecoVenda precoVenda;
     @Embedded
     @AttributeOverride(name = "valor", column = @Column(name = "quantidade", nullable = false))
     private Quantidade quantidade;
@@ -42,7 +42,7 @@ public class InsumoNecessario extends Entidade {
         this.insumoId = insumo.id();
         this.servicoContratadoId = servicoContratadoId;
         this.nome = insumo.nome();
-        this.precoUnitario = insumo.precoVenda();
+        this.precoVenda = insumo.precoVenda();
         this.quantidade = quantidade;
     }
 
@@ -55,8 +55,8 @@ public class InsumoNecessario extends Entidade {
     public Nome nome() {
         return this.nome;
     }
-    public PrecoVenda precoUnitario() {
-        return this.precoUnitario;
+    public PrecoVenda precoVenda() {
+        return this.precoVenda;
     }
     public Quantidade quantidade() {
         return this.quantidade;
@@ -65,7 +65,7 @@ public class InsumoNecessario extends Entidade {
         return this.servicoContratadoId == null;
     }
     public BigDecimal subtotal() {
-        return this.precoUnitario.preco().valor().multiply(BigDecimal.valueOf(this.quantidade.valor()));
+        return this.precoVenda.preco().valor().multiply(BigDecimal.valueOf(this.quantidade.valor()));
     }
 
     public int quantidadeReservada() {
@@ -82,7 +82,7 @@ public class InsumoNecessario extends Entidade {
 
     void reservar(final Quantidade quantidade) {
         if (quantidade.valor() > quantidadePendente()) {
-            throw new ConflitoOrdemServicoException("Reserva excede a necessidade do item");
+            throw new ConflitoOrdemServicoException("Reserva excede a necessidade do insumo necessário");
         }
         this.quantidadeReservada += quantidade.valor();
     }

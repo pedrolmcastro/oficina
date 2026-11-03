@@ -15,21 +15,21 @@ public record RespostaInsumoNecessario(
     int quantidadeReservada,
     int quantidadeConsumida,
     int quantidadePendente,
-    BigDecimal precoUnitario,
+    BigDecimal precoVenda,
     BigDecimal subtotal
 ) {
-    public static RespostaInsumoNecessario de(final InsumoNecessario item) {
+    public static RespostaInsumoNecessario de(final InsumoNecessario insumoNecessario) {
         return new RespostaInsumoNecessario(
-            item.id(),
-            item.insumoId(),
-            item.servicoContratadoId(),
-            item.nome().texto().valor(),
-            item.quantidade().valor(),
-            item.quantidadeReservada(),
-            item.quantidadeConsumida(),
-            item.quantidadePendente(),
-            item.precoUnitario().preco().valor(),
-            item.subtotal()
+            insumoNecessario.id(),
+            insumoNecessario.insumoId(),
+            insumoNecessario.servicoContratadoId(),
+            insumoNecessario.nome().texto().valor(),
+            insumoNecessario.quantidade().valor(),
+            insumoNecessario.quantidadeReservada(),
+            insumoNecessario.quantidadeConsumida(),
+            insumoNecessario.quantidadePendente(),
+            insumoNecessario.precoVenda().preco().valor(),
+            insumoNecessario.subtotal()
         );
     }
 }

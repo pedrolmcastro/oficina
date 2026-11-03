@@ -15,13 +15,13 @@ public record RespostaOrdemServico(
     @Nullable
     String resultado,
     Instant criadaEm,
-    BigDecimal total,
-    List<RespostaServicoContratado> servicos,
+    BigDecimal orcamento,
+    List<RespostaServicoContratado> servicosContratados,
     List<RespostaInsumoNecessario> insumosNecessarios,
     List<RespostaEventoOrdemServico> eventos
 ) {
     public RespostaOrdemServico {
-        servicos = List.copyOf(servicos);
+        servicosContratados = List.copyOf(servicosContratados);
         insumosNecessarios = List.copyOf(insumosNecessarios);
         eventos = List.copyOf(eventos);
     }
@@ -34,9 +34,9 @@ public record RespostaOrdemServico(
             ordem.status().valor(),
             ordem.resultado(),
             ordem.criadaEm(),
-            ordem.total(),
-            ordem.servicos().stream().map(RespostaServicoContratado::de).toList(),
-            ordem.insumos().stream().map(RespostaInsumoNecessario::de).toList(),
+            ordem.orcamento(),
+            ordem.servicosContratados().stream().map(RespostaServicoContratado::de).toList(),
+            ordem.insumosNecessarios().stream().map(RespostaInsumoNecessario::de).toList(),
             ordem.eventos().stream().map(RespostaEventoOrdemServico::de).toList()
         );
     }

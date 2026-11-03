@@ -19,11 +19,12 @@ class EventoOrdemServicoTest {
 
     @Test
     void devePreservarDadosImutaveis() {
-        final var dados = new HashMap<>(Map.of("total", "100.00"));
+        final var dados = new HashMap<>(Map.of("orcamento", "100.00"));
         final var evento = new EventoOrdemServico(0, "ORCAMENTO_APROVADO", Instant.now(), "CLIENTE", dados);
-        dados.put("total", "200.00");
+        dados.put("orcamento", "200.00");
         final var dadosEvento = evento.dados();
-        assertThat(dadosEvento).containsExactlyEntriesOf(Map.of("total", "100.00"));
-        assertThatThrownBy(() -> dadosEvento.put("total", "300.00")).isInstanceOf(UnsupportedOperationException.class);
+        assertThat(dadosEvento).containsExactlyEntriesOf(Map.of("orcamento", "100.00"));
+        assertThatThrownBy(() -> dadosEvento.put("orcamento", "300.00"))
+            .isInstanceOf(UnsupportedOperationException.class);
     }
 }

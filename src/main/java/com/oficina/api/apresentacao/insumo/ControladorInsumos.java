@@ -101,17 +101,17 @@ public class ControladorInsumos {
         return RespostasHttp.ok(RespostaInsumo.de(insumo));
     }
 
-    @PostMapping(value = "/{id}/entradas-estoque", consumes = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary = "Incrementar estoque do insumo.",
+    @PostMapping(value = "/{id}/reposicoes-estoque", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Repor estoque do insumo",
         description = "Quantidade adicionada ao saldo físico. Reservas para ordens de serviço feitas automaticamente.")
-    @ApiResponse(responseCode = "200", description = "Estoque incrementado e fila de reservas processada")
+    @ApiResponse(responseCode = "200", description = "Estoque reposto e fila de reservas processada")
     @ApiResponse(responseCode = "404", description = "Insumo inexistente ou excluído")
-    public ResponseEntity<RespostaInsumo> incrementarEstoque(
+    public ResponseEntity<RespostaInsumo> reporEstoque(
         @PathVariable final UUID id,
-        @Valid @RequestBody final RequisicaoEntradaEstoque requisicao
+        @Valid @RequestBody final RequisicaoReposicaoEstoque requisicao
     ) {
         return RespostasHttp
-            .ok(RespostaInsumo.de(this.servico.incrementarEstoque(id, new Quantidade(requisicao.quantidade()))));
+            .ok(RespostaInsumo.de(this.servico.reporEstoque(id, new Quantidade(requisicao.quantidade()))));
     }
 
     @DeleteMapping(value = "/{id}")
