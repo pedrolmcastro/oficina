@@ -3,11 +3,15 @@
 - **Projeto:** Oficina
 - **Versão:** 1.0.0
 
+## Linguagem ubíquoa
+
+O dicionário da linguagem ubíquoa utilizada por esse projeto pode ser encontrada em [/doc/GLOSSARY.md](/doc/GLOSSARY.md)
+
 ## Requisitos
 
 ### Requisitos funcionais
 
-Os requisitos funcionais do sistema foram descritos em [(/src/bdd/resources/features/](/src/bdd/resources/features/)
+Os requisitos funcionais do sistema foram descritos em [/src/bdd/resources/features/](/src/bdd/resources/features/)
 utilizando Gherkin e práticas de BDD com validação automática
 
 ### Requisitos não funcionais
