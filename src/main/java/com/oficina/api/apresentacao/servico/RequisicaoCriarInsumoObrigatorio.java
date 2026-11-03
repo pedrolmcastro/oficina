@@ -7,7 +7,7 @@ import java.util.UUID;
 public record RequisicaoCriarInsumoObrigatorio(
     @NotNull
     UUID insumoId,
-    @Schema(description = "Quantidade inteira positiva", example = "4")
+    @Schema(description = "Quantidade positiva de insumos", minimum = "1", example = "4")
     @NotNull
     Integer quantidade
 ) {}

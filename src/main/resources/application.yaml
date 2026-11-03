@@ -57,3 +57,11 @@ management:
         enabled: false
       exposure:
         include: prometheus
+springdoc:
+  swagger-ui:
+    display-request-duration: true
+    doc-expansion: list
+    filter: true
+    persist-authorization: true
+    tags-sorter: alpha
+    try-it-out-enabled: true

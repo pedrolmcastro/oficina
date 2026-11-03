@@ -33,12 +33,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(value = "/servicos", produces = MediaType.APPLICATION_JSON_VALUE)
-@Tag(name = "Serviços", description = "Cadastro, consulta, atualização e exclusão de serviços")
+@Tag(name = "Serviços", description = "Gestão de serviços")
 @SecurityRequirement(name = "bearerAuth")
 @ApiResponse(responseCode = "400", description = "Requisição inválida", content = {
     @Content(schema = @Schema(implementation = ProblemDetail.class)) })
 @ApiResponse(responseCode = "401", description = "Token ausente ou inválido", content = { @Content })
-@ApiResponse(responseCode = "403", description = "Requer perfil ADMIN", content = { @Content })
+@ApiResponse(responseCode = "403", description = "Acesso negado", content = { @Content })
 public class ControladorServicos {
     private final ServicoServicos servico;
 
@@ -49,7 +49,7 @@ public class ControladorServicos {
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Cadastrar serviço")
     @ApiResponse(responseCode = "201", description = "Serviço cadastrado")
-    @ApiResponse(responseCode = "409", description = "Nome já cadastrado")
+    @ApiResponse(responseCode = "409", description = "Conflito com outro serviço já cadastrado")
     public ResponseEntity<RespostaServico> criar(@Valid @RequestBody final RequisicaoCriarServico requisicao) {
         final var criado = this.servico
             .criar(
@@ -68,9 +68,7 @@ public class ControladorServicos {
     }
 
     @GetMapping
-    @Operation(summary = "Listar serviços", description = "Busca FULLTEXT opcional por nome em português. "
-        + "Retorna em itens até first serviços (padrão 25, entre 1 e 25), em ordem crescente de ID, após after. "
-        + "Use nextCursor em after com o mesmo filtro; null indica o fim da listagem.")
+    @Operation(summary = "Listar serviços", description = "Busca opcional por nome em português. Ordenados por IDm.")
     public ResponseEntity<RespostaLista<RespostaServico>> listar(
         @RequestParam(required = false) final @Nullable String nome,
         @RequestParam(required = false) final @Nullable UUID after,
@@ -83,7 +81,7 @@ public class ControladorServicos {
     @PatchMapping(value = "/{id}", consumes = { MediaType.APPLICATION_JSON_VALUE, "application/merge-patch+json" })
     @Operation(summary = "Atualizar serviço")
     @ApiResponse(responseCode = "404", description = "Serviço inexistente ou excluído")
-    @ApiResponse(responseCode = "409", description = "Nome já cadastrado")
+    @ApiResponse(responseCode = "409", description = "Conflito com outro serviço já cadastrado")
     public ResponseEntity<RespostaServico> atualizar(
         @PathVariable final UUID id,
         @Valid @RequestBody final RequisicaoAtualizarServico atualizacao

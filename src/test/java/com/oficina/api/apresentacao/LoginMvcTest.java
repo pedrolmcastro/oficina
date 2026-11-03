@@ -50,7 +50,10 @@ class LoginMvcTest {
             )
             .andExpect(status().isOk())
             .andExpect(header().string("Cache-Control", "no-store"))
-            .andExpect(content().json("{\"tokenAcesso\":\"token\",\"tipoToken\":\"Bearer\",\"expiraEm\":1800}"))
+            .andExpect(
+                content()
+                    .json("{\"tokenAcesso\":\"token\",\"tipoTokenAcesso\":\"Bearer\",\"validadeTokenAcesso\":1800}")
+            )
             .andReturn()
             .getResponse();
         assertThat(resposta.getCookies()).isEmpty();

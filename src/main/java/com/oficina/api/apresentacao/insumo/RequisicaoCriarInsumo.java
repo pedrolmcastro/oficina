@@ -8,7 +8,7 @@ public record RequisicaoCriarInsumo(
     @Schema(example = "Óleo de motor")
     @NotNull
     String nome,
-    @Schema(description = "Valor não negativo, até 10000.00, com no máximo duas casas decimais", minimum = "0",
+    @Schema(description = "Preço de venda do insumo com no máximo 2 casas decimais", minimum = "0",
         maximum = "10000.00", example = "19.90")
     @NotNull
     BigDecimal precoVenda

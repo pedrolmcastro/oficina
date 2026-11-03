@@ -11,8 +11,8 @@ public record RequisicaoAtualizarInsumo(
     @Nullable
     String nome,
     @Nullable
-    @Schema(description = "Valor não negativo, com no máximo duas casas decimais", minimum = "0", maximum = "10000.00",
-        example = "19.90")
+    @Schema(description = "Preço de venda do insumo com no máximo 2 casas decimais", minimum = "0",
+        maximum = "10000.00", example = "19.90")
     BigDecimal precoVenda
 ) {
     @AssertTrue(message = "Informe ao menos um campo para atualizar")

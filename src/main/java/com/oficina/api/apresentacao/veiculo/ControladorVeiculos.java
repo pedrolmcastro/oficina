@@ -34,12 +34,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(value = "/veiculos", produces = MediaType.APPLICATION_JSON_VALUE)
-@Tag(name = "Veículos", description = "Cadastro, consulta, atualização e exclusão de veículos")
+@Tag(name = "Veículos", description = "Gestão de veículos")
 @SecurityRequirement(name = "bearerAuth")
 @ApiResponse(responseCode = "400", description = "Requisição ou placa inválida", content = {
     @Content(schema = @Schema(implementation = ProblemDetail.class)) })
 @ApiResponse(responseCode = "401", description = "Token ausente ou inválido", content = { @Content })
-@ApiResponse(responseCode = "403", description = "Requer perfil ADMIN", content = { @Content })
+@ApiResponse(responseCode = "403", description = "Acesso negado", content = { @Content })
 public class ControladorVeiculos {
     private final ServicoVeiculos servico;
 
@@ -77,12 +77,8 @@ public class ControladorVeiculos {
     }
 
     @GetMapping
-    @Operation(summary = "Listar veículos",
-        description = "Informe ao menos um filtro: placa (antiga ou Mercosul, em maiúsculas e sem hífen) "
-            + "ou ID do cliente. "
-            + "Retorna em itens até first veículos (padrão 25, entre 1 e 25), em ordem crescente de ID, após after. "
-            + "Use nextCursor em after para continuar com os mesmos filtros; null indica que não há mais páginas.")
-    @ApiResponse(responseCode = "200", description = "Lista de veículos, vazia quando nenhum corresponde aos filtros")
+    @Operation(summary = "Listar veículos", description = "Informe a placa ou cliente. Ordenados por ID")
+    @ApiResponse(responseCode = "200", description = "Lista de veículos")
     @ApiResponse(responseCode = "404", description = "Cliente inexistente ou excluído", content = {
         @Content(schema = @Schema(implementation = ProblemDetail.class)) })
     public ResponseEntity<RespostaLista<RespostaVeiculo>> listar(

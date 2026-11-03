@@ -38,7 +38,7 @@ public class ControladorLogin {
 
     @PostMapping(value = "/login", consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Autenticar usuário",
-        description = "Autentica nome de usuário e senha e retorna um JWT para uso em Authorization: Bearer <token>.")
+        description = "Autentica nome de usuário e senha e retorna um JWT para uso no cabeçalho Authorization")
     @ApiResponse(responseCode = "200", description = "Autenticação realizada com sucesso", content = {
         @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(
             implementation = RespostaLogin.class)) })

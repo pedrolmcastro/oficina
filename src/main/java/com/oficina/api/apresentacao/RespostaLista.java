@@ -11,7 +11,7 @@ import org.jspecify.annotations.Nullable;
 public record RespostaLista<T>(
     List<T> itens,
     @JsonInclude(value = JsonInclude.Include.ALWAYS)
-    @Schema(description = "ID do último item desta página para usar em after; null quando não há próxima página.",
+    @Schema(description = "Cursor utilizado para solicitar a próxima página; null se não houver próxima página",
         types = {
             "string",
             "null" }, format = "uuid")

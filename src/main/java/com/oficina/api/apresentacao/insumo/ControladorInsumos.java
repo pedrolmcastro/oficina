@@ -34,12 +34,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(value = "/insumos", produces = MediaType.APPLICATION_JSON_VALUE)
-@Tag(name = "Insumos", description = "Cadastro, consulta, atualização e exclusão de insumos")
+@Tag(name = "Insumos", description = "Gestão de insumos")
 @SecurityRequirement(name = "bearerAuth")
 @ApiResponse(responseCode = "400", description = "Requisição inválida", content = {
     @Content(schema = @Schema(implementation = ProblemDetail.class)) })
 @ApiResponse(responseCode = "401", description = "Token ausente ou inválido", content = { @Content })
-@ApiResponse(responseCode = "403", description = "Requer perfil ADMIN", content = { @Content })
+@ApiResponse(responseCode = "403", description = "Acesso negado", content = { @Content })
 public class ControladorInsumos {
     private final ServicoInsumos servico;
 
@@ -50,7 +50,7 @@ public class ControladorInsumos {
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Cadastrar insumo")
     @ApiResponse(responseCode = "201", description = "Insumo cadastrado")
-    @ApiResponse(responseCode = "409", description = "Nome já cadastrado")
+    @ApiResponse(responseCode = "409", description = "Conflito com outro insumo já cadastrado")
     public ResponseEntity<RespostaInsumo> criar(@Valid @RequestBody final RequisicaoCriarInsumo requisicao) {
         final var insumo = this.servico
             .criar(
@@ -68,9 +68,7 @@ public class ControladorInsumos {
     }
 
     @GetMapping
-    @Operation(summary = "Listar insumos", description = "Busca FULLTEXT opcional por nome em português. "
-        + "Retorna em itens até first insumos (padrão 25, entre 1 e 25), em ordem crescente de ID, após after. "
-        + "Use nextCursor em after com o mesmo filtro; null indica o fim da listagem.")
+    @Operation(summary = "Listar insumos", description = "Busca opcional por nome em português. Ordenados por ID")
     public ResponseEntity<RespostaLista<RespostaInsumo>> listar(
         @RequestParam(required = false) final @Nullable String nome,
         @RequestParam(required = false) final @Nullable UUID after,
@@ -83,7 +81,7 @@ public class ControladorInsumos {
     @PatchMapping(value = "/{id}", consumes = { MediaType.APPLICATION_JSON_VALUE, "application/merge-patch+json" })
     @Operation(summary = "Atualizar insumo")
     @ApiResponse(responseCode = "404", description = "Insumo inexistente ou excluído")
-    @ApiResponse(responseCode = "409", description = "Nome já cadastrado")
+    @ApiResponse(responseCode = "409", description = "Conflito com outro insumo já cadastrado")
     public ResponseEntity<RespostaInsumo> atualizar(
         @PathVariable final UUID id,
         @Valid @RequestBody final RequisicaoAtualizarInsumo atualizacao
@@ -104,8 +102,8 @@ public class ControladorInsumos {
     }
 
     @PostMapping(value = "/{id}/entradas-estoque", consumes = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary = "Incrementar estoque e reservar para OS por ordem de criação",
-        description = "A quantidade é adicionada ao saldo físico. Reservas parciais são mantidas até a execução.")
+    @Operation(summary = "Incrementar estoque do insumo.",
+        description = "Quantidade adicionada ao saldo físico. Reservas para ordens de serviço feitas automaticamente.")
     @ApiResponse(responseCode = "200", description = "Estoque incrementado e fila de reservas processada")
     @ApiResponse(responseCode = "404", description = "Insumo inexistente ou excluído")
     public ResponseEntity<RespostaInsumo> incrementarEstoque(
@@ -119,7 +117,8 @@ public class ControladorInsumos {
     @DeleteMapping(value = "/{id}")
     @Operation(summary = "Excluir insumo")
     @ApiResponse(responseCode = "204", description = "Insumo excluído", content = { @Content })
-    @ApiResponse(responseCode = "409", description = "Insumo obrigatório de serviço ativo ou necessário para OS ativa")
+    @ApiResponse(responseCode = "409",
+        description = "Insumo obrigatório de serviço ativo ou necessário para ordem de serviço ativa")
     @ApiResponse(responseCode = "404", description = "Insumo inexistente ou já excluído")
     public ResponseEntity<Void> excluir(@PathVariable final UUID id) {
         this.servico.excluir(id);

@@ -19,7 +19,10 @@ class SwaggerIT {
     private int porta;
 
     @ParameterizedTest
-    @ValueSource(strings = { "/swagger-ui.html", "/swagger-ui/swagger-ui-bundle.js" })
+    @ValueSource(strings = {
+        "/swagger-ui.html",
+        "/swagger-ui/swagger-ui-bundle.js",
+        "/swagger-ui/swagger-initializer.js" })
     void deveDisponibilizarDocumentacao(final String caminho) {
         final var resposta = RestAssured.given().port(this.porta).get(caminho);
         assertThat(resposta.statusCode()).isEqualTo(200);

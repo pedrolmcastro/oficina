@@ -30,13 +30,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(value = "/servicos/{servicoId}/insumos-obrigatorios", produces = MediaType.APPLICATION_JSON_VALUE)
-@Tag(name = "Serviços", description = "Cadastro de serviços e seus insumos obrigatórios")
+@Tag(name = "Serviços", description = "Gestão de insumos obrigatórios de serviços")
 @SecurityRequirement(name = "bearerAuth")
 @ApiResponse(responseCode = "400", description = "Requisição inválida", content = {
     @Content(schema = @Schema(implementation = ProblemDetail.class)) })
 @ApiResponse(responseCode = "401", description = "Token ausente ou inválido", content = { @Content })
-@ApiResponse(responseCode = "403", description = "Requer perfil ADMIN", content = { @Content })
-@ApiResponse(responseCode = "404", description = "Serviço, insumo obrigatório ou associação não encontrado", content = {
+@ApiResponse(responseCode = "403", description = "Acesso negado", content = { @Content })
+@ApiResponse(responseCode = "404", description = "Serviço ou insumo obrigatório não encontrado", content = {
     @Content(schema = @Schema(implementation = ProblemDetail.class)) })
 public class ControladorInsumosObrigatorios {
     private final ServicoServicos servico;
@@ -78,10 +78,7 @@ public class ControladorInsumosObrigatorios {
     }
 
     @GetMapping
-    @Operation(summary = "Listar insumos obrigatórios do serviço",
-        description = "Retorna em itens até first insumos obrigatórios "
-            + "(padrão 25, entre 1 e 25), em ordem crescente de ID, após after. "
-            + "Use nextCursor em after; null indica o fim da listagem.")
+    @Operation(summary = "Listar insumos obrigatórios do serviço", description = "Ordenados por ID.")
     public ResponseEntity<RespostaLista<RespostaInsumoObrigatorio>> listar(
         @PathVariable final UUID servicoId,
         @RequestParam(required = false) final @Nullable UUID after,
@@ -98,7 +95,7 @@ public class ControladorInsumosObrigatorios {
     }
 
     @DeleteMapping(value = "/{insumoId}")
-    @Operation(summary = "Remover associação de insumo obrigatório", description = "Preserva o cadastro do insumo.")
+    @Operation(summary = "Remover associação de insumo obrigatório")
     @ApiResponse(responseCode = "204", description = "Associação de insumo obrigatório removida", content = {
         @Content })
     public ResponseEntity<Void> remover(@PathVariable final UUID servicoId, @PathVariable final UUID insumoId) {
