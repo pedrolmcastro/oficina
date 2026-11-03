@@ -18,13 +18,14 @@ Com a aplicação rodando, é possível acessar:
 - A documentação interativa do Swagger em [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
 - Os dashboards do Grafana em [http://localhost:3000](http://localhost:3000)
 - O sandbox de emails do Mailpit em [http://localhost:8025](http://localhost:8025)
+- Recomenda-se o uso da Collection do Postman [postman.json](/postman.json) para testar a API
 
-> **Nota:** Tanto no Grafana quanto na aplicação tem cadastrado o usuário "admin" com senha "admin"
+> **Nota:** Tanto o Grafana quanto a aplicação têm um usuário "admin" com senha "admin"
 
 Para encerrar a aplicação, basta executar:
 
 ```bash
-docker compose down
+docker compose down -v
 ```
 
 ### Como executar as validações
