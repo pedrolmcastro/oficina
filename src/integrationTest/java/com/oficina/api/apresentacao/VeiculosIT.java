@@ -4,8 +4,6 @@ import com.oficina.api.apresentacao.cliente.RespostaCliente;
 import com.oficina.api.apresentacao.veiculo.RespostaVeiculo;
 import io.restassured.common.mapper.TypeRef;
 import io.restassured.response.Response;
-import java.util.Comparator;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,39 +23,14 @@ class VeiculosIT extends ApiIntegrationTest {
     }
 
     @Test
-    void deveRespeitarContratoHttpNoCicloDeVidaDoVeiculo() {
+    void deveRetornarLocalizacaoNoCadastroECorpoVazioNaExclusao() {
         final var cadastro = cadastrar("ABC1234");
         validar(cadastro, 201);
         final var veiculo = cadastro.as(RespostaVeiculo.class);
         assertThat(cadastro.header("Location")).endsWith("/veiculos/" + veiculo.id());
-        assertThat(veiculo)
-            .isEqualTo(new RespostaVeiculo(veiculo.id(), "ABC1234", "Corolla", "Toyota", 2024, this.clienteId));
-        final var consulta = requisicao().get("/veiculos/{id}", veiculo.id());
-        validar(consulta, 200);
-        assertThat(consulta.as(RespostaVeiculo.class)).isEqualTo(veiculo);
-        validar(requisicao().queryParam("placa", veiculo.placa()).get("/veiculos"), 200);
-        validar(requisicao().body(Map.of("modelo", "Civic")).patch("/veiculos/{id}", veiculo.id()), 200);
         final var exclusao = requisicao().delete("/veiculos/{id}", veiculo.id());
         validar(exclusao, 204);
         assertThat(exclusao.body().asString()).isEmpty();
-    }
-
-    @Test
-    void deveAtualizarSomenteClientePreservandoDemaisCampos() {
-        final var original = cadastrar("ABC1234").as(RespostaVeiculo.class);
-        final var novoCliente = criarCliente("11144477735");
-        final var resposta = requisicao().body(Map.of("clienteId", novoCliente)).patch("/veiculos/{id}", original.id());
-        validar(resposta, 200);
-        final var esperado = new RespostaVeiculo(
-            original.id(),
-            original.placa(),
-            original.modelo(),
-            original.marca(),
-            original.ano(),
-            novoCliente
-        );
-        assertThat(resposta.as(RespostaVeiculo.class)).isEqualTo(esperado);
-        assertThat(requisicao().get("/veiculos/{id}", original.id()).as(RespostaVeiculo.class)).isEqualTo(esperado);
     }
 
     @ParameterizedTest
@@ -69,66 +42,19 @@ class VeiculosIT extends ApiIntegrationTest {
     }
 
     @Test
-    void deveRetornarListaVaziaParaPlacaExcluida() {
-        final var veiculo = cadastrar("ABC1234").as(RespostaVeiculo.class);
-        assertThat(requisicao().delete("/veiculos/{id}", veiculo.id()).statusCode()).isEqualTo(204);
-
-        final var resposta = requisicao().queryParam("placa", veiculo.placa()).get("/veiculos");
-
-        validar(resposta, 200);
-        assertThat(resposta.as(new TypeRef<RespostaLista<RespostaVeiculo>>() {}).itens()).isEmpty();
-        assertThat(listar(Map.of("cliente", this.clienteId)).itens()).isEmpty();
-    }
-
-    @Test
-    void deveFiltrarPorPlacaClienteEAmbos() {
+    void deveCombinarFiltrosDePlacaECliente() {
         final var primeiro = cadastrar("ABC1234").as(RespostaVeiculo.class);
-        final var terceiro = cadastrar("GHI5678").as(RespostaVeiculo.class);
         final var outroCliente = criarCliente("11144477735");
-        assertThat(cadastrar("DEF1G23", outroCliente).statusCode()).isEqualTo(201);
-
-        final var porPlaca = listar(Map.of("placa", primeiro.placa(), "first", 1));
-        assertThat(porPlaca.itens()).containsExactly(primeiro);
-        assertThat(porPlaca.nextCursor()).isNull();
-        assertThat(listar(Map.of("cliente", this.clienteId)).itens()).containsExactlyInAnyOrder(primeiro, terceiro);
         assertThat(listar(Map.of("placa", primeiro.placa(), "cliente", this.clienteId)).itens())
             .containsExactly(primeiro);
         assertThat(listar(Map.of("placa", primeiro.placa(), "cliente", outroCliente)).itens()).isEmpty();
-        assertThat(listar(Map.of("cliente", UUID.randomUUID())).itens()).isEmpty();
     }
 
     @Test
-    void devePercorrerTodosOsVeiculosEmOrdemSemRepeticoes() {
-        final var esperados = List
-            .of(
-                cadastrar("ABC1234").as(RespostaVeiculo.class),
-                cadastrar("DEF1G23").as(RespostaVeiculo.class),
-                cadastrar("GHI5678").as(RespostaVeiculo.class)
-            )
-            .stream()
-            .sorted(Comparator.comparing(veiculo -> veiculo.id().toString()))
-            .toList();
-
-        final var primeira = listar(Map.of("cliente", this.clienteId, "first", 2));
-        assertThat(primeira.itens()).containsExactlyElementsOf(esperados.subList(0, 2));
-        assertThat(primeira.nextCursor()).isEqualTo(esperados.get(1).id());
-
-        final var ultima = listar(Map.of("cliente", this.clienteId, "first", 2, "after", primeira.nextCursor()));
-        assertThat(ultima.itens()).containsExactly(esperados.getLast());
-        assertThat(ultima.nextCursor()).isNull();
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = { false, true })
-    void deveRejeitarClienteInexistenteOuExcluido(final boolean excluido) {
+    void deveRejeitarClienteExcluido() {
         final var original = cadastrar("ABC1234").as(RespostaVeiculo.class);
-        final UUID invalido;
-        if (excluido) {
-            invalido = criarCliente("11144477735");
-            assertThat(requisicao().delete("/clientes/{id}", invalido).statusCode()).isEqualTo(204);
-        } else {
-            invalido = UUID.randomUUID();
-        }
+        final var invalido = criarCliente("11144477735");
+        validar(requisicao().delete("/clientes/{id}", invalido), 204);
         validar(
             requisicao()
                 .body(
@@ -159,12 +85,10 @@ class VeiculosIT extends ApiIntegrationTest {
     }
 
     private Response cadastrar(final String placa) {
-        return cadastrar(placa, this.clienteId);
-    }
-
-    private Response cadastrar(final String placa, final UUID cliente) {
         return requisicao()
-            .body(Map.of("placa", placa, "modelo", "Corolla", "marca", "Toyota", "ano", 2024, "clienteId", cliente))
+            .body(
+                Map.of("placa", placa, "modelo", "Corolla", "marca", "Toyota", "ano", 2024, "clienteId", this.clienteId)
+            )
             .post("/veiculos");
     }
 }

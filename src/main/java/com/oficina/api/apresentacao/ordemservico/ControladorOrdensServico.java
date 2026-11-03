@@ -87,7 +87,7 @@ public class ControladorOrdensServico {
     }
 
     @GetMapping(value = "/{id}/insumos-necessarios")
-    @Operation(summary = "Listar itens de insumos da OS, mantendo suas origens separadas")
+    @Operation(summary = "Listar insumos necessários da OS, mantendo suas origens separadas")
     public ResponseEntity<RespostaLista<RespostaInsumoNecessario>> listarInsumos(
         @PathVariable final UUID id,
         @RequestParam(required = false) final @Nullable UUID after,

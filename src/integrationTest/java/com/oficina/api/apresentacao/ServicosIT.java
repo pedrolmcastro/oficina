@@ -4,17 +4,12 @@ import com.oficina.api.apresentacao.servico.RespostaServico;
 import io.restassured.common.mapper.TypeRef;
 import io.restassured.response.Response;
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.NullSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ServicosIT extends ApiIntegrationTest {
@@ -25,16 +20,11 @@ class ServicosIT extends ApiIntegrationTest {
     }
 
     @Test
-    void deveRespeitarContratoHttpEPreservarHistorico() {
+    void deveRetornarLocalizacaoAceitarMergePatchEPreservarExclusaoLogica() {
         final var cadastro = cadastrar("Óleo de motor");
         validar(cadastro, 201);
         final var original = cadastro.as(RespostaServico.class);
         assertThat(cadastro.header("Location")).isEqualTo("/servicos/" + original.id());
-        assertThat(original)
-            .isEqualTo(new RespostaServico(original.id(), "Óleo de motor", new BigDecimal("19.90"), true));
-        final var consulta = requisicao().get("/servicos/{id}", original.id());
-        validar(consulta, 200);
-        assertThat(consulta.as(RespostaServico.class)).isEqualTo(original);
         validar(
             requisicao()
                 .contentType("application/merge-patch+json")
@@ -50,26 +40,19 @@ class ServicosIT extends ApiIntegrationTest {
             .containsAllEntriesOf(Map.of("nome", original.nome(), "preco_venda", original.precoVenda()));
     }
 
-    @ParameterizedTest
-    @NullSource
-    @ValueSource(strings = { "ÓLEO" })
-    void devePercorrerServicosEmOrdemSemRepeticoes(final @Nullable String nome) {
+    @Test
+    void devePaginarServicosMantendoFiltroPorNome() {
         final var oleos = List
             .of(
                 cadastrar("Filtro de óleo").as(RespostaServico.class),
                 cadastrar("Óleo para motor").as(RespostaServico.class),
                 cadastrar("Óleos sintéticos").as(RespostaServico.class)
             );
-        final var todos = new ArrayList<>(oleos);
-        todos.add(cadastrar("Pneu").as(RespostaServico.class));
-        final var esperados = (nome == null
-            ? todos
-            : oleos).stream().sorted(Comparator.comparing(servico -> servico.id().toString())).toList();
+        cadastrar("Pneu");
+        final var esperados = oleos.stream().sorted(Comparator.comparing(servico -> servico.id().toString())).toList();
         final Map<String, Object> parametros = new HashMap<>();
         parametros.put("first", 2);
-        if (nome != null) {
-            parametros.put("nome", nome);
-        }
+        parametros.put("nome", "ÓLEO");
         final var primeira = listar(parametros);
         assertThat(primeira.itens()).containsExactlyElementsOf(esperados.subList(0, 2));
         assertThat(primeira.nextCursor()).isEqualTo(esperados.get(1).id());

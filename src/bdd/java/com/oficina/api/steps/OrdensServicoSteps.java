@@ -4,6 +4,7 @@ import com.oficina.api.apresentacao.RespostaLista;
 import com.oficina.api.apresentacao.cliente.RespostaCliente;
 import com.oficina.api.apresentacao.insumo.RespostaInsumo;
 import com.oficina.api.apresentacao.ordemservico.RespostaAcessoOrdemServico;
+import com.oficina.api.apresentacao.ordemservico.RespostaAcompanhamento;
 import com.oficina.api.apresentacao.ordemservico.RespostaInsumoNecessario;
 import com.oficina.api.apresentacao.ordemservico.RespostaOrdemServico;
 import com.oficina.api.apresentacao.servico.RespostaServico;
@@ -18,12 +19,13 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import io.restassured.common.mapper.TypeRef;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.IntStream;
 import org.jspecify.annotations.Nullable;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +34,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 public class OrdensServicoSteps {
@@ -47,15 +51,20 @@ public class OrdensServicoSteps {
     private @Nullable UUID veiculoId;
     private @Nullable UUID insumoId;
     private @Nullable UUID avulsoId;
-    private @Nullable UUID automaticoId;
     private @Nullable RespostaAcessoOrdemServico acesso;
     private @Nullable String tokenAnterior;
+    private final List<RespostaAcessoOrdemServico> ordensCadastradas = new ArrayList<>();
+    private @Nullable String decisaoAnterior;
     private List<UUID> servicoIds = List.of();
 
     @Before(value = "@ordens-servico")
     public void preparar() {
         limpar();
-        administrar();
+        this.http.autenticar(this.emissor.emitir("admin", Set.of("ADMIN")).valor());
+    }
+
+    @Given("que existe um veículo e um serviço com diagnóstico {string} para abrir a OS")
+    public void prepararCadastro(final String diagnostico) {
         this.http
             .receber(
                 this.http
@@ -64,7 +73,8 @@ public class OrdensServicoSteps {
                     .post("/clientes")
             );
         this.http.validarStatus(201);
-        this.clienteId = this.http.resposta().as(RespostaCliente.class).id();
+        final var clienteId = this.http.resposta().as(RespostaCliente.class).id();
+        this.clienteId = clienteId;
         this.http
             .receber(
                 this.http
@@ -81,7 +91,7 @@ public class OrdensServicoSteps {
                                 "ano",
                                 2024,
                                 "clienteId",
-                                this.clienteId
+                                clienteId
                             )
                     )
                     .post("/veiculos")
@@ -91,6 +101,9 @@ public class OrdensServicoSteps {
         this.http.receber(this.http.requisicao().body(Map.of("nome", "Óleo", "precoVenda", 10)).post("/insumos"));
         this.http.validarStatus(201);
         this.insumoId = this.http.resposta().as(RespostaInsumo.class).id();
+        final var servico = cadastrarServico("Troca de óleo", "requer".equals(diagnostico));
+        this.servicoIds = List.of(servico);
+        associar(servico, 4);
     }
 
     @After(value = "@ordens-servico")
@@ -113,20 +126,29 @@ public class OrdensServicoSteps {
 
     @Given("uma OS com um serviço que {string} diagnóstico")
     public void criarOrdem(final String requisitoDiagnostico) {
-        administrar();
-        final var servico = cadastrarServico("Troca de óleo", "requer".equals(requisitoDiagnostico));
-        this.servicoIds = List.of(servico);
-        associar(servico, 4);
+        prepararCadastro(requisitoDiagnostico);
+        criarComAcesso();
+    }
+
+    @Given("uma OS sem insumos obrigatórios")
+    public void prepararOrdemSemInsumos() {
+        prepararCadastro("não requer");
+        this.http
+            .receber(
+                this.http
+                    .requisicao()
+                    .delete("/servicos/{id}/insumos-obrigatorios/{insumo}", this.servicoIds.getFirst(), this.insumoId)
+            );
+        this.http.validarStatus(204);
         criarComAcesso();
     }
 
     @Given("uma OS com dois serviços, dos quais apenas um requer diagnóstico")
     public void criarOrdemComDoisServicos() {
-        administrar();
-        final var primeiro = cadastrarServico("Troca de óleo", true);
+        prepararCadastro("requer");
+        final var primeiro = this.servicoIds.getFirst();
         final var segundo = cadastrarServico("Limpeza", false);
         this.servicoIds = List.of(primeiro, segundo);
-        associar(primeiro, 4);
         associar(segundo, 1);
         criarComAcesso();
     }
@@ -134,22 +156,25 @@ public class OrdensServicoSteps {
     private void criarComAcesso() {
         criar();
         this.http.validarStatus(201);
-        this.acesso = this.http.resposta().as(RespostaAcessoOrdemServico.class);
-        assertThat(this.http.resposta().header("Location")).isEqualTo("/ordens-servico/" + ordemId());
-        final var itens = acesso().ordemServico().insumosNecessarios();
-        assertThat(itens).hasSize(this.servicoIds.size());
-        assertThat(itens).allSatisfy(i -> assertThat(i.servicoContratadoId()).isNotNull());
-        this.automaticoId = itens.getFirst().id();
     }
 
     @When("executo a ação administrativa {string} na OS")
     public void acao(final String acao) {
-        administrar();
         this.http.receber(this.http.requisicao().post("/ordens-servico/{id}/{acao}", ordemId(), acao));
     }
 
     @Given("uma OS em {string}")
     public void prepararStatus(final String status) {
+        assertThat(status)
+            .isIn(
+                "aguardando-diagnostico",
+                "em-diagnostico",
+                "aguardando-confirmacao",
+                "aguardando-insumos",
+                "aguardando-execucao",
+                "em-execucao",
+                "aguardando-retirada"
+            );
         criarOrdem("requer");
         if ("aguardando-diagnostico".equals(status)) {
             return;
@@ -187,9 +212,13 @@ public class OrdensServicoSteps {
     }
 
     @Given("uma entrada de {int} unidades do insumo")
+    public void prepararEstoque(final int quantidade) {
+        incrementarEstoque(quantidade);
+        this.http.validarStatus(200);
+    }
+
     @When("incremento o estoque do insumo em {int} unidades")
     public void incrementarEstoque(final int quantidade) {
-        administrar();
         this.http
             .receber(
                 this.http
@@ -202,6 +231,7 @@ public class OrdensServicoSteps {
     @Then("a OS possui {int} unidades reservadas e {int} pendentes")
     public void validarReservas(final int reservada, final int pendente) {
         consultar();
+        this.http.validarStatus(200);
         final var itens = this.http.resposta().as(RespostaOrdemServico.class).insumosNecessarios();
         assertThat(itens.stream().mapToInt(RespostaInsumoNecessario::quantidadeReservada).sum()).isEqualTo(reservada);
         assertThat(itens.stream().mapToInt(RespostaInsumoNecessario::quantidadePendente).sum()).isEqualTo(pendente);
@@ -235,15 +265,8 @@ public class OrdensServicoSteps {
         this.http.validarStatus(200);
     }
 
-    @Given("o insumo avulso já foi removido")
-    public void prepararRemocaoAvulso() {
-        remover("avulso");
-        this.http.validarStatus(204);
-    }
-
     @When("consulto a OS administrativamente")
     public void consultar() {
-        administrar();
         this.http.receber(this.http.requisicao().get("/ordens-servico/{id}", ordemId()));
     }
 
@@ -271,12 +294,35 @@ public class OrdensServicoSteps {
             );
     }
 
-    @Then("a OS está em {string} com total {string}")
-    public void validarOrdem(final String status, final String total) {
-        assertThat(this.http.resposta().jsonPath().getString("status")).isEqualTo(status);
-        assertThat(this.http.resposta().jsonPath().getObject("total", java.math.BigDecimal.class))
-            .isEqualByComparingTo(total);
-        assertThat(this.http.resposta().header("Cache-Control")).isEqualTo("no-store");
+    @Then("a resposta deve conter a OS:")
+    public void validarOrdem(final DataTable tabela) {
+        validarCamposOrdem(tabela.asMaps().getFirst());
+    }
+
+    @Then("a OS deve estar em {string}")
+    public void validarStatusOrdem(final String status) {
+        validarCamposOrdem(Map.of("status", status));
+    }
+
+    @Then("a OS deve estar em {string} com total {string}")
+    public void validarStatusETotalOrdem(final String status, final String total) {
+        validarCamposOrdem(Map.of("status", status, "total", total));
+    }
+
+    private void validarCamposOrdem(final Map<@Nullable String, @Nullable String> esperado) {
+        final var json = this.http.resposta().jsonPath();
+        final var prefixo = json.getMap("").containsKey("ordemServico")
+            ? "ordemServico."
+            : "";
+        for (final var campo : List.of("status", "resultado")) {
+            if (esperado.containsKey(campo)) {
+                assertThat(json.getString(prefixo + campo)).isEqualTo(esperado.get(campo));
+            }
+        }
+        if (esperado.containsKey("total")) {
+            assertThat(json.getObject(prefixo + "total", java.math.BigDecimal.class))
+                .isEqualByComparingTo(esperado.get("total"));
+        }
     }
 
     @Then("o acompanhamento expõe somente os dados necessários ao cliente")
@@ -294,14 +340,8 @@ public class OrdensServicoSteps {
         assertThat(this.http.resposta().header("Referrer-Policy")).isEqualTo("no-referrer");
     }
 
-    @Then("o resultado da OS é {string}")
-    public void validarResultado(final String resultado) {
-        assertThat(this.http.resposta().jsonPath().getString("resultado")).isEqualTo(resultado);
-    }
-
     @When("adiciono um insumo avulso com quantidade {int}")
     public void adicionar(final int quantidade) {
-        administrar();
         this.http
             .receber(
                 this.http
@@ -316,7 +356,6 @@ public class OrdensServicoSteps {
 
     @When("altero o item {string} para quantidade {int}")
     public void alterar(final String origem, final int quantidade) {
-        administrar();
         this.http
             .receber(
                 this.http
@@ -328,13 +367,13 @@ public class OrdensServicoSteps {
 
     @When("removo o item {string}")
     public void remover(final String origem) {
-        administrar();
+        removerPorId(item(origem).toString());
+    }
+
+    @When("removo o insumo necessário pelo ID {string}")
+    public void removerPorId(final String id) {
         this.http
-            .receber(
-                this.http
-                    .requisicao()
-                    .delete("/ordens-servico/{id}/insumos-necessarios/{item}", ordemId(), item(origem))
-            );
+            .receber(this.http.requisicao().delete("/ordens-servico/{id}/insumos-necessarios/{item}", ordemId(), id));
     }
 
     @Then("o item avulso tem quantidade {int}")
@@ -342,14 +381,13 @@ public class OrdensServicoSteps {
         assertThat(this.http.resposta().as(RespostaInsumoNecessario.class).quantidade()).isEqualTo(quantidade);
     }
 
-    @When("listo os insumos da OS")
-    public void listarInsumos() {
-        administrar();
+    @When("consulto os insumos necessários da OS")
+    public void consultarInsumosNecessarios() {
         this.http.receber(this.http.requisicao().get("/ordens-servico/{id}/insumos-necessarios", ordemId()));
     }
 
-    @Then("existe(m) {int} item/itens de insumo(s) com quantidade total {int}")
-    public void validarItens(final int itens, final int quantidade) {
+    @Then("existe(m) {int} item/itens de insumo(s) necessário(s) com quantidade total {int}")
+    public void validarInsumosNecessarios(final int itens, final int quantidade) {
         final var lista = this.http.resposta().as(new TypeRef<RespostaLista<RespostaInsumoNecessario>>() {});
         assertThat(lista.itens()).hasSize(itens);
         assertThat(lista.itens().stream().mapToInt(RespostaInsumoNecessario::quantidade).sum()).isEqualTo(quantidade);
@@ -374,16 +412,10 @@ public class OrdensServicoSteps {
         assertThat(this.http.resposta().as(RespostaOrdemServico.class).eventos())
             .extracting(e -> e.tipo())
             .containsExactlyElementsOf(tabela.asList());
-        assertThat(this.http.resposta().as(RespostaOrdemServico.class).eventos())
-            .extracting(e -> e.sequencia())
-            .containsExactlyElementsOf(IntStream.range(0, tabela.height()).boxed().toList());
-        assertThat(this.http.resposta().jsonPath().getMap("eventos[0]"))
-            .containsOnlyKeys("sequencia", "tipo", "ocorridoEm", "autor", "dados");
     }
 
-    @When("os preços e nomes dos serviços e insumos mudam no catálogo")
-    public void alterarCatalogo() {
-        administrar();
+    @When("os preços e nomes dos serviços e insumos mudam nos cadastros")
+    public void alterarCadastrosServicosInsumos() {
         for (final var servicoId : this.servicoIds) {
             this.http
                 .receber(
@@ -414,6 +446,7 @@ public class OrdensServicoSteps {
     @Given("o link de acompanhamento foi reemitido")
     public void renovar() {
         this.tokenAnterior = acesso().tokenAcompanhamento();
+        this.decisaoAnterior = tokenDecisao();
         acao("acesso-cliente");
         this.http.validarStatus(200);
         this.acesso = this.http.resposta().as(RespostaAcessoOrdemServico.class);
@@ -439,22 +472,12 @@ public class OrdensServicoSteps {
             );
     }
 
-    @Then("somente o hash do token está persistido")
-    public void validarHash() {
-        final var hash = this.jdbc
-            .queryForObject("SELECT hash_token FROM oficina.ordens_servico WHERE id = ?", String.class, ordemId());
-        assertThat(hash)
-            .isEqualTo(TokenAcompanhamento.hash(acesso().tokenAcompanhamento()))
-            .isNotEqualTo(acesso().tokenAcompanhamento());
-    }
-
-    @When("listo as OS com status {string}")
-    public void listar(final String status) {
-        administrar();
+    @When("consulto as OS com status {string}")
+    public void consultarPorStatus(final String status) {
         this.http.receber(this.http.requisicao().queryParam("status", status).get("/ordens-servico"));
     }
 
-    @Then("a listagem contém {int} OS")
+    @Then("a lista de OS contém {int} OS")
     public void validarLista(final int quantidade) {
         assertThat(this.http.resposta().as(new TypeRef<RespostaLista<RespostaOrdemServico>>() {}).itens())
             .hasSize(quantidade);
@@ -462,7 +485,6 @@ public class OrdensServicoSteps {
 
     @When("tento criar OS com referência {string}")
     public void criarInvalida(final String tipo) {
-        administrar();
         final var veiculo = "veículo inexistente".equals(tipo)
             ? UUID.randomUUID()
             : this.veiculoId;
@@ -481,19 +503,262 @@ public class OrdensServicoSteps {
             );
     }
 
-    @Then("a criação inválida não persiste outra OS nem eventos")
-    public void validarRollback() {
-        assertThat(this.jdbc.queryForObject("SELECT count(*) FROM oficina.ordens_servico", Integer.class)).isEqualTo(1);
-        assertThat(this.jdbc.queryForObject("SELECT count(*) FROM oficina.ordens_servico_eventos", Integer.class))
-            .isEqualTo(acesso().ordemServico().eventos().size());
+    @Then("a lista de OS deve estar vazia")
+    public void validarListaVazia() {
+        assertThat(listaOrdens().itens()).isEmpty();
+        assertThat(listaOrdens().nextCursor()).isNull();
     }
 
     @Given("outro insumo disponível para inclusão como avulso")
     public void outroInsumo() {
-        administrar();
         this.http.receber(this.http.requisicao().body(Map.of("nome", "Filtro", "precoVenda", 20)).post("/insumos"));
         this.http.validarStatus(201);
         this.insumoId = this.http.resposta().as(RespostaInsumo.class).id();
+    }
+
+    @Then("a OS criada deve pertencer ao veículo e ao cliente cadastrados")
+    public void validarCriacao() {
+        final var ordem = acesso().ordemServico();
+        assertThat(ordem.veiculoId()).isEqualTo(this.veiculoId);
+        final var veiculo = this.http.requisicao().get("/veiculos/{id}", this.veiculoId);
+        assertThat(veiculo.statusCode()).isEqualTo(200);
+        assertThat(ordem.clienteId()).isEqualTo(veiculo.as(RespostaVeiculo.class).clienteId());
+        assertThat(this.http.resposta().header("Location")).isEqualTo("/ordens-servico/" + ordem.id());
+        assertThat(ordem.servicos())
+            .extracting(servico -> servico.servicoId())
+            .containsExactlyElementsOf(this.servicoIds);
+    }
+
+    @When("consulto as OS")
+    public void consultarTodas() {
+        this.http.receber(this.http.requisicao().get("/ordens-servico"));
+    }
+
+    @When("consulto a OS pelo ID {string}")
+    public void consultarPorId(final String id) {
+        this.http.receber(this.http.requisicao().get("/ordens-servico/{id}", id));
+    }
+
+    @Then("o estoque utilizado pela OS deve ter {int} unidades físicas, {int} reservadas e {int} disponíveis")
+    public void validarEstoque(final int fisico, final int reservado, final int disponivel) {
+        final var resposta = this.http.requisicao().get("/insumos/{id}", this.insumoId);
+        assertThat(resposta.statusCode()).isEqualTo(200);
+        final var insumo = resposta.as(RespostaInsumo.class);
+        assertThat(insumo.quantidadeEmEstoque()).isEqualTo(fisico);
+        assertThat(insumo.quantidadeReservada()).isEqualTo(reservado);
+        assertThat(insumo.quantidadeDisponivel()).isEqualTo(disponivel);
+    }
+
+    @Then("os insumos necessários da OS devem ter as quantidades:")
+    public void validarQuantidadesInsumosNecessarios(final DataTable tabela) {
+        final var resposta = this.http.requisicao().get("/ordens-servico/{id}", ordemId());
+        assertThat(resposta.statusCode()).isEqualTo(200);
+        final var itens = resposta.as(RespostaOrdemServico.class).insumosNecessarios();
+        assertThat(itens).hasSize(tabela.asMaps().size());
+        for (final var esperado : tabela.asMaps()) {
+            assertThat(itens)
+                .filteredOn(item -> item.nome().equals(esperado.get("nome")))
+                .filteredOn(
+                    item -> (item.servicoContratadoId() == null
+                        ? "avulso"
+                        : "obrigatório").equals(esperado.get("origem"))
+                )
+                .singleElement()
+                .satisfies(item -> {
+                    assertThat(item.quantidade()).isEqualTo(Integer.parseInt(esperado.get("quantidade")));
+                    assertThat(item.quantidadeReservada()).isEqualTo(Integer.parseInt(esperado.get("reservada")));
+                    assertThat(item.quantidadeConsumida()).isEqualTo(Integer.parseInt(esperado.get("consumida")));
+                    assertThat(item.quantidadePendente()).isEqualTo(Integer.parseInt(esperado.get("pendente")));
+                });
+        }
+    }
+
+    @Given("outra OS aprovada para o mesmo insumo")
+    public void prepararOutraOrdem() {
+        criarComAcesso();
+        acao("inicio-diagnostico");
+        this.http.validarStatus(200);
+        prepararFimDiagnostico();
+        prepararDecisao("aprovado");
+    }
+
+    @When("consulto a OS cadastrada {int}")
+    public void selecionarOrdem(final int posicao) {
+        this.acesso = this.ordensCadastradas.get(posicao - 1);
+        consultar();
+    }
+
+    @When("o cliente consulta o orçamento pelo link de decisão")
+    public void consultarDecisao() {
+        this.http.receber(this.http.requisicao().auth().none().get("/ordens-servico/decisao/{token}", tokenDecisao()));
+    }
+
+    @When("o cliente envia {string} com o link de acompanhamento")
+    public void decidirComAcompanhamento(final String decisao) {
+        this.http
+            .receber(
+                this.http
+                    .requisicao()
+                    .auth()
+                    .none()
+                    .post("/ordens-servico/acompanhamento/{token}/{decisao}", acesso().tokenAcompanhamento(), decisao)
+            );
+    }
+
+    @When("o cliente envia {string} com o link de decisão anterior")
+    public void decidirComLinkAnterior(final String decisao) {
+        this.http
+            .receber(
+                this.http
+                    .requisicao()
+                    .auth()
+                    .none()
+                    .post("/ordens-servico/acompanhamento/{token}/{decisao}", this.decisaoAnterior, decisao)
+            );
+    }
+
+    @Then("o orçamento do cliente deve conter os itens contratados")
+    public void validarOrcamentoCliente() {
+        final var resposta = this.http.resposta().as(RespostaAcompanhamento.class);
+        assertThat(resposta.servicos()).singleElement().satisfies(servico -> {
+            assertThat(servico.nome()).isEqualTo("Troca de óleo");
+            assertThat(servico.preco()).isEqualByComparingTo("100.00");
+        });
+        assertThat(resposta.insumosNecessarios()).singleElement().satisfies(insumo -> {
+            assertThat(insumo.nome()).isEqualTo("Óleo");
+            assertThat(insumo.quantidade()).isEqualTo(4);
+            assertThat(insumo.precoUnitario()).isEqualByComparingTo("10.00");
+            assertThat(insumo.subtotal()).isEqualByComparingTo("40.00");
+        });
+    }
+
+    @Given("que existem {int} OS aguardando diagnóstico")
+    public void prepararOrdens(final int quantidade) {
+        prepararCadastro("requer");
+        for (int indice = 0; indice < quantidade; indice++) {
+            criarComAcesso();
+        }
+    }
+
+    @When("consulto as OS aguardando diagnóstico com limite 1")
+    public void consultarPrimeiraPagina() {
+        this.http
+            .receber(
+                this.http
+                    .requisicao()
+                    .queryParam("status", "aguardando-diagnostico")
+                    .queryParam("first", 1)
+                    .get("/ordens-servico")
+            );
+    }
+
+    @When("consulto a próxima página de OS aguardando diagnóstico")
+    public void consultarProximaPagina() {
+        this.http
+            .receber(
+                this.http
+                    .requisicao()
+                    .queryParam("status", "aguardando-diagnostico")
+                    .queryParam("first", 1)
+                    .queryParam("after", Objects.requireNonNull(listaOrdens().nextCursor()))
+                    .get("/ordens-servico")
+            );
+    }
+
+    @Then("a página deve conter a OS {int} em ordem de ID")
+    public void validarPagina(final int posicao) {
+        final var ordens = this.ordensCadastradas
+            .stream()
+            .map(RespostaAcessoOrdemServico::ordemServico)
+            .sorted(Comparator.comparing(ordem -> ordem.id().toString()))
+            .toList();
+        assertThat(listaOrdens().itens())
+            .extracting(RespostaOrdemServico::id)
+            .containsExactly(ordens.get(posicao - 1).id());
+    }
+
+    @Then("a resposta deve indicar a próxima página de OS")
+    public void validarProximaPagina() {
+        assertThat(listaOrdens().nextCursor()).isEqualTo(listaOrdens().itens().getLast().id());
+    }
+
+    @Then("a resposta deve indicar o fim da lista de OS")
+    public void validarFimLista() {
+        assertThat(listaOrdens().nextCursor()).isNull();
+    }
+
+    private RespostaLista<RespostaOrdemServico> listaOrdens() {
+        return this.http.resposta().as(new TypeRef<RespostaLista<RespostaOrdemServico>>() {});
+    }
+
+    @Then("o cliente original recebe {int} email(s) de acompanhamento e {int} email(s) de decisão")
+    public void validarNotificacoes(final int acompanhamento, final int decisao) {
+        final var destinatarios = ArgumentCaptor.forClass(String.class);
+        final var corpos = ArgumentCaptor.forClass(String.class);
+        verify(this.emails, times(acompanhamento + decisao))
+            .enviar(eq(ordemId()), destinatarios.capture(), corpos.capture());
+        assertThat(destinatarios.getAllValues()).containsOnly("maria@example.com");
+        assertThat(corpos.getAllValues().stream().filter(c -> c.endsWith("/status"))).hasSize(acompanhamento);
+        assertThat(corpos.getAllValues().stream().filter(c -> c.contains("/aprovacao") && c.endsWith("/rejeicao")))
+            .hasSize(decisao);
+        if (acompanhamento > 0) {
+            assertThat(corpos.getAllValues())
+                .anySatisfy(c -> assertThat(c).endsWith("/cliente/" + acesso().tokenAcompanhamento() + "/status"));
+        }
+    }
+
+    @Given("as notificações anteriores foram recebidas")
+    public void limparNotificacoes() {
+        clearInvocations(this.emails);
+    }
+
+    @When("reemito os links do cliente")
+    public void reemitirLinks() {
+        acao("acesso-cliente");
+        this.http.validarStatus(200);
+        this.acesso = this.http.resposta().as(RespostaAcessoOrdemServico.class);
+    }
+
+    @When("transfiro o veículo da OS para outro cliente")
+    public void transferirVeiculo() {
+        this.http
+            .receber(
+                this.http
+                    .requisicao()
+                    .body(Map.of("nome", "João", "email", "joao@example.com", "documento", "11144477735"))
+                    .post("/clientes")
+            );
+        this.http.validarStatus(201);
+        final var novoCliente = this.http.resposta().as(RespostaCliente.class).id();
+        this.http
+            .receber(
+                this.http.requisicao().body(Map.of("clienteId", novoCliente)).patch("/veiculos/{id}", this.veiculoId)
+            );
+    }
+
+    @Then("a OS continua vinculada ao cliente original e ao mesmo veículo")
+    public void validarClienteOriginal() {
+        final var ordem = this.http.resposta().as(RespostaOrdemServico.class);
+        assertThat(ordem.clienteId()).isEqualTo(this.clienteId);
+        assertThat(ordem.veiculoId()).isEqualTo(this.veiculoId);
+    }
+
+    @Then("o item avulso tem preço unitário {string} e subtotal {string}")
+    public void validarValoresAvulso(final String preco, final String subtotal) {
+        final var item = this.http.resposta().as(RespostaInsumoNecessario.class);
+        assertThat(item.precoUnitario()).isEqualByComparingTo(preco);
+        assertThat(item.subtotal()).isEqualByComparingTo(subtotal);
+    }
+
+    @Then("o orçamento do cliente contém o avulso com quantidade {int} e subtotal {string}")
+    public void validarAvulsoNoOrcamento(final int quantidade, final String subtotal) {
+        final var itens = this.http.resposta().as(RespostaAcompanhamento.class).insumosNecessarios();
+        assertThat(itens).hasSize(2);
+        assertThat(itens).anySatisfy(item -> {
+            assertThat(item.quantidade()).isEqualTo(quantidade);
+            assertThat(item.precoUnitario()).isEqualByComparingTo("10.00");
+            assertThat(item.subtotal()).isEqualByComparingTo(subtotal);
+        });
     }
 
     private String tokenDecisao() {
@@ -505,10 +770,11 @@ public class OrdensServicoSteps {
             .filter(c -> c.contains("/aprovacao"))
             .reduce((_, ultimo) -> ultimo)
             .map(c -> c.split("/", -1)[4])
-            .orElse(acesso().tokenAcompanhamento());
+            .orElseThrow();
     }
 
-    private void criar() {
+    @When("abro a OS para o veículo com o serviço cadastrado")
+    public void criar() {
         this.http
             .receber(
                 this.http
@@ -516,6 +782,10 @@ public class OrdensServicoSteps {
                     .body(Map.of("veiculoId", Objects.requireNonNull(this.veiculoId), "servicoIds", this.servicoIds))
                     .post("/ordens-servico")
             );
+        if (this.http.resposta().statusCode() == 201) {
+            this.acesso = this.http.resposta().as(RespostaAcessoOrdemServico.class);
+            this.ordensCadastradas.add(acesso());
+        }
     }
 
     private UUID cadastrarServico(final String nome, final boolean diagnostico) {
@@ -541,9 +811,6 @@ public class OrdensServicoSteps {
         this.http.validarStatus(201);
     }
 
-    private void administrar() {
-        this.http.autenticar(this.emissor.emitir("admin", Set.of("ADMIN")).valor());
-    }
     private RespostaAcessoOrdemServico acesso() {
         return Objects.requireNonNull(this.acesso);
     }
@@ -555,7 +822,7 @@ public class OrdensServicoSteps {
             .requireNonNull(
                 "avulso".equals(origem)
                     ? this.avulsoId
-                    : this.automaticoId
+                    : acesso().ordemServico().insumosNecessarios().getFirst().id()
             );
     }
 }

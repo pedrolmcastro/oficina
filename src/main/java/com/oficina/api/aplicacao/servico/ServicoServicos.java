@@ -90,6 +90,20 @@ public class ServicoServicos {
         });
     }
 
+    public InsumoObrigatorio atualizarInsumoObrigatorio(
+        final UUID servicoId,
+        final UUID insumoId,
+        final Quantidade quantidade
+    ) {
+        return this.operacoes.escrita("atualizar_insumo_obrigatorio", () -> {
+            encontrar(servicoId, LockModeType.PESSIMISTIC_WRITE);
+            if (!this.repositorio.atualizarInsumoObrigatorio(servicoId, insumoId, quantidade)) {
+                throw new InsumoObrigatorioNaoEncontradoException();
+            }
+            return new InsumoObrigatorio(insumoId, quantidade);
+        });
+    }
+
     public Pagina<InsumoObrigatorio> listarInsumosObrigatorios(
         final UUID servicoId,
         final @Nullable UUID after,
