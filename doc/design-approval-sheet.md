@@ -5,14 +5,14 @@
 
 ## Linguagem ubíquoa
 
-O dicionário da linguagem ubíquoa utilizada por esse projeto pode ser encontrada em [/doc/GLOSSARY.md](/doc/GLOSSARY.md)
+O dicionário da linguagem ubíquoa utilizada por esse projeto pode ser encontrada em [/doc/GLOSSARY.md](/doc/GLOSSARY.md).
 
 ## Requisitos
 
 ### Requisitos funcionais
 
 Os requisitos funcionais do sistema foram descritos em [/src/bdd/resources/features/](/src/bdd/resources/features/)
-utilizando Gherkin e práticas de BDD com validação automática
+utilizando Gherkin e práticas de BDD com validação automática.
 
 ### Requisitos não funcionais
 
@@ -33,16 +33,20 @@ utilizando Gherkin e práticas de BDD com validação automática
 
 #### Confiabilidade e recuperação
 
-- Manter a consistência dos dados em acessos simultâneos e falhas de operação
+- Manter a consistência dos dados em acessos simultâneos e falhas de operação.
 
 #### Rastreabilidade e monitoramento
 
-- Registrar responsável, data e alterações relevantes para o negócio
-- Monitorar falhas e indisponibilidade para agilizar a identificação de problemas
+- Registrar responsável, data e alterações relevantes para o negócio.
+- Monitorar falhas e indisponibilidade para agilizar a identificação de problemas.
 
 #### Manutenibilidade
 
-- Validar fluxos com testes automatizados com cobertura mínima de 80% e ideal de 100%
+- Validar fluxos com testes automatizados com cobertura mínima de 80% e ideal de 100%.
+
+## Decisões de arquitetura
+
+O histórico de decisões de arquitetura do projeto pode ser encontrado em [/doc/adr/](/doc/adr/).
 
 ## Modelo C4
 
@@ -59,12 +63,12 @@ utilizando Gherkin e práticas de BDD com validação automática
 [![C4: Components](./c4/components.jpg)](https://miro.com/app/board/uXjVES5fBEI=/?share_link_id=936444901270)
 
 > **Nota:** Nesse MVP, as dependências entre componentes não ficaram muito limpas. Existem diversos ciclos de
-> dependências. No diagrama, dependências "indesejadas" foram representadas em vermelho
+> dependências. No diagrama, dependências "indesejadas" foram representadas em vermelho.
 
 ### Code
 
 Esse projeto não contém diagramas para o nível de "Code" do C4. O código pode ser encontrado em
-[/src/main/java/com/oficina/api/](/src/main/java/com/oficina/api/)
+[/src/main/java/com/oficina/api/](/src/main/java/com/oficina/api/).
 
 ## Event Storming
 
