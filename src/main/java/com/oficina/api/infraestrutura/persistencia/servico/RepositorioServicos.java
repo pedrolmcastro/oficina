@@ -16,6 +16,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class RepositorioServicos extends RepositorioEntidades<Servico> {
     private static final String PARAMETRO_SERVICO = "servico";
+    private static final String PARAMETRO_INSUMO = "insumo";
+    private static final String QUANTIDADE = "quantidade";
     private final BuscaTextual<Servico> buscaTextual;
 
     public RepositorioServicos(final EntityManager entityManager) {
@@ -42,8 +44,8 @@ public class RepositorioServicos extends RepositorioEntidades<Servico> {
                 Void.class
             )
             .setParameter(PARAMETRO_SERVICO, servicoId)
-            .setParameter("insumo", insumoId)
-            .setParameter("quantidade", quantidade.valor())
+            .setParameter(PARAMETRO_INSUMO, insumoId)
+            .setParameter(QUANTIDADE, quantidade.valor())
             .executeUpdate();
     }
 
@@ -55,8 +57,8 @@ public class RepositorioServicos extends RepositorioEntidades<Servico> {
                 Void.class
             )
             .setParameter(PARAMETRO_SERVICO, servicoId)
-            .setParameter("insumo", insumoId)
-            .setParameter("quantidade", quantidade.valor())
+            .setParameter(PARAMETRO_INSUMO, insumoId)
+            .setParameter(QUANTIDADE, quantidade.valor())
             .executeUpdate() > 0;
     }
 
@@ -67,7 +69,7 @@ public class RepositorioServicos extends RepositorioEntidades<Servico> {
                 Void.class
             )
             .setParameter(PARAMETRO_SERVICO, servicoId)
-            .setParameter("insumo", insumoId)
+            .setParameter(PARAMETRO_INSUMO, insumoId)
             .executeUpdate() > 0;
     }
 
@@ -87,7 +89,7 @@ public class RepositorioServicos extends RepositorioEntidades<Servico> {
             .unwrap(Session.class)
             .createNativeQuery(sql.toString(), Object[].class)
             .addScalar("insumo_id", UUID.class)
-            .addScalar("quantidade", Integer.class)
+            .addScalar(QUANTIDADE, Integer.class)
             .setTupleTransformer(
                 (tupla, _) -> new InsumoObrigatorio((UUID) tupla[0], new Quantidade((Integer) tupla[1]))
             );

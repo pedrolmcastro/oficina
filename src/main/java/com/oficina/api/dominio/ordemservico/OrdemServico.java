@@ -28,6 +28,8 @@ public class OrdemServico extends Entidade {
     private static final String EXECUCAO_CONCLUIDA = "EXECUCAO_CONCLUIDA";
     private static final String ITEM_ID = "itemId";
     private static final String ORCAMENTO_REJEITADO = "ORCAMENTO_REJEITADO";
+    private static final String SISTEMA = "SISTEMA";
+    private static final String QUANTIDADE = "quantidade";
     private UUID clienteId;
     private UUID veiculoId;
     @Enumerated(value = EnumType.STRING)
@@ -74,7 +76,7 @@ public class OrdemServico extends Entidade {
             : StatusOrdemServico.AGUARDANDO_CONFIRMACAO;
         registrar("CRIADA", autor, Map.of());
         if (this.status == StatusOrdemServico.AGUARDANDO_CONFIRMACAO) {
-            registrar("DIAGNOSTICO_DISPENSADO", "SISTEMA", Map.of());
+            registrar("DIAGNOSTICO_DISPENSADO", SISTEMA, Map.of());
         }
     }
 
@@ -177,7 +179,7 @@ public class OrdemServico extends Entidade {
                     item.id().toString(),
                     "insumoId",
                     insumo.id().toString(),
-                    "quantidade",
+                    QUANTIDADE,
                     Integer.toString(quantidade.valor())
                 )
         );
@@ -201,7 +203,7 @@ public class OrdemServico extends Entidade {
                     itemId.toString(),
                     "anterior",
                     Integer.toString(anterior.valor()),
-                    "quantidade",
+                    QUANTIDADE,
                     Integer.toString(quantidade.valor())
                 )
         );
@@ -254,15 +256,15 @@ public class OrdemServico extends Entidade {
         item.reservar(quantidade);
         registrar(
             "INSUMO_RESERVADO",
-            "SISTEMA",
-            Map.of(ITEM_ID, itemId.toString(), "quantidade", Integer.toString(quantidade.valor()))
+            SISTEMA,
+            Map.of(ITEM_ID, itemId.toString(), QUANTIDADE, Integer.toString(quantidade.valor()))
         );
         if (this.insumos.stream().allMatch(i -> i.quantidadePendente() == 0)) {
             transicionar(
                 StatusOrdemServico.AGUARDANDO_INSUMOS,
                 StatusOrdemServico.AGUARDANDO_EXECUCAO,
                 "INSUMOS_RESERVADOS",
-                "SISTEMA"
+                SISTEMA
             );
         }
     }

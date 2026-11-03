@@ -16,7 +16,11 @@ public class NotificacoesOrdensServico {
         @Value(value = "${app.notificacoes.url-base}") final String urlBase
     ) {
         this.envio = envio;
-        this.urlBase = urlBase.replaceAll("/+$", "");
+        int fim = urlBase.length();
+        while (fim > 0 && urlBase.charAt(fim - 1) == '/') {
+            fim--;
+        }
+        this.urlBase = urlBase.substring(0, fim);
     }
 
     @TransactionalEventListener
@@ -28,8 +32,8 @@ public class NotificacoesOrdensServico {
     public void enviar(final EmailOrdemServico evento) {
         final var base = this.urlBase + "/cliente/" + evento.token();
         final var corpo = evento.decisao()
-            ? base + "/aprovacao\n" + base + "/rejeicao"
-            : base + "/status";
+            ? (base + "/aprovacao\n" + base + "/rejeicao")
+            : (base + "/status");
         this.envio.enviar(evento.ordemId(), evento.destinatario(), corpo);
     }
 }

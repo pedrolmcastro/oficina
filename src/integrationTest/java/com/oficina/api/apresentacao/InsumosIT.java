@@ -95,6 +95,10 @@ class InsumosIT extends ApiIntegrationTest {
         final var insumo = cadastrar("Óleo").as(RespostaInsumo.class);
         validar(requisicao().delete("/insumos/{id}", insumo.id()), 204);
         validar(requisicao().body(Map.of("quantidade", 1)).post("/insumos/{id}/entradas-estoque", insumo.id()), 404);
+        assertThat(
+            this.jdbc
+                .queryForMap("SELECT deletado, quantidade_em_estoque FROM oficina.insumos WHERE id = ?", insumo.id())
+        ).containsAllEntriesOf(Map.of("deletado", true, "quantidade_em_estoque", 0));
     }
 
     @Test

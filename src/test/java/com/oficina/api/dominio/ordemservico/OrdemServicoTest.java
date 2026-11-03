@@ -74,7 +74,8 @@ class OrdemServicoTest {
         ordem.aprovar();
         final var item = ordem.insumos().getFirst();
         final var quantidade = new Quantidade(3);
-        assertThatThrownBy(() -> ordem.reservarInsumo(item.id(), quantidade))
+        final var itemId = item.id();
+        assertThatThrownBy(() -> ordem.reservarInsumo(itemId, quantidade))
             .isInstanceOf(ConflitoOrdemServicoException.class);
         assertThat(item.quantidadeReservada()).isZero();
         assertThat(item.quantidadePendente()).isEqualTo(2);
