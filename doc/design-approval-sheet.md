@@ -56,11 +56,15 @@ utilizando Gherkin e práticas de BDD com validação automática
 
 ### Components
 
-TODO
+[![C4: Components](./c4/components.jpg)](https://miro.com/app/board/uXjVES5fBEI=/?share_link_id=936444901270)
+
+> **Nota:** Nesse MVP, as dependências entre componentes não ficaram muito limpas. Existem diversos ciclos de
+> dependências. No diagrama, dependências "indesejadas" foram representadas em vermelho
 
 ### Code
 
-Esse projeto não contém um diagrama para o nível de Code do C4.
+Esse projeto não contém diagramas para o nível de "Code" do C4. O código pode ser encontrado em
+[/src/main/java/com/oficina/api/](/src/main/java/com/oficina/api/)
 
 ## Event Storming
 
