@@ -1,0 +1,7 @@
+# Credenciais fixas para a demonstração local do MVP.
+app:
+  seguranca:
+    admin:
+      nome-usuario: admin
+      # BCrypt de "admin".
+      hash-senha: $2b$12$5QxnYYbMOXc79Le8J5KWtuAGL/MudoGOXHFBtlnA0u8gemzL61O2y
