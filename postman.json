@@ -1,0 +1,3693 @@
+{
+  "info": {
+    "name": "Oficina",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{tokenAcesso}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "usuario",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "senha",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "demoIdentificador",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "clienteDocumento",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "clienteEmail",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "veiculoPlaca",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tokenAcesso",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "clienteId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "veiculoId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "insumoId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "servicoId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "ordemServicoId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "insumoNecessarioId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tokenAcompanhamento",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tokenDecisao",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "veiculosCursor",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "insumosCursor",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "servicosCursor",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "ordensCursor",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "obrigatoriosCursor",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "necessariosCursor",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "oleoId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "velaId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "trocaOleoId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "manutencaoMotorId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Demo",
+      "item": [
+        {
+          "name": "01 · POST /clientes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/clientes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clientes"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Cliente Demo\",\n  \"email\": \"demo@example.com\",\n  \"documento\": \"52998224725\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Nova execução: os dados e os IDs ficam apenas nas variáveis desta coleção.",
+                  "const identificador = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);",
+                  "const digitos = Array.from({length: 9}, () => Math.floor(Math.random() * 10));",
+                  "if (digitos.every(d => d === digitos[0])) digitos[0] = (digitos[0] + 1) % 10;",
+                  "for (const tamanho of [9, 10]) {",
+                  "    const soma = digitos.reduce((total, d, i) => total + d * (tamanho + 1 - i), 0);",
+                  "    const resto = (soma * 10) % 11;",
+                  "    digitos.push(resto === 10 ? 0 : resto);",
+                  "}",
+                  "const letra = () => String.fromCharCode(65 + Math.floor(Math.random() * 26));",
+                  "const numero = () => Math.floor(Math.random() * 10).toString();",
+                  "for (const chave of ['oleoId', 'velaId', 'trocaOleoId', 'manutencaoMotorId', 'tokenAcesso', 'clienteId', 'veiculoId', 'insumoId', 'servicoId',",
+                  "    'ordemServicoId', 'insumoNecessarioId', 'tokenAcompanhamento', 'tokenDecisao',",
+                  "    'veiculosCursor', 'insumosCursor', 'servicosCursor', 'ordensCursor', 'obrigatoriosCursor', 'necessariosCursor']) {",
+                  "    pm.collectionVariables.set(chave, '');",
+                  "}",
+                  "pm.collectionVariables.set('demoIdentificador', identificador);",
+                  "pm.collectionVariables.set('clienteDocumento', digitos.join(''));",
+                  "pm.collectionVariables.set('clienteEmail', 'demo.' + identificador + '@example.com');",
+                  "pm.collectionVariables.set('veiculoPlaca', letra() + letra() + letra() + numero() + letra() + numero() + numero());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', function () { pm.response.to.have.status(401); });",
+                  "if (pm.response.code !== 401) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('Resposta inesperada. Corrija a requisição antes de continuar a demo.');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "02 · POST /login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nomeUsuario\": \"{{usuario}}\",\n  \"senha\": \"{{senha}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.code !== 200) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('Resposta inesperada. Corrija a requisição antes de continuar a demo.');",
+                  "}",
+                  "const dados = pm.response.json();",
+                  "pm.test('Capturar tokenAcesso', function () { pm.expect(dados.tokenAcesso).to.be.a('string').and.not.empty; });",
+                  "if (typeof dados.tokenAcesso !== 'string' || !dados.tokenAcesso) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('A resposta não contém tokenAcesso.');",
+                  "}",
+                  "pm.collectionVariables.set('tokenAcesso', dados.tokenAcesso);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "03 · POST /clientes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/clientes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clientes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Cliente Demo {{demoIdentificador}}\",\n  \"email\": \"{{clienteEmail}}\",\n  \"documento\": \"{{clienteDocumento}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function () { pm.response.to.have.status(201); });",
+                  "if (pm.response.code !== 201) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('Resposta inesperada. Corrija a requisição antes de continuar a demo.');",
+                  "}",
+                  "const dados = pm.response.json();",
+                  "pm.test('Capturar clienteId', function () { pm.expect(dados.id).to.be.a('string').and.not.empty; });",
+                  "if (typeof dados.id !== 'string' || !dados.id) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('A resposta não contém clienteId.');",
+                  "}",
+                  "pm.collectionVariables.set('clienteId', dados.id);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "04 · GET /clientes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/clientes?documento={{clienteDocumento}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clientes"
+              ],
+              "query": [
+                {
+                  "key": "documento",
+                  "value": "{{clienteDocumento}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.code !== 200) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('Resposta inesperada. Corrija a requisição antes de continuar a demo.');",
+                  "}",
+                  "const dados = pm.response.json();",
+                  "pm.test('Cliente encontrado pelo documento', function () { pm.expect(dados.itens.map(i => i.id)).to.include(pm.collectionVariables.get('clienteId')); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "05 · POST /veiculos",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/veiculos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "veiculos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placa\": \"{{veiculoPlaca}}\",\n  \"modelo\": \"Corola\",\n  \"marca\": \"Toyota\",\n  \"ano\": 2024,\n  \"clienteId\": \"{{clienteId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function () { pm.response.to.have.status(201); });",
+                  "if (pm.response.code !== 201) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('Resposta inesperada. Corrija a requisição antes de continuar a demo.');",
+                  "}",
+                  "const dados = pm.response.json();",
+                  "pm.test('Capturar veiculoId', function () { pm.expect(dados.id).to.be.a('string').and.not.empty; });",
+                  "if (typeof dados.id !== 'string' || !dados.id) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('A resposta não contém veiculoId.');",
+                  "}",
+                  "pm.collectionVariables.set('veiculoId', dados.id);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "06 · PATCH /veiculos/{{veiculoId}}",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/veiculos/{{veiculoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "veiculos",
+                "{{veiculoId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"modelo\": \"Corolla\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.code !== 200) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('Resposta inesperada. Corrija a requisição antes de continuar a demo.');",
+                  "}",
+                  "const dados = pm.response.json();",
+                  "pm.test('Modelo corrigido', function () { pm.expect(dados.modelo).to.eql('Corolla'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "07 · GET /veiculos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/veiculos?cliente={{clienteId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "veiculos"
+              ],
+              "query": [
+                {
+                  "key": "cliente",
+                  "value": "{{clienteId}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.code !== 200) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('Resposta inesperada. Corrija a requisição antes de continuar a demo.');",
+                  "}",
+                  "const dados = pm.response.json();",
+                  "pm.test('Veículo do cliente encontrado', function () { pm.expect(dados.itens.map(i => i.id)).to.include(pm.collectionVariables.get('veiculoId')); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "08 · POST /insumos",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/insumos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "insumos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"1L Óleo {{demoIdentificador}}\",\n  \"precoVenda\": 25\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function () { pm.response.to.have.status(201); });",
+                  "if (pm.response.code !== 201) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('Resposta inesperada. Corrija a requisição antes de continuar a demo.');",
+                  "}",
+                  "const dados = pm.response.json();",
+                  "pm.test('Capturar insumoId', function () { pm.expect(dados.id).to.be.a('string').and.not.empty; });",
+                  "if (typeof dados.id !== 'string' || !dados.id) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('A resposta não contém insumoId.');",
+                  "}",
+                  "pm.collectionVariables.set('insumoId', dados.id);",
+                  "pm.test('Capturar oleoId', function () { pm.expect(dados.id).to.be.a('string').and.not.empty; });",
+                  "if (typeof dados.id !== 'string' || !dados.id) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('A resposta não contém oleoId.');",
+                  "}",
+                  "pm.collectionVariables.set('oleoId', dados.id);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "09 · POST /insumos/{{oleoId}}/reposicoes-estoque",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/insumos/{{oleoId}}/reposicoes-estoque",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "insumos",
+                "{{oleoId}}",
+                "reposicoes-estoque"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantidade\": 20\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.code !== 200) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('Resposta inesperada. Corrija a requisição antes de continuar a demo.');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "10 · POST /insumos",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/insumos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "insumos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Vela de ignição {{demoIdentificador}}\",\n  \"precoVenda\": 40\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function () { pm.response.to.have.status(201); });",
+                  "if (pm.response.code !== 201) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('Resposta inesperada. Corrija a requisição antes de continuar a demo.');",
+                  "}",
+                  "const dados = pm.response.json();",
+                  "pm.test('Capturar insumoId', function () { pm.expect(dados.id).to.be.a('string').and.not.empty; });",
+                  "if (typeof dados.id !== 'string' || !dados.id) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('A resposta não contém insumoId.');",
+                  "}",
+                  "pm.collectionVariables.set('insumoId', dados.id);",
+                  "pm.test('Capturar velaId', function () { pm.expect(dados.id).to.be.a('string').and.not.empty; });",
+                  "if (typeof dados.id !== 'string' || !dados.id) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('A resposta não contém velaId.');",
+                  "}",
+                  "pm.collectionVariables.set('velaId', dados.id);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "11 · GET /insumos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/insumos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "insumos"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.code !== 200) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('Resposta inesperada. Corrija a requisição antes de continuar a demo.');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "12 · POST /servicos",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/servicos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "servicos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Troca de óleo {{demoIdentificador}}\",\n  \"precoVenda\": 100,\n  \"requerDiagnostico\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function () { pm.response.to.have.status(201); });",
+                  "if (pm.response.code !== 201) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('Resposta inesperada. Corrija a requisição antes de continuar a demo.');",
+                  "}",
+                  "const dados = pm.response.json();",
+                  "pm.test('Capturar servicoId', function () { pm.expect(dados.id).to.be.a('string').and.not.empty; });",
+                  "if (typeof dados.id !== 'string' || !dados.id) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('A resposta não contém servicoId.');",
+                  "}",
+                  "pm.collectionVariables.set('servicoId', dados.id);",
+                  "pm.test('Capturar trocaOleoId', function () { pm.expect(dados.id).to.be.a('string').and.not.empty; });",
+                  "if (typeof dados.id !== 'string' || !dados.id) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('A resposta não contém trocaOleoId.');",
+                  "}",
+                  "pm.collectionVariables.set('trocaOleoId', dados.id);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "13 · POST /servicos/{{trocaOleoId}}/insumos-obrigatorios",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/servicos/{{trocaOleoId}}/insumos-obrigatorios",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "servicos",
+                "{{trocaOleoId}}",
+                "insumos-obrigatorios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"insumoId\": \"{{oleoId}}\",\n  \"quantidade\": 4\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function () { pm.response.to.have.status(201); });",
+                  "if (pm.response.code !== 201) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('Resposta inesperada. Corrija a requisição antes de continuar a demo.');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "14 · POST /servicos",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/servicos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "servicos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Manutenção de motor {{demoIdentificador}}\",\n  \"precoVenda\": 300,\n  \"requerDiagnostico\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function () { pm.response.to.have.status(201); });",
+                  "if (pm.response.code !== 201) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('Resposta inesperada. Corrija a requisição antes de continuar a demo.');",
+                  "}",
+                  "const dados = pm.response.json();",
+                  "pm.test('Capturar servicoId', function () { pm.expect(dados.id).to.be.a('string').and.not.empty; });",
+                  "if (typeof dados.id !== 'string' || !dados.id) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('A resposta não contém servicoId.');",
+                  "}",
+                  "pm.collectionVariables.set('servicoId', dados.id);",
+                  "pm.test('Capturar manutencaoMotorId', function () { pm.expect(dados.id).to.be.a('string').and.not.empty; });",
+                  "if (typeof dados.id !== 'string' || !dados.id) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('A resposta não contém manutencaoMotorId.');",
+                  "}",
+                  "pm.collectionVariables.set('manutencaoMotorId', dados.id);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "15 · GET /servicos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/servicos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "servicos"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.code !== 200) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('Resposta inesperada. Corrija a requisição antes de continuar a demo.');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "16 · POST /ordens-servico",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ordens-servico",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ordens-servico"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"veiculoId\": \"{{veiculoId}}\",\n  \"servicoIds\": [\n    \"{{trocaOleoId}}\",\n    \"{{manutencaoMotorId}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function () { pm.response.to.have.status(201); });",
+                  "if (pm.response.code !== 201) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('Resposta inesperada. Corrija a requisição antes de continuar a demo.');",
+                  "}",
+                  "const dados = pm.response.json();",
+                  "pm.test('Capturar ordemServicoId', function () { pm.expect(dados.ordemServico.id).to.be.a('string').and.not.empty; });",
+                  "if (typeof dados.ordemServico.id !== 'string' || !dados.ordemServico.id) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('A resposta não contém ordemServicoId.');",
+                  "}",
+                  "pm.collectionVariables.set('ordemServicoId', dados.ordemServico.id);",
+                  "pm.test('Capturar tokenAcompanhamento', function () { pm.expect(dados.tokenAcompanhamento).to.be.a('string').and.not.empty; });",
+                  "if (typeof dados.tokenAcompanhamento !== 'string' || !dados.tokenAcompanhamento) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('A resposta não contém tokenAcompanhamento.');",
+                  "}",
+                  "pm.collectionVariables.set('tokenAcompanhamento', dados.tokenAcompanhamento);",
+                  "pm.collectionVariables.set('tokenDecisao', '');",
+                  "pm.test('OS com dois serviços e diagnóstico', function () { pm.expect(dados.ordemServico.servicosContratados).to.have.lengthOf(2); pm.expect(dados.ordemServico.status).to.eql('aguardando-diagnostico'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "17 · POST /ordens-servico/{{ordemServicoId}}/inicio-diagnostico",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ordens-servico/{{ordemServicoId}}/inicio-diagnostico",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ordens-servico",
+                "{{ordemServicoId}}",
+                "inicio-diagnostico"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.code !== 200) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('Resposta inesperada. Corrija a requisição antes de continuar a demo.');",
+                  "}",
+                  "const dados = pm.response.json();",
+                  "pm.test('Status: em-diagnostico', function () { pm.expect(dados.status).to.eql('em-diagnostico'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "18 · POST /ordens-servico/{{ordemServicoId}}/inicio-diagnostico",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ordens-servico/{{ordemServicoId}}/inicio-diagnostico",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ordens-servico",
+                "{{ordemServicoId}}",
+                "inicio-diagnostico"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 409 — transição de estado inválida bloqueada', function () { pm.response.to.have.status(409); });",
+                  "if (pm.response.code !== 409) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('Era esperado conflito ao iniciar novamente um diagnóstico já iniciado.');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "19 · POST /ordens-servico/{{ordemServicoId}}/insumos-necessarios",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ordens-servico/{{ordemServicoId}}/insumos-necessarios",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ordens-servico",
+                "{{ordemServicoId}}",
+                "insumos-necessarios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"insumoId\": \"{{velaId}}\",\n  \"quantidade\": 4\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function () { pm.response.to.have.status(201); });",
+                  "if (pm.response.code !== 201) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('Resposta inesperada. Corrija a requisição antes de continuar a demo.');",
+                  "}",
+                  "const dados = pm.response.json();",
+                  "pm.test('Capturar insumoNecessarioId', function () { pm.expect(dados.id).to.be.a('string').and.not.empty; });",
+                  "if (typeof dados.id !== 'string' || !dados.id) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('A resposta não contém insumoNecessarioId.');",
+                  "}",
+                  "pm.collectionVariables.set('insumoNecessarioId', dados.id);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "20 · POST /ordens-servico/{{ordemServicoId}}/fim-diagnostico",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ordens-servico/{{ordemServicoId}}/fim-diagnostico",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ordens-servico",
+                "{{ordemServicoId}}",
+                "fim-diagnostico"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.code !== 200) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('Resposta inesperada. Corrija a requisição antes de continuar a demo.');",
+                  "}",
+                  "const dados = pm.response.json();",
+                  "pm.test('Status: aguardando-confirmacao', function () { pm.expect(dados.status).to.eql('aguardando-confirmacao'); });",
+                  "pm.test('Orçamento: R$ 660,00', function () { pm.expect(Number(dados.orcamento)).to.eql(660); });",
+                  "pm.execution.setNextRequest(null);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "21 · POST /insumos/{{velaId}}/reposicoes-estoque",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/insumos/{{velaId}}/reposicoes-estoque",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "insumos",
+                "{{velaId}}",
+                "reposicoes-estoque"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantidade\": 20\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.code !== 200) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('Resposta inesperada. Corrija a requisição antes de continuar a demo.');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "22 · POST /ordens-servico/{{ordemServicoId}}/inicio-execucao",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ordens-servico/{{ordemServicoId}}/inicio-execucao",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ordens-servico",
+                "{{ordemServicoId}}",
+                "inicio-execucao"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.code !== 200) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('Resposta inesperada. Corrija a requisição antes de continuar a demo.');",
+                  "}",
+                  "const dados = pm.response.json();",
+                  "pm.test('Status: em-execucao', function () { pm.expect(dados.status).to.eql('em-execucao'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "23 · POST /ordens-servico/{{ordemServicoId}}/fim-execucao",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ordens-servico/{{ordemServicoId}}/fim-execucao",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ordens-servico",
+                "{{ordemServicoId}}",
+                "fim-execucao"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.code !== 200) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('Resposta inesperada. Corrija a requisição antes de continuar a demo.');",
+                  "}",
+                  "const dados = pm.response.json();",
+                  "pm.test('Status: aguardando-retirada', function () { pm.expect(dados.status).to.eql('aguardando-retirada'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "24 · POST /ordens-servico/{{ordemServicoId}}/retirada-veiculo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ordens-servico/{{ordemServicoId}}/retirada-veiculo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ordens-servico",
+                "{{ordemServicoId}}",
+                "retirada-veiculo"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.code !== 200) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('Resposta inesperada. Corrija a requisição antes de continuar a demo.');",
+                  "}",
+                  "const dados = pm.response.json();",
+                  "pm.test('Status: entregue', function () { pm.expect(dados.status).to.eql('entregue'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "25 · DELETE /veiculos/{{veiculoId}}",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/veiculos/{{veiculoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "veiculos",
+                "{{veiculoId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', function () { pm.response.to.have.status(204); });",
+                  "if (pm.response.code !== 204) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('Resposta inesperada. Corrija a requisição antes de continuar a demo.');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "26 · GET /veiculos/{{veiculoId}}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/veiculos/{{veiculoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "veiculos",
+                "{{veiculoId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404 — veículo excluído', function () { pm.response.to.have.status(404); });",
+                  "if (pm.response.code !== 404) {",
+                  "    pm.execution.setNextRequest(null);",
+                  "    throw new Error('O veículo ainda está acessível ou a consulta falhou por outro motivo.');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Endpoints",
+      "item": [
+        {
+          "name": "/login",
+          "item": [
+            {
+              "name": "POST /",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "login"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nomeUsuario\": \"{{usuario}}\",\n  \"senha\": \"{{senha}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                      "if (pm.response.code !== 200) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                      "}",
+                      "const dados = pm.response.json();",
+                      "pm.test(\"Capturar tokenAcesso\", function () {",
+                      "    pm.expect(dados.tokenAcesso).to.be.a('string').and.not.empty;",
+                      "});",
+                      "if (typeof dados.tokenAcesso !== 'string' || !dados.tokenAcesso) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"A resposta não contém tokenAcesso.\");",
+                      "}",
+                      "pm.collectionVariables.set('tokenAcesso', dados.tokenAcesso);"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "POST / (+ Reset env)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "login"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nomeUsuario\": \"{{usuario}}\",\n  \"senha\": \"{{senha}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "noauth"
+                },
+                "description": "Limpa IDs, tokens e cursores da coleção e gera novos CPF, placa e email para a demo."
+              },
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// Nova execução: os dados e os IDs ficam apenas nas variáveis desta coleção.",
+                      "const identificador = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);",
+                      "const digitos = Array.from({length: 9}, () => Math.floor(Math.random() * 10));",
+                      "if (digitos.every(d => d === digitos[0])) digitos[0] = (digitos[0] + 1) % 10;",
+                      "for (const tamanho of [9, 10]) {",
+                      "    const soma = digitos.reduce((total, d, i) => total + d * (tamanho + 1 - i), 0);",
+                      "    const resto = (soma * 10) % 11;",
+                      "    digitos.push(resto === 10 ? 0 : resto);",
+                      "}",
+                      "const letra = () => String.fromCharCode(65 + Math.floor(Math.random() * 26));",
+                      "const numero = () => Math.floor(Math.random() * 10).toString();",
+                      "for (const chave of ['oleoId', 'velaId', 'trocaOleoId', 'manutencaoMotorId', 'tokenAcesso', 'clienteId', 'veiculoId', 'insumoId', 'servicoId',",
+                      "    'ordemServicoId', 'insumoNecessarioId', 'tokenAcompanhamento', 'tokenDecisao',",
+                      "    'veiculosCursor', 'insumosCursor', 'servicosCursor', 'ordensCursor', 'obrigatoriosCursor', 'necessariosCursor']) {",
+                      "    pm.collectionVariables.set(chave, '');",
+                      "}",
+                      "pm.collectionVariables.set('demoIdentificador', identificador);",
+                      "pm.collectionVariables.set('clienteDocumento', digitos.join(''));",
+                      "pm.collectionVariables.set('clienteEmail', 'demo.' + identificador + '@example.com');",
+                      "pm.collectionVariables.set('veiculoPlaca', letra() + letra() + letra() + numero() + letra() + numero() + numero());"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                      "if (pm.response.code !== 200) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                      "}",
+                      "const dados = pm.response.json();",
+                      "pm.test(\"Capturar tokenAcesso\", function () {",
+                      "    pm.expect(dados.tokenAcesso).to.be.a('string').and.not.empty;",
+                      "});",
+                      "if (typeof dados.tokenAcesso !== 'string' || !dados.tokenAcesso) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"A resposta não contém tokenAcesso.\");",
+                      "}",
+                      "pm.collectionVariables.set('tokenAcesso', dados.tokenAcesso);"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "/clientes",
+          "item": [
+            {
+              "name": "POST /",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/clientes",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "clientes"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nome\": \"Cliente Demo {{demoIdentificador}}\",\n  \"email\": \"{{clienteEmail}}\",\n  \"documento\": \"{{clienteDocumento}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                      "if (pm.response.code !== 201) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                      "}",
+                      "const dados = pm.response.json();",
+                      "pm.test(\"Capturar clienteId\", function () {",
+                      "    pm.expect(dados.id).to.be.a('string').and.not.empty;",
+                      "});",
+                      "if (typeof dados.id !== 'string' || !dados.id) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"A resposta não contém clienteId.\");",
+                      "}",
+                      "pm.collectionVariables.set('clienteId', dados.id);"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "GET /{{clienteId}}",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/clientes/{{clienteId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "clientes",
+                    "{{clienteId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                      "if (pm.response.code !== 200) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "GET /",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/clientes?documento={{clienteDocumento}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "clientes"
+                  ],
+                  "query": [
+                    {
+                      "key": "documento",
+                      "value": "{{clienteDocumento}}"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                      "if (pm.response.code !== 200) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "PATCH /{{clienteId}}",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/clientes/{{clienteId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "clientes",
+                    "{{clienteId}}"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nome\": \"Cliente Demo atualizado\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                      "if (pm.response.code !== 200) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "DELETE /{{clienteId}}",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/clientes/{{clienteId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "clientes",
+                    "{{clienteId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 204\", function () { pm.response.to.have.status(204); });",
+                      "if (pm.response.code !== 204) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "/veiculos",
+          "item": [
+            {
+              "name": "POST /",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/veiculos",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "veiculos"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"placa\": \"{{veiculoPlaca}}\",\n  \"modelo\": \"Corolla\",\n  \"marca\": \"Toyota\",\n  \"ano\": 2024,\n  \"clienteId\": \"{{clienteId}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                      "if (pm.response.code !== 201) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                      "}",
+                      "const dados = pm.response.json();",
+                      "pm.test(\"Capturar veiculoId\", function () {",
+                      "    pm.expect(dados.id).to.be.a('string').and.not.empty;",
+                      "});",
+                      "if (typeof dados.id !== 'string' || !dados.id) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"A resposta não contém veiculoId.\");",
+                      "}",
+                      "pm.collectionVariables.set('veiculoId', dados.id);"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "GET /{{veiculoId}}",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/veiculos/{{veiculoId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "veiculos",
+                    "{{veiculoId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                      "if (pm.response.code !== 200) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "GET /",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/veiculos?cliente={{clienteId}}&first=25",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "veiculos"
+                  ],
+                  "query": [
+                    {
+                      "key": "cliente",
+                      "value": "{{clienteId}}"
+                    },
+                    {
+                      "key": "placa",
+                      "value": "{{veiculoPlaca}}",
+                      "disabled": true
+                    },
+                    {
+                      "key": "first",
+                      "value": "25"
+                    },
+                    {
+                      "key": "after",
+                      "value": "{{veiculosCursor}}",
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                      "if (pm.response.code !== 200) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                      "}",
+                      "const dados = pm.response.json();",
+                      "pm.collectionVariables.set('veiculosCursor', dados.nextCursor || '');"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "PATCH /{{veiculoId}}",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/veiculos/{{veiculoId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "veiculos",
+                    "{{veiculoId}}"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"modelo\": \"Corolla XEi\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                      "if (pm.response.code !== 200) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "DELETE /{{veiculoId}}",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/veiculos/{{veiculoId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "veiculos",
+                    "{{veiculoId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 204\", function () { pm.response.to.have.status(204); });",
+                      "if (pm.response.code !== 204) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "/insumos",
+          "item": [
+            {
+              "name": "POST /",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/insumos",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "insumos"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nome\": \"Óleo Demo {{demoIdentificador}}\",\n  \"precoVenda\": 25\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                      "if (pm.response.code !== 201) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                      "}",
+                      "const dados = pm.response.json();",
+                      "pm.test(\"Capturar insumoId\", function () {",
+                      "    pm.expect(dados.id).to.be.a('string').and.not.empty;",
+                      "});",
+                      "if (typeof dados.id !== 'string' || !dados.id) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"A resposta não contém insumoId.\");",
+                      "}",
+                      "pm.collectionVariables.set('insumoId', dados.id);"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "GET /{{insumoId}}",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/insumos/{{insumoId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "insumos",
+                    "{{insumoId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                      "if (pm.response.code !== 200) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "GET /",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/insumos?first=25",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "insumos"
+                  ],
+                  "query": [
+                    {
+                      "key": "nome",
+                      "value": "Óleo",
+                      "disabled": true
+                    },
+                    {
+                      "key": "first",
+                      "value": "25"
+                    },
+                    {
+                      "key": "after",
+                      "value": "{{insumosCursor}}",
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                      "if (pm.response.code !== 200) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                      "}",
+                      "const dados = pm.response.json();",
+                      "pm.collectionVariables.set('insumosCursor', dados.nextCursor || '');"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "PATCH /{{insumoId}}",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/insumos/{{insumoId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "insumos",
+                    "{{insumoId}}"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"precoVenda\": 30\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                      "if (pm.response.code !== 200) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "/{{insumoId}}/reposicoes-estoque",
+              "item": [
+                {
+                  "name": "POST /",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/insumos/{{insumoId}}/reposicoes-estoque",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "insumos",
+                        "{{insumoId}}",
+                        "reposicoes-estoque"
+                      ]
+                    },
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"quantidade\": 20\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                          "if (pm.response.code !== 200) {",
+                          "    pm.execution.setNextRequest(null);",
+                          "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                          "}"
+                        ]
+                      }
+                    }
+                  ],
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "DELETE /{{insumoId}}",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/insumos/{{insumoId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "insumos",
+                    "{{insumoId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 204\", function () { pm.response.to.have.status(204); });",
+                      "if (pm.response.code !== 204) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "/servicos",
+          "item": [
+            {
+              "name": "POST /",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/servicos",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "servicos"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nome\": \"Revisão Demo {{demoIdentificador}}\",\n  \"precoVenda\": 100,\n  \"requerDiagnostico\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                      "if (pm.response.code !== 201) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                      "}",
+                      "const dados = pm.response.json();",
+                      "pm.test(\"Capturar servicoId\", function () {",
+                      "    pm.expect(dados.id).to.be.a('string').and.not.empty;",
+                      "});",
+                      "if (typeof dados.id !== 'string' || !dados.id) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"A resposta não contém servicoId.\");",
+                      "}",
+                      "pm.collectionVariables.set('servicoId', dados.id);"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "GET /{{servicoId}}",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/servicos/{{servicoId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "servicos",
+                    "{{servicoId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                      "if (pm.response.code !== 200) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "GET /",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/servicos?first=25",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "servicos"
+                  ],
+                  "query": [
+                    {
+                      "key": "nome",
+                      "value": "Revisão",
+                      "disabled": true
+                    },
+                    {
+                      "key": "first",
+                      "value": "25"
+                    },
+                    {
+                      "key": "after",
+                      "value": "{{servicosCursor}}",
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                      "if (pm.response.code !== 200) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                      "}",
+                      "const dados = pm.response.json();",
+                      "pm.collectionVariables.set('servicosCursor', dados.nextCursor || '');"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "PATCH /{{servicoId}}",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/servicos/{{servicoId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "servicos",
+                    "{{servicoId}}"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"precoVenda\": 120\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                      "if (pm.response.code !== 200) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "DELETE /{{servicoId}}",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/servicos/{{servicoId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "servicos",
+                    "{{servicoId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 204\", function () { pm.response.to.have.status(204); });",
+                      "if (pm.response.code !== 204) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "/{{servicoId}}/insumos-obrigatorios",
+              "item": [
+                {
+                  "name": "POST /",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/servicos/{{servicoId}}/insumos-obrigatorios",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "servicos",
+                        "{{servicoId}}",
+                        "insumos-obrigatorios"
+                      ]
+                    },
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"insumoId\": \"{{insumoId}}\",\n  \"quantidade\": 4\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                          "if (pm.response.code !== 201) {",
+                          "    pm.execution.setNextRequest(null);",
+                          "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                          "}"
+                        ]
+                      }
+                    }
+                  ],
+                  "response": []
+                },
+                {
+                  "name": "GET /",
+                  "request": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/servicos/{{servicoId}}/insumos-obrigatorios?first=25",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "servicos",
+                        "{{servicoId}}",
+                        "insumos-obrigatorios"
+                      ],
+                      "query": [
+                        {
+                          "key": "first",
+                          "value": "25"
+                        },
+                        {
+                          "key": "after",
+                          "value": "{{obrigatoriosCursor}}",
+                          "disabled": true
+                        }
+                      ]
+                    }
+                  },
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                          "if (pm.response.code !== 200) {",
+                          "    pm.execution.setNextRequest(null);",
+                          "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                          "}",
+                          "const dados = pm.response.json();",
+                          "pm.collectionVariables.set('obrigatoriosCursor', dados.nextCursor || '');"
+                        ]
+                      }
+                    }
+                  ],
+                  "response": []
+                },
+                {
+                  "name": "PATCH /{{insumoId}}",
+                  "request": {
+                    "method": "PATCH",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/servicos/{{servicoId}}/insumos-obrigatorios/{{insumoId}}",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "servicos",
+                        "{{servicoId}}",
+                        "insumos-obrigatorios",
+                        "{{insumoId}}"
+                      ]
+                    },
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"quantidade\": 3\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                          "if (pm.response.code !== 200) {",
+                          "    pm.execution.setNextRequest(null);",
+                          "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                          "}"
+                        ]
+                      }
+                    }
+                  ],
+                  "response": []
+                },
+                {
+                  "name": "DELETE /{{insumoId}}",
+                  "request": {
+                    "method": "DELETE",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/servicos/{{servicoId}}/insumos-obrigatorios/{{insumoId}}",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "servicos",
+                        "{{servicoId}}",
+                        "insumos-obrigatorios",
+                        "{{insumoId}}"
+                      ]
+                    }
+                  },
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test(\"HTTP 204\", function () { pm.response.to.have.status(204); });",
+                          "if (pm.response.code !== 204) {",
+                          "    pm.execution.setNextRequest(null);",
+                          "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                          "}"
+                        ]
+                      }
+                    }
+                  ],
+                  "response": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "/ordens-servico",
+          "item": [
+            {
+              "name": "POST /",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/ordens-servico",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "ordens-servico"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"veiculoId\": \"{{veiculoId}}\",\n  \"servicoIds\": [\n    \"{{servicoId}}\"\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                      "if (pm.response.code !== 201) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                      "}",
+                      "const dados = pm.response.json();",
+                      "pm.test(\"Capturar ordemServicoId\", function () {",
+                      "    pm.expect(dados.ordemServico.id).to.be.a('string').and.not.empty;",
+                      "});",
+                      "if (typeof dados.ordemServico.id !== 'string' || !dados.ordemServico.id) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"A resposta não contém ordemServicoId.\");",
+                      "}",
+                      "pm.collectionVariables.set('ordemServicoId', dados.ordemServico.id);",
+                      "pm.test(\"Capturar tokenAcompanhamento\", function () {",
+                      "    pm.expect(dados.tokenAcompanhamento).to.be.a('string').and.not.empty;",
+                      "});",
+                      "if (typeof dados.tokenAcompanhamento !== 'string' || !dados.tokenAcompanhamento) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"A resposta não contém tokenAcompanhamento.\");",
+                      "}",
+                      "pm.collectionVariables.set('tokenAcompanhamento', dados.tokenAcompanhamento);",
+                      "pm.collectionVariables.set('tokenDecisao', '');"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "GET /{{ordemServicoId}}",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/ordens-servico/{{ordemServicoId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "ordens-servico",
+                    "{{ordemServicoId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                      "if (pm.response.code !== 200) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "GET /",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/ordens-servico?first=25",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "ordens-servico"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "aguardando-diagnostico",
+                      "disabled": true
+                    },
+                    {
+                      "key": "first",
+                      "value": "25"
+                    },
+                    {
+                      "key": "after",
+                      "value": "{{ordensCursor}}",
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                      "if (pm.response.code !== 200) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                      "}",
+                      "const dados = pm.response.json();",
+                      "pm.collectionVariables.set('ordensCursor', dados.nextCursor || '');"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "GET /{{ordemServicoId}}/insumos-necessarios",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/ordens-servico/{{ordemServicoId}}/insumos-necessarios?first=25",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "ordens-servico",
+                    "{{ordemServicoId}}",
+                    "insumos-necessarios"
+                  ],
+                  "query": [
+                    {
+                      "key": "first",
+                      "value": "25"
+                    },
+                    {
+                      "key": "after",
+                      "value": "{{necessariosCursor}}",
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                      "if (pm.response.code !== 200) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                      "}",
+                      "const dados = pm.response.json();",
+                      "pm.collectionVariables.set('necessariosCursor', dados.nextCursor || '');"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "POST /{{ordemServicoId}}/inicio-diagnostico",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/ordens-servico/{{ordemServicoId}}/inicio-diagnostico",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "ordens-servico",
+                    "{{ordemServicoId}}",
+                    "inicio-diagnostico"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                      "if (pm.response.code !== 200) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                      "}",
+                      "const dados = pm.response.json();",
+                      "pm.test(\"Status da OS: em-diagnostico\", function () { pm.expect(dados.status).to.eql('em-diagnostico'); });"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "POST /{{ordemServicoId}}/insumos-necessarios",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/ordens-servico/{{ordemServicoId}}/insumos-necessarios",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "ordens-servico",
+                    "{{ordemServicoId}}",
+                    "insumos-necessarios"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"insumoId\": \"{{insumoId}}\",\n  \"quantidade\": 1\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                      "if (pm.response.code !== 201) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                      "}",
+                      "const dados = pm.response.json();",
+                      "pm.test(\"Capturar insumoNecessarioId\", function () {",
+                      "    pm.expect(dados.id).to.be.a('string').and.not.empty;",
+                      "});",
+                      "if (typeof dados.id !== 'string' || !dados.id) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"A resposta não contém insumoNecessarioId.\");",
+                      "}",
+                      "pm.collectionVariables.set('insumoNecessarioId', dados.id);"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "PATCH /{{ordemServicoId}}/insumos-necessarios/{{insumoNecessarioId}}",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/ordens-servico/{{ordemServicoId}}/insumos-necessarios/{{insumoNecessarioId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "ordens-servico",
+                    "{{ordemServicoId}}",
+                    "insumos-necessarios",
+                    "{{insumoNecessarioId}}"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"quantidade\": 2\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                      "if (pm.response.code !== 200) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "DELETE /{{ordemServicoId}}/insumos-necessarios/{{insumoNecessarioId}}",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/ordens-servico/{{ordemServicoId}}/insumos-necessarios/{{insumoNecessarioId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "ordens-servico",
+                    "{{ordemServicoId}}",
+                    "insumos-necessarios",
+                    "{{insumoNecessarioId}}"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 204\", function () { pm.response.to.have.status(204); });",
+                      "if (pm.response.code !== 204) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "POST /{{ordemServicoId}}/fim-diagnostico",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/ordens-servico/{{ordemServicoId}}/fim-diagnostico",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "ordens-servico",
+                    "{{ordemServicoId}}",
+                    "fim-diagnostico"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                      "if (pm.response.code !== 200) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                      "}",
+                      "const dados = pm.response.json();",
+                      "pm.test(\"Status da OS: aguardando-confirmacao\", function () { pm.expect(dados.status).to.eql('aguardando-confirmacao'); });"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "POST /{{ordemServicoId}}/acesso-cliente",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/ordens-servico/{{ordemServicoId}}/acesso-cliente",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "ordens-servico",
+                    "{{ordemServicoId}}",
+                    "acesso-cliente"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                      "if (pm.response.code !== 200) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                      "}",
+                      "const dados = pm.response.json();",
+                      "pm.test(\"Capturar ordemServicoId\", function () {",
+                      "    pm.expect(dados.ordemServico.id).to.be.a('string').and.not.empty;",
+                      "});",
+                      "if (typeof dados.ordemServico.id !== 'string' || !dados.ordemServico.id) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"A resposta não contém ordemServicoId.\");",
+                      "}",
+                      "pm.collectionVariables.set('ordemServicoId', dados.ordemServico.id);",
+                      "pm.test(\"Capturar tokenAcompanhamento\", function () {",
+                      "    pm.expect(dados.tokenAcompanhamento).to.be.a('string').and.not.empty;",
+                      "});",
+                      "if (typeof dados.tokenAcompanhamento !== 'string' || !dados.tokenAcompanhamento) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"A resposta não contém tokenAcompanhamento.\");",
+                      "}",
+                      "pm.collectionVariables.set('tokenAcompanhamento', dados.tokenAcompanhamento);",
+                      "pm.collectionVariables.set('tokenDecisao', '');"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "POST /{{ordemServicoId}}/inicio-execucao",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/ordens-servico/{{ordemServicoId}}/inicio-execucao",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "ordens-servico",
+                    "{{ordemServicoId}}",
+                    "inicio-execucao"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                      "if (pm.response.code !== 200) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                      "}",
+                      "const dados = pm.response.json();",
+                      "pm.test(\"Status da OS: em-execucao\", function () { pm.expect(dados.status).to.eql('em-execucao'); });"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "POST /{{ordemServicoId}}/fim-execucao",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/ordens-servico/{{ordemServicoId}}/fim-execucao",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "ordens-servico",
+                    "{{ordemServicoId}}",
+                    "fim-execucao"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                      "if (pm.response.code !== 200) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                      "}",
+                      "const dados = pm.response.json();",
+                      "pm.test(\"Status da OS: aguardando-retirada\", function () { pm.expect(dados.status).to.eql('aguardando-retirada'); });"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "POST /{{ordemServicoId}}/retirada-veiculo",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/ordens-servico/{{ordemServicoId}}/retirada-veiculo",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "ordens-servico",
+                    "{{ordemServicoId}}",
+                    "retirada-veiculo"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                      "if (pm.response.code !== 200) {",
+                      "    pm.execution.setNextRequest(null);",
+                      "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                      "}",
+                      "const dados = pm.response.json();",
+                      "pm.test(\"Status da OS: entregue\", function () { pm.expect(dados.status).to.eql('entregue'); });"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "/acompanhamento",
+              "item": [
+                {
+                  "name": "GET /{{tokenAcompanhamento}}",
+                  "request": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/ordens-servico/acompanhamento/{{tokenAcompanhamento}}",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "ordens-servico",
+                        "acompanhamento",
+                        "{{tokenAcompanhamento}}"
+                      ]
+                    },
+                    "auth": {
+                      "type": "noauth"
+                    }
+                  },
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                          "if (pm.response.code !== 200) {",
+                          "    pm.execution.setNextRequest(null);",
+                          "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                          "}"
+                        ]
+                      }
+                    }
+                  ],
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "/decisao",
+              "item": [
+                {
+                  "name": "GET /{{tokenDecisao}}",
+                  "request": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/ordens-servico/decisao/{{tokenDecisao}}",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "ordens-servico",
+                        "decisao",
+                        "{{tokenDecisao}}"
+                      ]
+                    },
+                    "auth": {
+                      "type": "noauth"
+                    }
+                  },
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                          "if (pm.response.code !== 200) {",
+                          "    pm.execution.setNextRequest(null);",
+                          "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                          "}"
+                        ]
+                      }
+                    }
+                  ],
+                  "response": []
+                },
+                {
+                  "name": "POST /{{tokenDecisao}}/aprovacao",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/ordens-servico/decisao/{{tokenDecisao}}/aprovacao",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "ordens-servico",
+                        "decisao",
+                        "{{tokenDecisao}}",
+                        "aprovacao"
+                      ]
+                    },
+                    "auth": {
+                      "type": "noauth"
+                    }
+                  },
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                          "if (pm.response.code !== 200) {",
+                          "    pm.execution.setNextRequest(null);",
+                          "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                          "}"
+                        ]
+                      }
+                    }
+                  ],
+                  "response": []
+                },
+                {
+                  "name": "POST /{{tokenDecisao}}/rejeicao",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/ordens-servico/decisao/{{tokenDecisao}}/rejeicao",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "ordens-servico",
+                        "decisao",
+                        "{{tokenDecisao}}",
+                        "rejeicao"
+                      ]
+                    },
+                    "auth": {
+                      "type": "noauth"
+                    }
+                  },
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                          "if (pm.response.code !== 200) {",
+                          "    pm.execution.setNextRequest(null);",
+                          "    throw new Error(\"Resposta inesperada. Corrija a requisição antes de continuar a demo.\");",
+                          "}"
+                        ]
+                      }
+                    }
+                  ],
+                  "response": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
