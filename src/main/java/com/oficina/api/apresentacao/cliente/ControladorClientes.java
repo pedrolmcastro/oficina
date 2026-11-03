@@ -33,13 +33,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(value = "/clientes", produces = MediaType.APPLICATION_JSON_VALUE)
-@Tag(name = "Clientes", description = "Cadastro, consulta, atualização e exclusão de clientes")
+@Tag(name = "Clientes", description = "Gestão de clientes")
 @SecurityScheme(name = "bearerAuth", type = SecuritySchemeType.HTTP, scheme = "bearer", bearerFormat = "JWT")
 @SecurityRequirement(name = "bearerAuth")
 @ApiResponse(responseCode = "400", description = "Requisição ou documento inválido", content = {
     @Content(schema = @Schema(implementation = ProblemDetail.class)) })
 @ApiResponse(responseCode = "401", description = "Token ausente ou inválido", content = { @Content })
-@ApiResponse(responseCode = "403", description = "Requer perfil ADMIN", content = { @Content })
+@ApiResponse(responseCode = "403", description = "Acesso negado", content = { @Content })
 public class ControladorClientes {
     private final ServicoClientes servico;
 
@@ -73,10 +73,8 @@ public class ControladorClientes {
     }
 
     @GetMapping
-    @Operation(summary = "Buscar cliente por CPF ou CNPJ",
-        description = "Informe documento obrigatório, apenas com dígitos. "
-            + "Retorna itens com no máximo um cliente e nextCursor null.")
-    @ApiResponse(responseCode = "200", description = "Lista de clientes, vazia quando o documento não é encontrado")
+    @Operation(summary = "Buscar cliente por CPF ou CNPJ", description = "Informe documento apenas com dígitos.")
+    @ApiResponse(responseCode = "200", description = "Lista de clientes")
     public ResponseEntity<RespostaLista<RespostaCliente>> buscarDocumento(@RequestParam final String documento) {
         return RespostasHttp
             .ok(

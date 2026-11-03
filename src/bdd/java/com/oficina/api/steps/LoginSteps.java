@@ -89,7 +89,7 @@ public class LoginSteps {
         assertThat(this.http.resposta().statusCode()).isEqualTo(200);
         assertThat(this.http.resposta().contentType()).startsWith("application/json");
         final var login = this.http.resposta().as(RespostaLogin.class);
-        assertThat(login.tipoToken()).isEqualTo(TipoToken.BEARER);
+        assertThat(login.tipoTokenAcesso()).isEqualTo(TipoToken.BEARER);
         this.http.autenticar(login.tokenAcesso());
     }
 }

@@ -15,10 +15,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(value = "/ordens-servico/acompanhamento/{token}", produces = MediaType.APPLICATION_JSON_VALUE)
-@Tag(name = "Acompanhamento do cliente", description = "O token secreto da URL autoriza acesso somente à sua OS. "
-    + "Não requer conta ou JWT administrativo. Não registrar nem compartilhar a URL.")
+@Tag(name = "Acompanhamento do cliente da ordem de serviço",
+    description = "Acesso via tokens secretos enviados por email nas URLs.")
 @ApiResponse(responseCode = "404", description = "Acesso inválido, expirado ou substituído")
-@ApiResponse(responseCode = "409", description = "OS não aguarda confirmação ou já recebeu decisão oposta")
+@ApiResponse(responseCode = "409",
+    description = "Ordem de serviço não aguarda confirmação ou já recebeu decisão oposta")
 public class ControladorAcompanhamento {
     private final ServicoOrdensServico servico;
 
@@ -27,22 +28,20 @@ public class ControladorAcompanhamento {
     }
 
     @GetMapping
-    @Operation(summary = "Consultar andamento e orçamento da OS",
-        description = "Retorna apenas status, resultado, nomes, quantidades e valores do orçamento.")
+    @Operation(summary = "Consultar andamento e orçamento da ordem de serviço",
+        description = "Utiliza o token de acompanhamento.")
     public ResponseEntity<RespostaAcompanhamento> acompanhar(@PathVariable final String token) {
         return RespostasHttp.ok(RespostaAcompanhamento.de(this.servico.acompanhar(token)));
     }
 
     @PostMapping(value = "/aprovacao")
-    @Operation(summary = "Aprovar orçamento e liberar execução",
-        description = "Utiliza o token de decisão enviado por e-mail, distinto do token de acompanhamento.")
+    @Operation(summary = "Aprovar orçamento da ordem de serviço", description = "Utiliza o token de decisão.")
     public ResponseEntity<RespostaAcompanhamento> aprovar(@PathVariable final String token) {
         return RespostasHttp.ok(RespostaAcompanhamento.de(this.servico.decidir(token, true)));
     }
 
     @PostMapping(value = "/rejeicao")
-    @Operation(summary = "Rejeitar orçamento e aguardar retirada do veículo",
-        description = "Utiliza o token de decisão enviado por e-mail, distinto do token de acompanhamento.")
+    @Operation(summary = "Rejeitar orçamento da ordem de serviço", description = "Utiliza o token de decisão.")
     public ResponseEntity<RespostaAcompanhamento> rejeitar(@PathVariable final String token) {
         return RespostasHttp.ok(RespostaAcompanhamento.de(this.servico.decidir(token, false)));
     }

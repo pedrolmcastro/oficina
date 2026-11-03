@@ -34,10 +34,9 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Ordens de serviço")
 @SecurityRequirement(name = "bearerAuth")
 @ApiResponse(responseCode = "400", description = "Requisição inválida")
-@ApiResponse(responseCode = "401", description = "Token administrativo ausente ou inválido")
-@ApiResponse(responseCode = "403", description = "Requer perfil ADMIN")
-@ApiResponse(responseCode = "404", description = "Recurso não encontrado")
-@ApiResponse(responseCode = "409", description = "Operação incompatível com o status ou item da OS")
+@ApiResponse(responseCode = "401", description = "Token ausente ou inválido")
+@ApiResponse(responseCode = "403", description = "Acesso negado")
+@ApiResponse(responseCode = "409", description = "Operação incompatível com o status ou item da ordem de serviço")
 public class ControladorOrdensServico {
     private final ServicoOrdensServico servico;
 
@@ -46,9 +45,9 @@ public class ControladorOrdensServico {
     }
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary = "Criar OS com serviços e insumos obrigatórios; retorna acesso do cliente",
-        description = "Informe o veículo e os serviços. O cliente é obtido do cadastro do veículo.")
-    @ApiResponse(responseCode = "201", description = "OS criada")
+    @Operation(summary = "Cadastra ordem de serviço")
+    @ApiResponse(responseCode = "201", description = "Ordem de serviço cadastrada")
+    @ApiResponse(responseCode = "404", description = "Veículo, cliente, serviço ou insumo obrigatório não encontrado")
     public ResponseEntity<RespostaAcessoOrdemServico> criar(
         @Valid @RequestBody final RequisicaoCriarOrdemServico requisicao,
         final Principal autor
@@ -60,13 +59,14 @@ public class ControladorOrdensServico {
 
     @GetMapping(value = "/{id}")
     @Operation(summary = "Consultar OS com orçamento e histórico")
+    @ApiResponse(responseCode = "404", description = "Ordem de serviço não encontrada")
     public ResponseEntity<RespostaOrdemServico> buscar(@PathVariable final UUID id) {
         return RespostasHttp.ok(RespostaOrdemServico.de(this.servico.buscar(id)));
     }
 
     @GetMapping
-    @Operation(summary = "Listar OS por status", description = "Status em minúsculas separados por hífen. "
-        + "Paginação crescente por ID com first (1 a 25, padrão 25) e after, mantendo o filtro status.")
+    @Operation(summary = "Listar ordem de serviços por status",
+        description = "Informe o status em minúsculas com hífens. Ordenadas por ID")
     public ResponseEntity<RespostaLista<RespostaOrdemServico>> listar(
         @RequestParam(required = false) final @Nullable String status,
         @RequestParam(required = false) final @Nullable UUID after,
@@ -88,6 +88,7 @@ public class ControladorOrdensServico {
 
     @GetMapping(value = "/{id}/insumos-necessarios")
     @Operation(summary = "Listar insumos necessários da OS, mantendo suas origens separadas")
+    @ApiResponse(responseCode = "404", description = "Ordem de serviço não encontrada")
     public ResponseEntity<RespostaLista<RespostaInsumoNecessario>> listarInsumos(
         @PathVariable final UUID id,
         @RequestParam(required = false) final @Nullable UUID after,
@@ -106,8 +107,9 @@ public class ControladorOrdensServico {
     }
 
     @PostMapping(value = "/{id}/insumos-necessarios", consumes = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary = "Adicionar item avulso durante diagnóstico; quantidade inteira positiva")
-    @ApiResponse(responseCode = "201", description = "Item incluído")
+    @Operation(summary = "Incluir insumo avulso na ordem de serviço")
+    @ApiResponse(responseCode = "201", description = "Insumo incluído")
+    @ApiResponse(responseCode = "404", description = "Ordem de serviço ou insumo não encontrado")
     public ResponseEntity<RespostaInsumoNecessario> adicionarInsumo(
         @PathVariable final UUID id,
         @Valid @RequestBody final RequisicaoCriarInsumoAvulso requisicao,
@@ -125,7 +127,8 @@ public class ControladorOrdensServico {
     @PatchMapping(value = "/{id}/insumos-necessarios/{itemId}", consumes = {
         MediaType.APPLICATION_JSON_VALUE,
         "application/merge-patch+json" })
-    @Operation(summary = "Substituir a quantidade absoluta de um item avulso durante diagnóstico")
+    @Operation(summary = "Atualizar quantidade do insumo avulso necessário")
+    @ApiResponse(responseCode = "404", description = "Ordem de serviço ou insumo necessário não encontrado")
     public ResponseEntity<RespostaInsumoNecessario> setQuantidade(
         @PathVariable final UUID id,
         @PathVariable final UUID itemId,
@@ -142,7 +145,8 @@ public class ControladorOrdensServico {
     }
 
     @DeleteMapping(value = "/{id}/insumos-necessarios/{itemId}")
-    @Operation(summary = "Remover item avulso durante diagnóstico")
+    @Operation(summary = "Remover insumo avulso da ordem de serviço")
+    @ApiResponse(responseCode = "404", description = "Ordem de serviço ou insumo necessário não encontrado")
     public ResponseEntity<Void> removerInsumo(
         @PathVariable final UUID id,
         @PathVariable final UUID itemId,
@@ -154,6 +158,7 @@ public class ControladorOrdensServico {
 
     @PostMapping(value = "/{id}/acesso-cliente")
     @Operation(summary = "Reemitir acesso do cliente, invalidando imediatamente o token anterior")
+    @ApiResponse(responseCode = "404", description = "Ordem de serviço não encontrada")
     public ResponseEntity<RespostaAcessoOrdemServico> renovarAcesso(
         @PathVariable final UUID id,
         final Principal autor
@@ -162,7 +167,8 @@ public class ControladorOrdensServico {
     }
 
     @PostMapping(value = "/{id}/inicio-diagnostico")
-    @Operation(summary = "Iniciar diagnóstico")
+    @Operation(summary = "Iniciar diagnóstico da ordem de serviço")
+    @ApiResponse(responseCode = "404", description = "Ordem de serviço não encontrada")
     public ResponseEntity<RespostaOrdemServico> iniciarDiagnostico(@PathVariable final UUID id, final Principal autor) {
         return RespostasHttp
             .ok(
@@ -172,7 +178,8 @@ public class ControladorOrdensServico {
     }
 
     @PostMapping(value = "/{id}/fim-diagnostico")
-    @Operation(summary = "Concluir diagnóstico e disponibilizar orçamento")
+    @Operation(summary = "Finalizar diagnóstico da ordem de serviço")
+    @ApiResponse(responseCode = "404", description = "Ordem de serviço não encontrada")
     public ResponseEntity<RespostaOrdemServico> concluirDiagnostico(
         @PathVariable final UUID id,
         final Principal autor
@@ -185,7 +192,8 @@ public class ControladorOrdensServico {
     }
 
     @PostMapping(value = "/{id}/inicio-execucao")
-    @Operation(summary = "Iniciar execução aprovada")
+    @Operation(summary = "Iniciar execução da ordem de serviço")
+    @ApiResponse(responseCode = "404", description = "Ordem de serviço não encontrada")
     public ResponseEntity<RespostaOrdemServico> iniciarExecucao(@PathVariable final UUID id, final Principal autor) {
         return RespostasHttp
             .ok(
@@ -195,7 +203,8 @@ public class ControladorOrdensServico {
     }
 
     @PostMapping(value = "/{id}/fim-execucao")
-    @Operation(summary = "Concluir execução e aguardar retirada")
+    @Operation(summary = "Finalizar execução da ordem de serviço")
+    @ApiResponse(responseCode = "404", description = "Ordem de serviço não encontrada")
     public ResponseEntity<RespostaOrdemServico> concluirExecucao(@PathVariable final UUID id, final Principal autor) {
         return RespostasHttp
             .ok(
@@ -205,7 +214,8 @@ public class ControladorOrdensServico {
     }
 
     @PostMapping(value = "/{id}/retirada-veiculo")
-    @Operation(summary = "Registrar retirada do veículo")
+    @Operation(summary = "Cadastrar retirada do veículo")
+    @ApiResponse(responseCode = "404", description = "Ordem de serviço não encontrada")
     public ResponseEntity<RespostaOrdemServico> retirarVeiculo(@PathVariable final UUID id, final Principal autor) {
         return RespostasHttp
             .ok(

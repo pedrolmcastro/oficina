@@ -5,8 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 
 public record RequisicaoCriarVeiculo(
-    @Schema(description = "Placa antiga (ABC1234) ou Mercosul (ABC1D23), em maiúsculas e sem hífen",
-        example = "ABC1D23")
+    @Schema(description = "Placa antiga ou Mercosul, em maiúsculas e sem hífen", example = "ABC1D23")
     @NotNull
     String placa,
     @Schema(example = "Corolla")
