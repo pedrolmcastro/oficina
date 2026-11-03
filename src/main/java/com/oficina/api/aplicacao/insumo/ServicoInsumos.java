@@ -62,10 +62,10 @@ public class ServicoInsumos {
         });
     }
 
-    public Insumo incrementarEstoque(final UUID id, final Quantidade quantidade) {
-        return this.operacoes.escrita("incrementar_estoque", () -> {
+    public Insumo reporEstoque(final UUID id, final Quantidade quantidade) {
+        return this.operacoes.escrita("repor_estoque", () -> {
             this.reservas.bloquear();
-            return this.reservas.incrementar(id, quantidade);
+            return this.reservas.reporEstoque(id, quantidade);
         });
     }
 

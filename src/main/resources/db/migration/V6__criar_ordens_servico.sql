@@ -36,7 +36,7 @@ CREATE TABLE oficina.ordens_servico_servicos (
     ordem_servico_id UUID NOT NULL REFERENCES oficina.ordens_servico (id),
     servico_id UUID NOT NULL REFERENCES oficina.servicos (id),
     nome TEXT NOT NULL,
-    preco NUMERIC(19, 2) NOT NULL CHECK (preco >= 0),
+    preco_venda NUMERIC(19, 2) NOT NULL CHECK (preco_venda >= 0),
     requer_diagnostico BOOLEAN NOT NULL,
     UNIQUE (ordem_servico_id, servico_id),
     UNIQUE (ordem_servico_id, id)
@@ -54,7 +54,7 @@ CREATE TABLE oficina.ordens_servico_insumos (
     quantidade_reservada INTEGER NOT NULL DEFAULT 0 CHECK (quantidade_reservada >= 0),
     quantidade_consumida INTEGER NOT NULL DEFAULT 0 CHECK (quantidade_consumida >= 0),
     CHECK (quantidade_reservada + quantidade_consumida <= quantidade),
-    preco_unitario NUMERIC(19, 2) NOT NULL CHECK (preco_unitario >= 0),
+    preco_venda NUMERIC(19, 2) NOT NULL CHECK (preco_venda >= 0),
     FOREIGN KEY (ordem_servico_id, servico_contratado_id)
         REFERENCES oficina.ordens_servico_servicos (ordem_servico_id, id) DEFERRABLE INITIALLY DEFERRED,
     UNIQUE NULLS NOT DISTINCT (ordem_servico_id, servico_contratado_id, insumo_id)

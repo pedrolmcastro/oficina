@@ -190,7 +190,7 @@ public class OrdensServicoSteps {
             return;
         }
         if (!"aguardando-insumos".equals(status)) {
-            incrementarEstoque(4);
+            reporEstoque(4);
             this.http.validarStatus(200);
         }
         decidir("aprovacao");
@@ -211,20 +211,20 @@ public class OrdensServicoSteps {
         assertThat(status).isEqualTo("aguardando-retirada");
     }
 
-    @Given("uma entrada de {int} unidades do insumo")
+    @Given("uma reposição de {int} unidades do insumo")
     public void prepararEstoque(final int quantidade) {
-        incrementarEstoque(quantidade);
+        reporEstoque(quantidade);
         this.http.validarStatus(200);
     }
 
-    @When("incremento o estoque do insumo em {int} unidades")
-    public void incrementarEstoque(final int quantidade) {
+    @When("reponho o estoque do insumo em {int} unidades")
+    public void reporEstoque(final int quantidade) {
         this.http
             .receber(
                 this.http
                     .requisicao()
                     .body(Map.of("quantidade", quantidade))
-                    .post("/insumos/{id}/entradas-estoque", this.insumoId)
+                    .post("/insumos/{id}/reposicoes-estoque", this.insumoId)
             );
     }
 
@@ -232,9 +232,13 @@ public class OrdensServicoSteps {
     public void validarReservas(final int reservada, final int pendente) {
         consultar();
         this.http.validarStatus(200);
-        final var itens = this.http.resposta().as(RespostaOrdemServico.class).insumosNecessarios();
-        assertThat(itens.stream().mapToInt(item -> item.quantidadeReservada()).sum()).isEqualTo(reservada);
-        assertThat(itens.stream().mapToInt(item -> item.quantidadePendente()).sum()).isEqualTo(pendente);
+        final var insumosNecessarios = this.http.resposta().as(RespostaOrdemServico.class).insumosNecessarios();
+        assertThat(
+            insumosNecessarios.stream().mapToInt(insumoNecessario -> insumoNecessario.quantidadeReservada()).sum()
+        ).isEqualTo(reservada);
+        assertThat(
+            insumosNecessarios.stream().mapToInt(insumoNecessario -> insumoNecessario.quantidadePendente()).sum()
+        ).isEqualTo(pendente);
     }
 
     @Given("um insumo avulso incluído com quantidade {int}")
@@ -290,7 +294,7 @@ public class OrdensServicoSteps {
                     .requisicao()
                     .auth()
                     .none()
-                    .post("/ordens-servico/acompanhamento/{token}/{decisao}", tokenDecisao(), decisao)
+                    .post("/ordens-servico/decisao/{token}/{decisao}", tokenDecisao(), decisao)
             );
     }
 
@@ -304,9 +308,9 @@ public class OrdensServicoSteps {
         validarCamposOrdem(Map.of("status", status));
     }
 
-    @Then("a OS deve estar em {string} com total {string}")
-    public void validarStatusETotalOrdem(final String status, final String total) {
-        validarCamposOrdem(Map.of("status", status, "total", total));
+    @Then("a OS deve estar em {string} com orçamento {string}")
+    public void validarStatusEOrcamentoOrdem(final String status, final String orcamento) {
+        validarCamposOrdem(Map.of("status", status, "orcamento", orcamento));
     }
 
     private void validarCamposOrdem(final Map<@Nullable String, @Nullable String> esperado) {
@@ -319,24 +323,27 @@ public class OrdensServicoSteps {
                 assertThat(json.getString(prefixo + campo)).isEqualTo(esperado.get(campo));
             }
         }
-        if (esperado.containsKey("total")) {
-            assertThat(json.getObject(prefixo + "total", java.math.BigDecimal.class))
-                .isEqualByComparingTo(esperado.get("total"));
+        if (esperado.containsKey("orcamento")) {
+            assertThat(json.getObject(prefixo + "orcamento", java.math.BigDecimal.class))
+                .isEqualByComparingTo(esperado.get("orcamento"));
         }
     }
 
     @Then("o acompanhamento expõe somente os dados necessários ao cliente")
     public void validarPrivacidade() {
         assertThat(this.http.resposta().jsonPath().getMap(""))
-            .containsOnlyKeys("status", "resultado", "total", "servicos", "insumosNecessarios");
-        final List<Map<String, Object>> servicos = this.http.resposta().jsonPath().getList("servicos");
-        assertThat(servicos).isNotEmpty().allSatisfy(servico -> assertThat(servico).containsOnlyKeys("nome", "preco"));
+            .containsOnlyKeys("status", "resultado", "orcamento", "servicosContratados", "insumosNecessarios");
+        final List<Map<String, Object>> servicosContratados = this.http
+            .resposta()
+            .jsonPath()
+            .getList("servicosContratados");
+        assertThat(servicosContratados)
+            .isNotEmpty()
+            .allSatisfy(servico -> assertThat(servico).containsOnlyKeys("nome", "precoVenda"));
         final List<Map<String, Object>> insumos = this.http.resposta().jsonPath().getList("insumosNecessarios");
         assertThat(insumos)
             .isNotEmpty()
-            .allSatisfy(
-                insumo -> assertThat(insumo).containsOnlyKeys("nome", "quantidade", "precoUnitario", "subtotal")
-            );
+            .allSatisfy(insumo -> assertThat(insumo).containsOnlyKeys("nome", "quantidade", "precoVenda", "subtotal"));
         assertThat(this.http.resposta().header("Referrer-Policy")).isEqualTo("no-referrer");
     }
 
@@ -354,29 +361,37 @@ public class OrdensServicoSteps {
         }
     }
 
-    @When("altero o item {string} para quantidade {int}")
+    @When("altero o insumo {string} para quantidade {int}")
     public void alterar(final String origem, final int quantidade) {
         this.http
             .receber(
                 this.http
                     .requisicao()
                     .body(Map.of("quantidade", quantidade))
-                    .patch("/ordens-servico/{id}/insumos-necessarios/{item}", ordemId(), item(origem))
+                    .patch(
+                        "/ordens-servico/{id}/insumos-necessarios/{insumoNecessario}",
+                        ordemId(),
+                        insumoNecessario(origem)
+                    )
             );
     }
 
-    @When("removo o item {string}")
+    @When("removo o insumo {string}")
     public void remover(final String origem) {
-        removerPorId(item(origem).toString());
+        removerPorId(insumoNecessario(origem).toString());
     }
 
     @When("removo o insumo necessário pelo ID {string}")
     public void removerPorId(final String id) {
         this.http
-            .receber(this.http.requisicao().delete("/ordens-servico/{id}/insumos-necessarios/{item}", ordemId(), id));
+            .receber(
+                this.http
+                    .requisicao()
+                    .delete("/ordens-servico/{id}/insumos-necessarios/{insumoNecessario}", ordemId(), id)
+            );
     }
 
-    @Then("o item avulso tem quantidade {int}")
+    @Then("o insumo avulso tem quantidade {int}")
     public void validarQuantidade(final int quantidade) {
         assertThat(this.http.resposta().as(RespostaInsumoNecessario.class).quantidade()).isEqualTo(quantidade);
     }
@@ -386,20 +401,28 @@ public class OrdensServicoSteps {
         this.http.receber(this.http.requisicao().get("/ordens-servico/{id}/insumos-necessarios", ordemId()));
     }
 
-    @Then("existe(m) {int} item/itens de insumo(s) necessário(s) com quantidade total {int}")
-    public void validarInsumosNecessarios(final int itens, final int quantidade) {
+    @Then("existe(m) {int} insumo(s) necessário(s) com quantidade total {int}")
+    public void validarInsumosNecessarios(final int numeroInsumosNecessarios, final int quantidade) {
         final var lista = this.http.resposta().as(new TypeRef<RespostaLista<RespostaInsumoNecessario>>() {});
-        assertThat(lista.itens()).hasSize(itens);
-        assertThat(lista.itens().stream().mapToInt(item -> item.quantidade()).sum()).isEqualTo(quantidade);
+        assertThat(lista.itens()).hasSize(numeroInsumosNecessarios);
+        assertThat(lista.itens().stream().mapToInt(insumoNecessario -> insumoNecessario.quantidade()).sum())
+            .isEqualTo(quantidade);
     }
 
     @Then("o insumo obrigatório mantém a quantidade de cada serviço contratado")
     public void validarInsumoPorServico() {
-        final var itens = this.http.resposta().as(RespostaOrdemServico.class).insumosNecessarios();
-        assertThat(itens).hasSize(2);
-        assertThat(itens).extracting(item -> item.insumoId()).containsOnly(this.insumoId);
-        assertThat(itens).extracting(item -> item.servicoContratadoId()).doesNotHaveDuplicates().doesNotContainNull();
-        assertThat(itens).extracting(item -> item.quantidade()).containsExactlyInAnyOrder(4, 1);
+        final var insumosNecessarios = this.http.resposta().as(RespostaOrdemServico.class).insumosNecessarios();
+        assertThat(insumosNecessarios).hasSize(2);
+        assertThat(insumosNecessarios)
+            .extracting(insumoNecessario -> insumoNecessario.insumoId())
+            .containsOnly(this.insumoId);
+        assertThat(insumosNecessarios)
+            .extracting(insumoNecessario -> insumoNecessario.servicoContratadoId())
+            .doesNotHaveDuplicates()
+            .doesNotContainNull();
+        assertThat(insumosNecessarios)
+            .extracting(insumoNecessario -> insumoNecessario.quantidade())
+            .containsExactlyInAnyOrder(4, 1);
     }
 
     @Then("o histórico da OS contém em ordem:")
@@ -436,7 +459,7 @@ public class OrdensServicoSteps {
     @Then("os nomes contratados são preservados")
     public void validarNomes() {
         final var ordem = this.http.resposta().as(RespostaOrdemServico.class);
-        assertThat(ordem.servicos()).extracting(s -> s.nome()).containsExactly("Troca de óleo");
+        assertThat(ordem.servicosContratados()).extracting(s -> s.nome()).containsExactly("Troca de óleo");
         assertThat(ordem.insumosNecessarios()).extracting(i -> i.nome()).containsOnly("Óleo");
     }
 
@@ -521,7 +544,7 @@ public class OrdensServicoSteps {
         assertThat(veiculo.statusCode()).isEqualTo(200);
         assertThat(ordem.clienteId()).isEqualTo(veiculo.as(RespostaVeiculo.class).clienteId());
         assertThat(this.http.resposta().header("Location")).isEqualTo("/ordens-servico/" + ordem.id());
-        assertThat(ordem.servicos())
+        assertThat(ordem.servicosContratados())
             .extracting(servico -> servico.servicoId())
             .containsExactlyElementsOf(this.servicoIds);
     }
@@ -541,7 +564,7 @@ public class OrdensServicoSteps {
         final var resposta = this.http.requisicao().get("/insumos/{id}", this.insumoId);
         assertThat(resposta.statusCode()).isEqualTo(200);
         final var insumo = resposta.as(RespostaInsumo.class);
-        assertThat(insumo.quantidadeEmEstoque()).isEqualTo(fisico);
+        assertThat(insumo.quantidadeEstoqueFisico()).isEqualTo(fisico);
         assertThat(insumo.quantidadeReservada()).isEqualTo(reservado);
         assertThat(insumo.quantidadeDisponivel()).isEqualTo(disponivel);
     }
@@ -550,22 +573,25 @@ public class OrdensServicoSteps {
     public void validarQuantidadesInsumosNecessarios(final DataTable tabela) {
         final var resposta = this.http.requisicao().get("/ordens-servico/{id}", ordemId());
         assertThat(resposta.statusCode()).isEqualTo(200);
-        final var itens = resposta.as(RespostaOrdemServico.class).insumosNecessarios();
-        assertThat(itens).hasSize(tabela.asMaps().size());
+        final var insumosNecessarios = resposta.as(RespostaOrdemServico.class).insumosNecessarios();
+        assertThat(insumosNecessarios).hasSize(tabela.asMaps().size());
         for (final var esperado : tabela.asMaps()) {
-            assertThat(itens)
-                .filteredOn(item -> item.nome().equals(esperado.get("nome")))
+            assertThat(insumosNecessarios)
+                .filteredOn(insumoNecessario -> insumoNecessario.nome().equals(esperado.get("nome")))
                 .filteredOn(
-                    item -> (item.servicoContratadoId() == null
+                    insumoNecessario -> (insumoNecessario.servicoContratadoId() == null
                         ? "avulso"
                         : "obrigatório").equals(esperado.get("origem"))
                 )
                 .singleElement()
-                .satisfies(item -> {
-                    assertThat(item.quantidade()).isEqualTo(Integer.parseInt(esperado.get("quantidade")));
-                    assertThat(item.quantidadeReservada()).isEqualTo(Integer.parseInt(esperado.get("reservada")));
-                    assertThat(item.quantidadeConsumida()).isEqualTo(Integer.parseInt(esperado.get("consumida")));
-                    assertThat(item.quantidadePendente()).isEqualTo(Integer.parseInt(esperado.get("pendente")));
+                .satisfies(insumoNecessario -> {
+                    assertThat(insumoNecessario.quantidade()).isEqualTo(Integer.parseInt(esperado.get("quantidade")));
+                    assertThat(insumoNecessario.quantidadeReservada())
+                        .isEqualTo(Integer.parseInt(esperado.get("reservada")));
+                    assertThat(insumoNecessario.quantidadeConsumida())
+                        .isEqualTo(Integer.parseInt(esperado.get("consumida")));
+                    assertThat(insumoNecessario.quantidadePendente())
+                        .isEqualTo(Integer.parseInt(esperado.get("pendente")));
                 });
         }
     }
@@ -598,7 +624,7 @@ public class OrdensServicoSteps {
                     .requisicao()
                     .auth()
                     .none()
-                    .post("/ordens-servico/acompanhamento/{token}/{decisao}", acesso().tokenAcompanhamento(), decisao)
+                    .post("/ordens-servico/decisao/{token}/{decisao}", acesso().tokenAcompanhamento(), decisao)
             );
     }
 
@@ -610,21 +636,21 @@ public class OrdensServicoSteps {
                     .requisicao()
                     .auth()
                     .none()
-                    .post("/ordens-servico/acompanhamento/{token}/{decisao}", this.decisaoAnterior, decisao)
+                    .post("/ordens-servico/decisao/{token}/{decisao}", this.decisaoAnterior, decisao)
             );
     }
 
-    @Then("o orçamento do cliente deve conter os itens contratados")
+    @Then("o orçamento do cliente deve conter os serviços contratados e insumos necessários")
     public void validarOrcamentoCliente() {
         final var resposta = this.http.resposta().as(RespostaAcompanhamento.class);
-        assertThat(resposta.servicos()).singleElement().satisfies(servico -> {
+        assertThat(resposta.servicosContratados()).singleElement().satisfies(servico -> {
             assertThat(servico.nome()).isEqualTo("Troca de óleo");
-            assertThat(servico.preco()).isEqualByComparingTo("100.00");
+            assertThat(servico.precoVenda()).isEqualByComparingTo("100.00");
         });
         assertThat(resposta.insumosNecessarios()).singleElement().satisfies(insumo -> {
             assertThat(insumo.nome()).isEqualTo("Óleo");
             assertThat(insumo.quantidade()).isEqualTo(4);
-            assertThat(insumo.precoUnitario()).isEqualByComparingTo("10.00");
+            assertThat(insumo.precoVenda()).isEqualByComparingTo("10.00");
             assertThat(insumo.subtotal()).isEqualByComparingTo("40.00");
         });
     }
@@ -669,7 +695,7 @@ public class OrdensServicoSteps {
             .map(ordem -> ordem.ordemServico())
             .sorted(Comparator.comparing(ordem -> ordem.id().toString()))
             .toList();
-        assertThat(listaOrdens().itens()).extracting(item -> item.id()).containsExactly(ordens.get(posicao - 1).id());
+        assertThat(listaOrdens().itens()).extracting(ordem -> ordem.id()).containsExactly(ordens.get(posicao - 1).id());
     }
 
     @Then("a resposta deve indicar a próxima página de OS")
@@ -746,21 +772,21 @@ public class OrdensServicoSteps {
         assertThat(ordem.veiculoId()).isEqualTo(this.veiculoId);
     }
 
-    @Then("o item avulso tem preço unitário {string} e subtotal {string}")
+    @Then("o insumo avulso tem preço de venda {string} e subtotal {string}")
     public void validarValoresAvulso(final String preco, final String subtotal) {
-        final var item = this.http.resposta().as(RespostaInsumoNecessario.class);
-        assertThat(item.precoUnitario()).isEqualByComparingTo(preco);
-        assertThat(item.subtotal()).isEqualByComparingTo(subtotal);
+        final var insumoNecessario = this.http.resposta().as(RespostaInsumoNecessario.class);
+        assertThat(insumoNecessario.precoVenda()).isEqualByComparingTo(preco);
+        assertThat(insumoNecessario.subtotal()).isEqualByComparingTo(subtotal);
     }
 
     @Then("o orçamento do cliente contém o avulso com quantidade {int} e subtotal {string}")
     public void validarAvulsoNoOrcamento(final int quantidade, final String subtotal) {
-        final var itens = this.http.resposta().as(RespostaAcompanhamento.class).insumosNecessarios();
-        assertThat(itens).hasSize(2);
-        assertThat(itens).anySatisfy(item -> {
-            assertThat(item.quantidade()).isEqualTo(quantidade);
-            assertThat(item.precoUnitario()).isEqualByComparingTo("10.00");
-            assertThat(item.subtotal()).isEqualByComparingTo(subtotal);
+        final var insumosNecessarios = this.http.resposta().as(RespostaAcompanhamento.class).insumosNecessarios();
+        assertThat(insumosNecessarios).hasSize(2);
+        assertThat(insumosNecessarios).anySatisfy(insumoNecessario -> {
+            assertThat(insumoNecessario.quantidade()).isEqualTo(quantidade);
+            assertThat(insumoNecessario.precoVenda()).isEqualByComparingTo("10.00");
+            assertThat(insumoNecessario.subtotal()).isEqualByComparingTo(subtotal);
         });
     }
 
@@ -822,7 +848,7 @@ public class OrdensServicoSteps {
         return acesso().ordemServico().id();
     }
 
-    private UUID item(final String origem) {
+    private UUID insumoNecessario(final String origem) {
         return Objects
             .requireNonNull(
                 "avulso".equals(origem)

@@ -36,7 +36,8 @@ import org.springframework.web.bind.annotation.RestController;
 @ApiResponse(responseCode = "400", description = "Requisição inválida")
 @ApiResponse(responseCode = "401", description = "Token ausente ou inválido")
 @ApiResponse(responseCode = "403", description = "Acesso negado")
-@ApiResponse(responseCode = "409", description = "Operação incompatível com o status ou item da ordem de serviço")
+@ApiResponse(responseCode = "409",
+    description = "Operação incompatível com o status ou insumo necessário da ordem de serviço")
 public class ControladorOrdensServico {
     private final ServicoOrdensServico servico;
 
@@ -89,49 +90,51 @@ public class ControladorOrdensServico {
     @GetMapping(value = "/{id}/insumos-necessarios")
     @Operation(summary = "Listar insumos necessários da OS, mantendo suas origens separadas")
     @ApiResponse(responseCode = "404", description = "Ordem de serviço não encontrada")
-    public ResponseEntity<RespostaLista<RespostaInsumoNecessario>> listarInsumos(
+    public ResponseEntity<RespostaLista<RespostaInsumoNecessario>> listarInsumosNecessarios(
         @PathVariable final UUID id,
         @RequestParam(required = false) final @Nullable UUID after,
         @RequestParam(defaultValue = "25") final int first
     ) {
-        final var itens = this.servico
+        final var insumosNecessarios = this.servico
             .buscar(id)
-            .insumos()
+            .insumosNecessarios()
             .stream()
             .filter(i -> after == null || i.id().toString().compareTo(after.toString()) > 0)
             .sorted(java.util.Comparator.comparing(i -> i.id().toString()))
             .limit(new Pagina.Limite(first).quantidadeParaConsulta())
             .toList();
         return RespostasHttp
-            .ok(RespostaLista.de(Pagina.de(itens, new Pagina.Limite(first)), RespostaInsumoNecessario::de));
+            .ok(
+                RespostaLista.de(Pagina.de(insumosNecessarios, new Pagina.Limite(first)), RespostaInsumoNecessario::de)
+            );
     }
 
     @PostMapping(value = "/{id}/insumos-necessarios", consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Incluir insumo avulso na ordem de serviço")
     @ApiResponse(responseCode = "201", description = "Insumo incluído")
     @ApiResponse(responseCode = "404", description = "Ordem de serviço ou insumo não encontrado")
-    public ResponseEntity<RespostaInsumoNecessario> adicionarInsumo(
+    public ResponseEntity<RespostaInsumoNecessario> adicionarInsumoAvulso(
         @PathVariable final UUID id,
         @Valid @RequestBody final RequisicaoCriarInsumoAvulso requisicao,
         final Principal autor
     ) {
-        final var item = this.servico
-            .adicionarInsumo(id, requisicao.insumoId(), new Quantidade(requisicao.quantidade()), autor.getName());
+        final var insumoNecessario = this.servico
+            .adicionarInsumoAvulso(id, requisicao.insumoId(), new Quantidade(requisicao.quantidade()), autor.getName());
         return RespostasHttp
             .criada(
-                URI.create("/ordens-servico/" + id + "/insumos-necessarios/" + item.id()),
-                RespostaInsumoNecessario.de(item)
+                URI.create("/ordens-servico/" + id + "/insumos-necessarios/" + insumoNecessario.id()),
+                RespostaInsumoNecessario.de(insumoNecessario)
             );
     }
 
-    @PatchMapping(value = "/{id}/insumos-necessarios/{itemId}", consumes = {
+    @PatchMapping(value = "/{id}/insumos-necessarios/{insumoNecessarioId}", consumes = {
         MediaType.APPLICATION_JSON_VALUE,
         "application/merge-patch+json" })
     @Operation(summary = "Atualizar quantidade do insumo avulso necessário")
     @ApiResponse(responseCode = "404", description = "Ordem de serviço ou insumo necessário não encontrado")
-    public ResponseEntity<RespostaInsumoNecessario> setQuantidade(
+    public ResponseEntity<RespostaInsumoNecessario> alterarQuantidadeInsumoAvulso(
         @PathVariable final UUID id,
-        @PathVariable final UUID itemId,
+        @PathVariable final UUID insumoNecessarioId,
         @Valid @RequestBody final RequisicaoAtualizarInsumoAvulso requisicao,
         final Principal autor
     ) {
@@ -139,20 +142,26 @@ public class ControladorOrdensServico {
             .ok(
                 RespostaInsumoNecessario
                     .de(
-                        this.servico.setQuantidade(id, itemId, new Quantidade(requisicao.quantidade()), autor.getName())
+                        this.servico
+                            .alterarQuantidadeInsumoAvulso(
+                                id,
+                                insumoNecessarioId,
+                                new Quantidade(requisicao.quantidade()),
+                                autor.getName()
+                            )
                     )
             );
     }
 
-    @DeleteMapping(value = "/{id}/insumos-necessarios/{itemId}")
+    @DeleteMapping(value = "/{id}/insumos-necessarios/{insumoNecessarioId}")
     @Operation(summary = "Remover insumo avulso da ordem de serviço")
     @ApiResponse(responseCode = "404", description = "Ordem de serviço ou insumo necessário não encontrado")
-    public ResponseEntity<Void> removerInsumo(
+    public ResponseEntity<Void> removerInsumoAvulso(
         @PathVariable final UUID id,
-        @PathVariable final UUID itemId,
+        @PathVariable final UUID insumoNecessarioId,
         final Principal autor
     ) {
-        this.servico.executar(id, "remover_insumo", o -> o.removerInsumo(itemId, autor.getName()));
+        this.servico.executar(id, "remover_insumo", o -> o.removerInsumoAvulso(insumoNecessarioId, autor.getName()));
         return RespostasHttp.semConteudo();
     }
 

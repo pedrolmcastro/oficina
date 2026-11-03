@@ -115,7 +115,7 @@ public class ServicoOrdensServico {
                         );
                     for (final var obrigatorio : pagina.itens()) {
                         ordem
-                            .associarObrigatorio(
+                            .associarInsumoObrigatorio(
                                 encontrarInsumo(obrigatorio.insumoId()),
                                 contratado.id(),
                                 obrigatorio.quantidade()
@@ -173,7 +173,7 @@ public class ServicoOrdensServico {
         });
     }
 
-    public InsumoNecessario adicionarInsumo(
+    public InsumoNecessario adicionarInsumoAvulso(
         final UUID id,
         final UUID insumoId,
         final Quantidade quantidade,
@@ -184,13 +184,13 @@ public class ServicoOrdensServico {
             final var ordem = this.repositorio
                 .buscar(id, LockModeType.PESSIMISTIC_WRITE)
                 .orElseThrow(OrdemServicoNaoEncontradaException::new);
-            return ordem.adicionarInsumo(encontrarInsumo(insumoId), quantidade, autor);
+            return ordem.adicionarInsumoAvulso(encontrarInsumo(insumoId), quantidade, autor);
         });
     }
 
-    public InsumoNecessario setQuantidade(
+    public InsumoNecessario alterarQuantidadeInsumoAvulso(
         final UUID id,
-        final UUID itemId,
+        final UUID insumoNecessarioId,
         final Quantidade quantidade,
         final String autor
     ) {
@@ -198,7 +198,7 @@ public class ServicoOrdensServico {
             final var ordem = this.repositorio
                 .buscar(id, LockModeType.PESSIMISTIC_WRITE)
                 .orElseThrow(OrdemServicoNaoEncontradaException::new);
-            return ordem.setQuantidade(itemId, quantidade, autor);
+            return ordem.alterarQuantidadeInsumoAvulso(insumoNecessarioId, quantidade, autor);
         });
     }
 

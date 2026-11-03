@@ -27,7 +27,7 @@
       [consulta]: { get: { summary: 'Consultar status e orçamento', responses: respostas } }
     };
     if (!status) {
-      paths[`/ordens-servico/acompanhamento/${token}/${pagina}`] = {
+      paths[`/ordens-servico/decisao/${token}/${pagina}`] = {
         post: { summary: titulo, description: 'Confira o orçamento acima antes de executar a decisão.',
           responses: respostas }
       };

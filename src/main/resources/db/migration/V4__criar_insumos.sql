@@ -3,9 +3,9 @@ CREATE TABLE oficina.insumos (
     nome TEXT NOT NULL CHECK (char_length(btrim(nome)) > 0),
     preco_venda NUMERIC(19, 2) NOT NULL CHECK (preco_venda >= 0)
         CONSTRAINT ck_insumos_preco_venda_maximo CHECK (preco_venda <= 10000.00),
-    quantidade_em_estoque INTEGER NOT NULL DEFAULT 0 CHECK (quantidade_em_estoque >= 0),
+    quantidade_estoque_fisico INTEGER NOT NULL DEFAULT 0 CHECK (quantidade_estoque_fisico >= 0),
     quantidade_reservada INTEGER NOT NULL DEFAULT 0
-        CHECK (quantidade_reservada >= 0 AND quantidade_reservada <= quantidade_em_estoque),
+        CHECK (quantidade_reservada >= 0 AND quantidade_reservada <= quantidade_estoque_fisico),
     deletado BOOLEAN NOT NULL DEFAULT FALSE
 );
 

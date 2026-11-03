@@ -41,13 +41,13 @@ Funcionalidade: Acompanhar a OS e decidir sobre o orçamento
 
       Exemplos:
         | status                 | decisao |
-        | aguardando-diagnostico |       0 |
-        | em-diagnostico         |       0 |
-        | aguardando-confirmacao |       1 |
-        | aguardando-insumos     |       0 |
-        | aguardando-execucao    |       0 |
-        | em-execucao            |       0 |
-        | aguardando-retirada    |       0 |
+        | aguardando-diagnostico | 0       |
+        | em-diagnostico         | 0       |
+        | aguardando-confirmacao | 1       |
+        | aguardando-insumos     | 0       |
+        | aguardando-execucao    | 0       |
+        | em-execucao            | 0       |
+        | aguardando-retirada    | 0       |
 
     Cenário: Manter o cliente original da OS após transferir o veículo
       Dado uma OS com um serviço que "requer" diagnóstico
@@ -70,8 +70,8 @@ Funcionalidade: Acompanhar a OS e decidir sobre o orçamento
       Quando o cliente envia "rejeicao" pelo link
       Então a API deve retornar 200
       E a resposta deve conter a OS:
-        | status              | total  | resultado           |
-        | aguardando-retirada | 140.00 | ORCAMENTO_REJEITADO |
+        | status              | orcamento | resultado           |
+        | aguardando-retirada | 140.00    | ORCAMENTO_REJEITADO |
       E o cliente original recebe 1 email de acompanhamento, 1 email de decisão e 1 email de retirada
       E o acompanhamento expõe somente os dados necessários ao cliente
 
@@ -88,8 +88,8 @@ Funcionalidade: Acompanhar a OS e decidir sobre o orçamento
 
       Exemplos:
         | decisaoAnterior | decisao   | evento              | retirada |
-        | aprovado        | aprovacao | ORCAMENTO_APROVADO  |        0 |
-        | rejeitado       | rejeicao  | ORCAMENTO_REJEITADO |        1 |
+        | aprovado        | aprovacao | ORCAMENTO_APROVADO  | 0        |
+        | rejeitado       | rejeicao  | ORCAMENTO_REJEITADO | 1        |
 
     Esquema do Cenário: Rejeitar mudança de decisão do cliente
       Dado uma OS em "aguardando-confirmacao"
@@ -116,7 +116,7 @@ Funcionalidade: Acompanhar a OS e decidir sobre o orçamento
       E o veículo já foi retirado
       Quando o cliente consulta sua OS pelo link
       Então a API deve retornar 200
-      E a OS deve estar em "entregue" com total "140.00"
+      E a OS deve estar em "entregue" com orçamento "140.00"
 
   Regra: Links de acompanhamento devem ser válidos, vigentes e substituídos na reemissão
 
@@ -155,9 +155,9 @@ Funcionalidade: Acompanhar a OS e decidir sobre o orçamento
       Dado uma OS em "<status>"
       Quando o cliente consulta sua OS pelo link
       Então a API deve retornar 200
-      E a OS deve estar em "<status>" com total "140.00"
+      E a OS deve estar em "<status>" com orçamento "140.00"
       E o acompanhamento expõe somente os dados necessários ao cliente
-      E o orçamento do cliente deve conter os itens contratados
+      E o orçamento do cliente deve conter os serviços contratados e insumos necessários
 
       Exemplos:
         | status                 |
@@ -173,8 +173,8 @@ Funcionalidade: Acompanhar a OS e decidir sobre o orçamento
       Dado uma OS em "aguardando-confirmacao"
       Quando o cliente consulta o orçamento pelo link de decisão
       Então a API deve retornar 200
-      E a OS deve estar em "aguardando-confirmacao" com total "140.00"
-      E o orçamento do cliente deve conter os itens contratados
+      E a OS deve estar em "aguardando-confirmacao" com orçamento "140.00"
+      E o orçamento do cliente deve conter os serviços contratados e insumos necessários
       E o acompanhamento expõe somente os dados necessários ao cliente
 
     Esquema do Cenário: Rejeitar decisão com o link destinado somente ao acompanhamento
@@ -183,7 +183,7 @@ Funcionalidade: Acompanhar a OS e decidir sobre o orçamento
       Então a API deve retornar 404
       Quando consulto a OS administrativamente
       Então a API deve retornar 200
-      E a OS deve estar em "aguardando-confirmacao" com total "140.00"
+      E a OS deve estar em "aguardando-confirmacao" com orçamento "140.00"
 
       Exemplos:
         | decisao   |
@@ -199,7 +199,7 @@ Funcionalidade: Acompanhar a OS e decidir sobre o orçamento
       Então a API deve retornar 200
       Quando o cliente envia "aprovacao" pelo link
       Então a API deve retornar 200
-      E a OS deve estar em "aguardando-insumos" com total "140.00"
+      E a OS deve estar em "aguardando-insumos" com orçamento "140.00"
 
     Cenário: Acompanhar a entrega após rejeitar o orçamento
       Dado uma OS com um serviço que "não requer" diagnóstico

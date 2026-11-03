@@ -13,10 +13,10 @@ class EstoqueInsumoTest {
     @Test
     void devePreservarSaldosAoReservarEConsumir() {
         final var insumo = insumo();
-        insumo.incrementarEstoque(new Quantidade(10));
+        insumo.reporEstoque(new Quantidade(10));
         insumo.reservar(new Quantidade(7));
         insumo.consumirReserva(new Quantidade(4));
-        assertThat(insumo.quantidadeEmEstoque()).isEqualTo(6);
+        assertThat(insumo.quantidadeEstoqueFisico()).isEqualTo(6);
         assertThat(insumo.quantidadeReservada()).isEqualTo(3);
         assertThat(insumo.quantidadeDisponivel()).isEqualTo(3);
     }
@@ -27,17 +27,17 @@ class EstoqueInsumoTest {
         final var quantidade = new Quantidade(1);
         assertThatThrownBy(() -> insumo.reservar(quantidade)).isInstanceOf(DadoInvalidoException.class);
         assertThatThrownBy(() -> insumo.consumirReserva(quantidade)).isInstanceOf(DadoInvalidoException.class);
-        assertThat(insumo.quantidadeEmEstoque()).isZero();
+        assertThat(insumo.quantidadeEstoqueFisico()).isZero();
         assertThat(insumo.quantidadeReservada()).isZero();
     }
 
     @Test
     void deveRecusarOverflowSemAlterarSaldo() {
         final var insumo = insumo();
-        insumo.incrementarEstoque(new Quantidade(Integer.MAX_VALUE));
+        insumo.reporEstoque(new Quantidade(Integer.MAX_VALUE));
         final var quantidade = new Quantidade(1);
-        assertThatThrownBy(() -> insumo.incrementarEstoque(quantidade)).isInstanceOf(DadoInvalidoException.class);
-        assertThat(insumo.quantidadeEmEstoque()).isEqualTo(Integer.MAX_VALUE);
+        assertThatThrownBy(() -> insumo.reporEstoque(quantidade)).isInstanceOf(DadoInvalidoException.class);
+        assertThat(insumo.quantidadeEstoqueFisico()).isEqualTo(Integer.MAX_VALUE);
     }
 
     private static Insumo insumo() {

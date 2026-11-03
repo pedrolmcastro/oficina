@@ -26,7 +26,7 @@ import org.jspecify.annotations.Nullable;
 @Table(name = "ordens_servico", schema = "oficina")
 public class OrdemServico extends Entidade {
     private static final String EXECUCAO_CONCLUIDA = "EXECUCAO_CONCLUIDA";
-    private static final String ITEM_ID = "itemId";
+    private static final String INSUMO_NECESSARIO_ID = "insumoNecessarioId";
     private static final String ORCAMENTO_REJEITADO = "ORCAMENTO_REJEITADO";
     private static final String SISTEMA = "SISTEMA";
     private static final String QUANTIDADE = "quantidade";
@@ -43,11 +43,11 @@ public class OrdemServico extends Entidade {
     @OneToMany(cascade = CascadeType.ALL)
     @JoinColumn(name = "ordem_servico_id", nullable = false, updatable = false)
     @OrderBy(value = "id ASC")
-    private List<ServicoContratado> servicos = new ArrayList<>();
+    private List<ServicoContratado> servicosContratados = new ArrayList<>();
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "ordem_servico_id", nullable = false, updatable = false)
     @OrderBy(value = "id ASC")
-    private List<InsumoNecessario> insumos = new ArrayList<>();
+    private List<InsumoNecessario> insumosNecessarios = new ArrayList<>();
     @ElementCollection
     @CollectionTable(name = "ordens_servico_eventos", schema = "oficina", joinColumns = {
         @JoinColumn(name = "ordem_servico_id", nullable = false) })
@@ -60,18 +60,18 @@ public class OrdemServico extends Entidade {
     private OrdemServico(
         final UUID clienteId,
         final UUID veiculoId,
-        final List<ServicoContratado> servicos,
+        final List<ServicoContratado> servicosContratados,
         final String hashToken,
         final Instant tokenExpiraEm,
         final String autor
     ) {
         this.clienteId = clienteId;
         this.veiculoId = veiculoId;
-        this.servicos.addAll(servicos);
+        this.servicosContratados.addAll(servicosContratados);
         this.criadaEm = Instant.now();
         this.hashToken = hashToken;
         this.tokenExpiraEm = tokenExpiraEm;
-        this.status = servicos.stream().anyMatch(servico -> servico.requerDiagnostico())
+        this.status = servicosContratados.stream().anyMatch(servico -> servico.requerDiagnostico())
             ? StatusOrdemServico.AGUARDANDO_DIAGNOSTICO
             : StatusOrdemServico.AGUARDANDO_CONFIRMACAO;
         registrar("CRIADA", autor, Map.of());
@@ -83,16 +83,20 @@ public class OrdemServico extends Entidade {
     public static OrdemServico criar(
         final UUID clienteId,
         final UUID veiculoId,
-        final List<ServicoContratado> servicos,
+        final List<ServicoContratado> servicosContratados,
         final String hashToken,
         final Instant tokenExpiraEm,
         final String autor
     ) {
-        if (servicos.isEmpty()
-            || servicos.stream().map(servico -> servico.servicoId()).distinct().count() != servicos.size()) {
+        if (servicosContratados.isEmpty()
+            || servicosContratados
+                .stream()
+                .map(servico -> servico.servicoId())
+                .distinct()
+                .count() != servicosContratados.size()) {
             throw new DadoInvalidoException("Informe ao menos um serviço, sem duplicatas");
         }
-        return new OrdemServico(clienteId, veiculoId, servicos, hashToken, tokenExpiraEm, autor);
+        return new OrdemServico(clienteId, veiculoId, servicosContratados, hashToken, tokenExpiraEm, autor);
     }
 
     public UUID clienteId() {
@@ -131,91 +135,103 @@ public class OrdemServico extends Entidade {
         return this.decisaoExpiraEm;
     }
 
-    public List<ServicoContratado> servicos() {
-        return List.copyOf(this.servicos);
+    public List<ServicoContratado> servicosContratados() {
+        return List.copyOf(this.servicosContratados);
     }
 
-    public List<InsumoNecessario> insumos() {
-        return List.copyOf(this.insumos);
+    public List<InsumoNecessario> insumosNecessarios() {
+        return List.copyOf(this.insumosNecessarios);
     }
 
     public List<EventoOrdemServico> eventos() {
         return List.copyOf(this.eventos);
     }
 
-    public BigDecimal total() {
-        return this.servicos
+    public BigDecimal orcamento() {
+        return this.servicosContratados
             .stream()
-            .map(servico -> servico.preco().preco().valor())
-            .reduce(BigDecimal.ZERO, (total, preco) -> total.add(preco))
+            .map(servico -> servico.precoVenda().preco().valor())
+            .reduce(BigDecimal.ZERO, (orcamento, preco) -> orcamento.add(preco))
             .add(
-                this.insumos
+                this.insumosNecessarios
                     .stream()
                     .map(insumo -> insumo.subtotal())
-                    .reduce(BigDecimal.ZERO, (total, subtotal) -> total.add(subtotal))
+                    .reduce(BigDecimal.ZERO, (orcamento, subtotal) -> orcamento.add(subtotal))
             );
     }
 
-    public void associarObrigatorio(final Insumo insumo, final UUID servicoContratadoId, final Quantidade quantidade) {
-        if (this.servicos.stream().noneMatch(s -> s.id().equals(servicoContratadoId))) {
+    public void associarInsumoObrigatorio(
+        final Insumo insumo,
+        final UUID servicoContratadoId,
+        final Quantidade quantidade
+    ) {
+        if (this.servicosContratados.stream().noneMatch(s -> s.id().equals(servicoContratadoId))) {
             throw new DadoInvalidoException("Serviço não pertence à OS");
         }
-        this.insumos.add(new InsumoNecessario(insumo, servicoContratadoId, quantidade));
+        this.insumosNecessarios.add(new InsumoNecessario(insumo, servicoContratadoId, quantidade));
     }
 
-    public InsumoNecessario adicionarInsumo(final Insumo insumo, final Quantidade quantidade, final String autor) {
+    public InsumoNecessario adicionarInsumoAvulso(
+        final Insumo insumo,
+        final Quantidade quantidade,
+        final String autor
+    ) {
         exigirStatus(StatusOrdemServico.EM_DIAGNOSTICO);
-        if (this.insumos.stream().anyMatch(i -> i.avulso() && i.insumoId().equals(insumo.id()))) {
+        if (this.insumosNecessarios.stream().anyMatch(i -> i.avulso() && i.insumoId().equals(insumo.id()))) {
             throw new ConflitoOrdemServicoException("Insumo avulso já incluído na OS; atualize sua quantidade");
         }
-        final var item = new InsumoNecessario(insumo, null, quantidade);
-        this.insumos.add(item);
+        final var insumoNecessario = new InsumoNecessario(insumo, null, quantidade);
+        this.insumosNecessarios.add(insumoNecessario);
         registrar(
             "INSUMO_AVULSO_ADICIONADO",
             autor,
             Map
                 .of(
-                    ITEM_ID,
-                    item.id().toString(),
+                    INSUMO_NECESSARIO_ID,
+                    insumoNecessario.id().toString(),
                     "insumoId",
                     insumo.id().toString(),
                     QUANTIDADE,
                     Integer.toString(quantidade.valor())
                 )
         );
-        return item;
+        return insumoNecessario;
     }
 
-    public InsumoNecessario setQuantidade(final UUID itemId, final Quantidade quantidade, final String autor) {
+    public InsumoNecessario alterarQuantidadeInsumoAvulso(
+        final UUID insumoNecessarioId,
+        final Quantidade quantidade,
+        final String autor
+    ) {
         exigirStatus(StatusOrdemServico.EM_DIAGNOSTICO);
-        final var item = encontrarInsumo(itemId);
-        final var anterior = item.quantidade();
-        item.setQuantidade(quantidade);
+        final var insumoNecessario = encontrarInsumo(insumoNecessarioId);
+        final var anterior = insumoNecessario.quantidade();
+        insumoNecessario.setQuantidade(quantidade);
         if (anterior.equals(quantidade)) {
-            return item;
+            return insumoNecessario;
         }
         registrar(
             "INSUMO_AVULSO_ALTERADO",
             autor,
             Map
                 .of(
-                    ITEM_ID,
-                    itemId.toString(),
+                    INSUMO_NECESSARIO_ID,
+                    insumoNecessarioId.toString(),
                     "anterior",
                     Integer.toString(anterior.valor()),
                     QUANTIDADE,
                     Integer.toString(quantidade.valor())
                 )
         );
-        return item;
+        return insumoNecessario;
     }
 
-    public void removerInsumo(final UUID itemId, final String autor) {
+    public void removerInsumoAvulso(final UUID insumoNecessarioId, final String autor) {
         exigirStatus(StatusOrdemServico.EM_DIAGNOSTICO);
-        final var item = encontrarInsumo(itemId);
-        item.exigirAvulso();
-        this.insumos.remove(item);
-        registrar("INSUMO_AVULSO_REMOVIDO", autor, Map.of(ITEM_ID, itemId.toString()));
+        final var insumoNecessario = encontrarInsumo(insumoNecessarioId);
+        insumoNecessario.exigirAvulso();
+        this.insumosNecessarios.remove(insumoNecessario);
+        registrar("INSUMO_AVULSO_REMOVIDO", autor, Map.of(INSUMO_NECESSARIO_ID, insumoNecessarioId.toString()));
     }
 
     public void iniciarDiagnostico(final String autor) {
@@ -242,7 +258,7 @@ public class OrdemServico extends Entidade {
         }
         transicionar(
             StatusOrdemServico.AGUARDANDO_CONFIRMACAO,
-            this.insumos.isEmpty()
+            this.insumosNecessarios.isEmpty()
                 ? StatusOrdemServico.AGUARDANDO_EXECUCAO
                 : StatusOrdemServico.AGUARDANDO_INSUMOS,
             "ORCAMENTO_APROVADO",
@@ -250,16 +266,22 @@ public class OrdemServico extends Entidade {
         );
     }
 
-    public void reservarInsumo(final UUID itemId, final Quantidade quantidade) {
+    public void reservarInsumo(final UUID insumoNecessarioId, final Quantidade quantidade) {
         exigirStatus(StatusOrdemServico.AGUARDANDO_INSUMOS);
-        final var item = encontrarInsumo(itemId);
-        item.reservar(quantidade);
+        final var insumoNecessario = encontrarInsumo(insumoNecessarioId);
+        insumoNecessario.reservar(quantidade);
         registrar(
             "INSUMO_RESERVADO",
             SISTEMA,
-            Map.of(ITEM_ID, itemId.toString(), QUANTIDADE, Integer.toString(quantidade.valor()))
+            Map
+                .of(
+                    INSUMO_NECESSARIO_ID,
+                    insumoNecessarioId.toString(),
+                    QUANTIDADE,
+                    Integer.toString(quantidade.valor())
+                )
         );
-        if (this.insumos.stream().allMatch(i -> i.quantidadePendente() == 0)) {
+        if (this.insumosNecessarios.stream().allMatch(i -> i.quantidadePendente() == 0)) {
             transicionar(
                 StatusOrdemServico.AGUARDANDO_INSUMOS,
                 StatusOrdemServico.AGUARDANDO_EXECUCAO,
@@ -293,8 +315,8 @@ public class OrdemServico extends Entidade {
 
     public void consumirReservas() {
         exigirStatus(StatusOrdemServico.EM_EXECUCAO);
-        for (final var item : this.insumos) {
-            item.consumirReserva();
+        for (final var insumoNecessario : this.insumosNecessarios) {
+            insumoNecessario.consumirReserva();
         }
     }
 
@@ -321,10 +343,10 @@ public class OrdemServico extends Entidade {
         registrar("ACESSO_REEMITIDO", autor, Map.of());
     }
 
-    private InsumoNecessario encontrarInsumo(final UUID itemId) {
-        return this.insumos
+    private InsumoNecessario encontrarInsumo(final UUID insumoNecessarioId) {
+        return this.insumosNecessarios
             .stream()
-            .filter(i -> i.id().equals(itemId))
+            .filter(i -> i.id().equals(insumoNecessarioId))
             .findFirst()
             .orElseThrow(InsumoNecessarioNaoEncontradoException::new);
     }
@@ -337,7 +359,7 @@ public class OrdemServico extends Entidade {
     ) {
         exigirStatus(esperado);
         this.status = destino;
-        registrar(evento, autor, Map.of("total", total().toPlainString()));
+        registrar(evento, autor, Map.of("orcamento", orcamento().toPlainString()));
     }
 
     private void exigirStatus(final StatusOrdemServico esperado) {

@@ -8,7 +8,7 @@ public record RespostaServicoContratado(
     UUID id,
     UUID servicoId,
     String nome,
-    BigDecimal preco,
+    BigDecimal precoVenda,
     boolean requerDiagnostico
 ) {
     public static RespostaServicoContratado de(final ServicoContratado servico) {
@@ -16,7 +16,7 @@ public record RespostaServicoContratado(
             servico.id(),
             servico.servicoId(),
             servico.nome().texto().valor(),
-            servico.preco().preco().valor(),
+            servico.precoVenda().preco().valor(),
             servico.requerDiagnostico()
         );
     }

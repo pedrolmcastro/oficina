@@ -68,8 +68,8 @@ public class ConfiguracaoSeguranca {
                     .permitAll()
                     .requestMatchers(
                         HttpMethod.POST,
-                        "/ordens-servico/acompanhamento/*/aprovacao",
-                        "/ordens-servico/acompanhamento/*/rejeicao"
+                        "/ordens-servico/decisao/*/aprovacao",
+                        "/ordens-servico/decisao/*/rejeicao"
                     )
                     .permitAll()
                     .requestMatchers(HttpMethod.POST, "/login")

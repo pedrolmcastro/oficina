@@ -182,7 +182,7 @@ public class InsumosSteps {
                 "id",
                 "nome",
                 "precoVenda",
-                "quantidadeEmEstoque",
+                "quantidadeEstoqueFisico",
                 "quantidadeReservada",
                 "quantidadeDisponivel"
             );
@@ -258,18 +258,18 @@ public class InsumosSteps {
 
     @When("adiciono {int} unidades ao estoque do insumo cadastrado")
     public void adicionarEstoque(final int quantidade) {
-        enviarEntradaEstoque(original().id().toString(), quantidade);
+        enviarReposicaoEstoque(original().id().toString(), quantidade);
     }
 
     @When("adiciono {int} unidades ao estoque do insumo pelo ID {string}")
     public void adicionarEstoquePorId(final int quantidade, final String id) {
-        enviarEntradaEstoque(id, quantidade);
+        enviarReposicaoEstoque(id, quantidade);
     }
 
     @Then("o estoque do insumo deve ter {int} unidades físicas, {int} reservadas e {int} disponíveis")
     public void validarEstoque(final int fisico, final int reservado, final int disponivel) {
         final var insumo = this.http.resposta().as(RespostaInsumo.class);
-        assertThat(insumo.quantidadeEmEstoque()).isEqualTo(fisico);
+        assertThat(insumo.quantidadeEstoqueFisico()).isEqualTo(fisico);
         assertThat(insumo.quantidadeReservada()).isEqualTo(reservado);
         assertThat(insumo.quantidadeDisponivel()).isEqualTo(disponivel);
     }
@@ -400,16 +400,17 @@ public class InsumosSteps {
             .orElseThrow()
             .split("/", -1)[4];
         this.http
-            .receber(
-                this.http.requisicao().auth().none().post("/ordens-servico/acompanhamento/{token}/aprovacao", token)
-            );
+            .receber(this.http.requisicao().auth().none().post("/ordens-servico/decisao/{token}/aprovacao", token));
         this.http.validarStatus(200);
     }
 
-    private void enviarEntradaEstoque(final String id, final int quantidade) {
+    private void enviarReposicaoEstoque(final String id, final int quantidade) {
         this.http
             .receber(
-                this.http.requisicao().body(Map.of("quantidade", quantidade)).post("/insumos/{id}/entradas-estoque", id)
+                this.http
+                    .requisicao()
+                    .body(Map.of("quantidade", quantidade))
+                    .post("/insumos/{id}/reposicoes-estoque", id)
             );
     }
 

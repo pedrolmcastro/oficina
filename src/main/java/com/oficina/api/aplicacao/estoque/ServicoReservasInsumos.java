@@ -27,34 +27,42 @@ public class ServicoReservasInsumos {
     }
 
     public void reservar(final OrdemServico ordem) {
-        ordem.insumos().stream().map(i -> i.insumoId()).distinct().sorted().forEach(id -> distribuir(encontrar(id)));
+        ordem
+            .insumosNecessarios()
+            .stream()
+            .map(i -> i.insumoId())
+            .distinct()
+            .sorted()
+            .forEach(id -> distribuir(encontrar(id)));
     }
 
-    public Insumo incrementar(final UUID insumoId, final Quantidade quantidade) {
+    public Insumo reporEstoque(final UUID insumoId, final Quantidade quantidade) {
         final var insumo = encontrar(insumoId);
-        insumo.incrementarEstoque(quantidade);
+        insumo.reporEstoque(quantidade);
         distribuir(insumo);
         return insumo;
     }
 
     public void consumir(final OrdemServico ordem) {
-        for (final var item : ordem.insumos()) {
-            encontrar(item.insumoId()).consumirReserva(new Quantidade(item.quantidadeReservada()));
+        for (final var insumoNecessario : ordem.insumosNecessarios()) {
+            encontrar(insumoNecessario.insumoId())
+                .consumirReserva(new Quantidade(insumoNecessario.quantidadeReservada()));
         }
         ordem.consumirReservas();
     }
 
     private void distribuir(final Insumo insumo) {
         for (final var ordem : this.ordens.aguardandoInsumo(insumo.id())) {
-            for (final var item : ordem.insumos()) {
-                if (item.insumoId().equals(insumo.id()) && item.quantidadePendente() > 0) {
-                    final var quantidade = Math.min(insumo.quantidadeDisponivel(), item.quantidadePendente());
+            for (final var insumoNecessario : ordem.insumosNecessarios()) {
+                if (insumoNecessario.insumoId().equals(insumo.id()) && insumoNecessario.quantidadePendente() > 0) {
+                    final var quantidade = Math
+                        .min(insumo.quantidadeDisponivel(), insumoNecessario.quantidadePendente());
                     if (quantidade == 0) {
                         return;
                     }
                     final var reserva = new Quantidade(quantidade);
                     insumo.reservar(reserva);
-                    ordem.reservarInsumo(item.id(), reserva);
+                    ordem.reservarInsumo(insumoNecessario.id(), reserva);
                 }
             }
         }

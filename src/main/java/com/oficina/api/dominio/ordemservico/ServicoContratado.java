@@ -18,9 +18,9 @@ public class ServicoContratado extends Entidade {
     @Embedded
     private Nome nome;
     @Embedded
-    @AttributeOverride(name = "preco.valor", column = @Column(name = "preco", nullable = false, precision = 19,
+    @AttributeOverride(name = "preco.valor", column = @Column(name = "preco_venda", nullable = false, precision = 19,
         scale = 2))
-    private PrecoVenda preco;
+    private PrecoVenda precoVenda;
     private boolean requerDiagnostico;
 
     @SuppressWarnings(value = "NullAway.Init") // JPA preenche os campos após chamar este construtor
@@ -29,7 +29,7 @@ public class ServicoContratado extends Entidade {
     public ServicoContratado(final Servico servico) {
         this.servicoId = servico.id();
         this.nome = servico.nome();
-        this.preco = servico.precoVenda();
+        this.precoVenda = servico.precoVenda();
         this.requerDiagnostico = servico.requerDiagnostico();
     }
 
@@ -39,8 +39,8 @@ public class ServicoContratado extends Entidade {
     public Nome nome() {
         return this.nome;
     }
-    public PrecoVenda preco() {
-        return this.preco;
+    public PrecoVenda precoVenda() {
+        return this.precoVenda;
     }
     public boolean requerDiagnostico() {
         return this.requerDiagnostico;
