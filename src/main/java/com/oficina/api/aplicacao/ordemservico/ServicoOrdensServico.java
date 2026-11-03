@@ -27,6 +27,7 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -159,6 +160,7 @@ public class ServicoOrdensServico {
             if (anterior != ordem.status() && ordem.status() == StatusOrdemServico.AGUARDANDO_CONFIRMACAO) {
                 emitirDecisao(ordem);
             }
+            notificarRetirada(ordem, anterior);
             if (anterior != ordem.status() && ordem.status() == StatusOrdemServico.ENTREGUE) {
                 this.eventos
                     .publishEvent(
@@ -220,6 +222,7 @@ public class ServicoOrdensServico {
         return this.operacoes.escrita("decidir", () -> {
             this.reservas.bloquear();
             final var ordem = encontrarPorTokenDecisao(token, LockModeType.PESSIMISTIC_WRITE);
+            final var anterior = ordem.status();
             if (aprovar) {
                 ordem.aprovar();
                 if (ordem.status() == StatusOrdemServico.AGUARDANDO_INSUMOS) {
@@ -228,6 +231,7 @@ public class ServicoOrdensServico {
             } else {
                 ordem.rejeitar();
             }
+            notificarRetirada(ordem, anterior);
             return ordem;
         });
     }
@@ -243,12 +247,22 @@ public class ServicoOrdensServico {
     }
 
     private void notificar(final OrdemServico ordem, final String token, final boolean decisao) {
+        notificar(ordem, destinatario -> new EmailOrdemServico(ordem.id(), destinatario, token, decisao));
+    }
+
+    private void notificar(final OrdemServico ordem, final Function<String, Object> evento) {
         final var cliente = this.clientes.buscar(ordem.clienteId(), LockModeType.NONE);
         if (cliente.isEmpty()) {
             LOG.warn("Notificação da OS {} não emitida: cliente indisponível", ordem.id());
             return;
         }
-        this.eventos.publishEvent(new EmailOrdemServico(ordem.id(), cliente.get().email().valor(), token, decisao));
+        this.eventos.publishEvent(evento.apply(cliente.get().email().valor()));
+    }
+
+    private void notificarRetirada(final OrdemServico ordem, final StatusOrdemServico anterior) {
+        if (anterior != ordem.status() && ordem.status() == StatusOrdemServico.AGUARDANDO_RETIRADA) {
+            notificar(ordem, destinatario -> new VeiculoDisponivelRetirada(ordem.id(), destinatario));
+        }
     }
 
     private OrdemServico encontrarPorTokenDecisao(final String token, final LockModeType modo) {

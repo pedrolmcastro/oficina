@@ -45,6 +45,7 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 class OrdensServicoIT extends ApiIntegrationTest {
     @Autowired
@@ -61,6 +62,39 @@ class OrdensServicoIT extends ApiIntegrationTest {
     private @Nullable UUID veiculoId;
     private @Nullable UUID servicoId;
     private @Nullable UUID insumoId;
+
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void deveNotificarRetiradaSomenteAoConfirmarTransicao(final boolean executar) {
+        final var acesso = criar();
+        final var id = acesso.ordemServico().id();
+        final var token = tokenDecisao(acesso);
+        if (executar) {
+            validar(decidir(token, "aprovacao"), 200);
+            validar(requisicao().post("/ordens-servico/{id}/inicio-execucao", id), 200);
+        }
+        clearInvocations(this.emails);
+        new TransactionTemplate(this.transacoes).executeWithoutResult(status -> {
+            if (executar) {
+                this.servicoOrdens.executar(id, "concluir", o -> o.concluirExecucao("admin"));
+            } else {
+                this.servicoOrdens.decidir(token, false);
+            }
+            status.setRollbackOnly();
+        });
+        verifyNoInteractions(this.emails);
+        if (executar) {
+            validar(requisicao().post("/ordens-servico/{id}/fim-execucao", id), 200);
+            validar(requisicao().post("/ordens-servico/{id}/fim-execucao", id), 409);
+        } else {
+            validar(decidir(token, "rejeicao"), 200);
+            validar(decidir(token, "rejeicao"), 200);
+        }
+        assertThat(buscar(acesso).status()).isEqualTo("aguardando-retirada");
+        verify(this.emails).enviar(id, "maria@example.com", "Veículo disponível para retirada");
+        validar(requisicao().post("/ordens-servico/{id}/retirada-veiculo", id), 200);
+        verifyNoMoreInteractions(this.emails);
+    }
 
     @Test
     void deveMedirCicloSomenteAposConfirmarEntrega() {

@@ -68,12 +68,14 @@ Funcionalidade: Conduzir uma ordem de serviço
     E a resposta deve conter a OS:
       | status              | total  | resultado          |
       | aguardando-retirada | 140.00 | EXECUCAO_CONCLUIDA |
+    E o cliente original recebe 1 email de acompanhamento, 1 email de decisão e 1 email de retirada
 
   Cenário: Entregar veículo após a execução
     Dado uma OS em "aguardando-retirada"
     Quando executo a ação administrativa "retirada-veiculo" na OS
     Então a API deve retornar 200
     E a OS deve estar em "entregue" com total "140.00"
+    E o cliente original recebe 1 email de acompanhamento, 1 email de decisão e 1 email de retirada
     E o histórico da OS contém em ordem:
       | CRIADA                |
       | DIAGNOSTICO_INICIADO  |
