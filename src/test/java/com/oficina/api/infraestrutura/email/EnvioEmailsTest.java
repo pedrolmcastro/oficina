@@ -1,6 +1,7 @@
 package com.oficina.api.infraestrutura.email;
 
 import com.oficina.api.aplicacao.ordemservico.EmailOrdemServico;
+import com.oficina.api.aplicacao.ordemservico.VeiculoDisponivelRetirada;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -15,6 +16,20 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 class EnvioEmailsTest {
+    @Test
+    void deveNotificarVeiculoDisponivelParaRetirada() {
+        final var smtp = mock(JavaMailSender.class);
+        final var envio = new EnvioEmails(smtp, "oficina@example.test");
+        final var evento = new VeiculoDisponivelRetirada(UUID.randomUUID(), "cliente@example.test");
+        new NotificacoesOrdensServico(envio, "http://localhost:8080").enviar(evento);
+        final var mensagem = ArgumentCaptor.forClass(SimpleMailMessage.class);
+        verify(smtp).send(mensagem.capture());
+        assertThat(mensagem.getValue().getFrom()).isEqualTo("oficina@example.test");
+        assertThat(mensagem.getValue().getTo()).containsExactly("cliente@example.test");
+        assertThat(mensagem.getValue().getText()).isEqualTo("Veículo disponível para retirada");
+        assertThat(evento.toString()).doesNotContain("cliente@example.test");
+    }
+
     @Test
     void deveEnviarSomenteLinksSemAssunto() {
         final var smtp = mock(JavaMailSender.class);

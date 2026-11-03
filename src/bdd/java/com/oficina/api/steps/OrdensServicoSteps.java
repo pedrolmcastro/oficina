@@ -693,14 +693,22 @@ public class OrdensServicoSteps {
 
     @Then("o cliente original recebe {int} email(s) de acompanhamento e {int} email(s) de decisão")
     public void validarNotificacoes(final int acompanhamento, final int decisao) {
+        validarNotificacoesComRetirada(acompanhamento, decisao, 0);
+    }
+
+    @Then("o cliente original recebe {int} email(s) de acompanhamento, "
+        + "{int} email(s) de decisão e {int} email(s) de retirada")
+    public void validarNotificacoesComRetirada(final int acompanhamento, final int decisao, final int retirada) {
         final var destinatarios = ArgumentCaptor.forClass(String.class);
         final var corpos = ArgumentCaptor.forClass(String.class);
-        verify(this.emails, times(acompanhamento + decisao))
+        verify(this.emails, times(acompanhamento + decisao + retirada))
             .enviar(eq(ordemId()), destinatarios.capture(), corpos.capture());
         assertThat(destinatarios.getAllValues()).containsOnly("maria@example.com");
         assertThat(corpos.getAllValues().stream().filter(c -> c.endsWith("/status"))).hasSize(acompanhamento);
         assertThat(corpos.getAllValues().stream().filter(c -> c.contains("/aprovacao") && c.endsWith("/rejeicao")))
             .hasSize(decisao);
+        assertThat(corpos.getAllValues().stream().filter(c -> c.equals("Veículo disponível para retirada")))
+            .hasSize(retirada);
         if (acompanhamento > 0) {
             assertThat(corpos.getAllValues())
                 .anySatisfy(c -> assertThat(c).endsWith("/cliente/" + acesso().tokenAcompanhamento() + "/status"));

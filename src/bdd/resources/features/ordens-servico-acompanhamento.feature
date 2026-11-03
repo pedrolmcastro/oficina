@@ -72,6 +72,7 @@ Funcionalidade: Acompanhar a OS e decidir sobre o orçamento
       E a resposta deve conter a OS:
         | status              | total  | resultado           |
         | aguardando-retirada | 140.00 | ORCAMENTO_REJEITADO |
+      E o cliente original recebe 1 email de acompanhamento, 1 email de decisão e 1 email de retirada
       E o acompanhamento expõe somente os dados necessários ao cliente
 
     Esquema do Cenário: Aceitar repetição da mesma decisão sem duplicar eventos
@@ -83,11 +84,12 @@ Funcionalidade: Acompanhar a OS e decidir sobre o orçamento
         | CRIADA                 |
         | DIAGNOSTICO_DISPENSADO |
         | <evento>               |
+      E o cliente original recebe 1 email de acompanhamento, 1 email de decisão e <retirada> emails de retirada
 
       Exemplos:
-        | decisaoAnterior | decisao   | evento              |
-        | aprovado        | aprovacao | ORCAMENTO_APROVADO  |
-        | rejeitado       | rejeicao  | ORCAMENTO_REJEITADO |
+        | decisaoAnterior | decisao   | evento              | retirada |
+        | aprovado        | aprovacao | ORCAMENTO_APROVADO  |        0 |
+        | rejeitado       | rejeicao  | ORCAMENTO_REJEITADO |        1 |
 
     Esquema do Cenário: Rejeitar mudança de decisão do cliente
       Dado uma OS em "aguardando-confirmacao"
